@@ -1,0 +1,2196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0055AA">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SM '91">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Soccer Manager '91</title>
+<style>
+:root{--blue:#0055AA;--deep:#003D80;--white:#FFFFFF;--black:#000000;--orange:#FF8800;--grey:#B8C8DC;--bevel-lo:#7A3F00;--bevel-hi:#FFD08A}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--blue);color:var(--white);font-family:"Courier New",Courier,"Lucida Console",monospace;font-weight:700;font-size:15px;line-height:1.35;overscroll-behavior:none}
+#app{display:flex;flex-direction:column;height:100%;max-width:520px;margin:0 auto;background:var(--blue)}
+header{padding:calc(10px + env(safe-area-inset-top)) 12px 8px;border-bottom:3px solid var(--white);display:flex;justify-content:space-between;align-items:flex-end;gap:8px;flex:none}
+header .club{color:var(--orange);font-size:17px;text-transform:uppercase;letter-spacing:.5px;line-height:1.15}
+header .meta{font-size:13px;color:var(--grey);text-align:right;white-space:nowrap;line-height:1.3}
+header .meta .neg{color:var(--orange)}
+main{flex:1;overflow-y:auto;padding:12px 12px 20px;-webkit-overflow-scrolling:touch}
+main::-webkit-scrollbar{display:none}
+h1{font-size:15px;margin:0 0 10px;color:var(--orange)}
+h2{font-size:15px;margin:16px 0 8px;color:var(--orange)}
+p{margin:0 0 10px}
+.dim{color:var(--grey)}
+.hot{color:var(--orange)}
+.b{display:block;width:100%;padding:12px 12px;background:var(--blue);color:var(--white);border:0;box-shadow:inset 2px 2px 0 var(--white),inset -2px -2px 0 var(--black);font:inherit;text-align:left;margin:0 0 8px;cursor:pointer;line-height:1.3}
+.b:active,.b.on{background:var(--orange);color:var(--black);box-shadow:inset 2px 2px 0 var(--bevel-hi),inset -2px -2px 0 var(--bevel-lo)}
+.b.on .dim{color:#5a3200}
+.b:focus-visible{outline:3px solid var(--orange);outline-offset:-5px}
+.b.small{padding:8px 10px;margin:0}
+.b:disabled{opacity:.45;cursor:default}
+.row{display:flex;gap:8px;margin-bottom:8px}
+.row .b{margin:0}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px}
+.grid3 .b{margin:0;padding:10px 6px;text-align:center}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
+.grid2 .b{margin:0;text-align:center}
+.pill{display:inline-block;background:var(--deep);padding:2px 6px;margin-left:4px;font-size:13px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+table.tight{font-size:13px}
+table.tight td,table.tight th{padding:5px 2px}
+td,th{padding:5px 3px;text-align:left;white-space:nowrap}
+th{color:var(--orange);font-weight:700;border-bottom:2px solid var(--white)}
+td.n,th.n{text-align:right}
+tr.me td{background:var(--deep);color:var(--orange)}
+tr.tap{cursor:pointer}
+tr.tap:active td{background:var(--orange);color:var(--black)}
+tr.sel td{background:var(--deep)}
+tr.line-promo td{border-bottom:2px dashed var(--grey)}
+tr.line-releg td{border-top:2px dashed var(--grey)}
+.news{margin:0 0 6px;padding-left:0;list-style:none}
+.news li{padding:6px 0;border-bottom:1px solid var(--deep)}
+.news li.warn{color:var(--orange)}
+.mark{color:var(--orange)}
+nav{display:grid;grid-template-columns:repeat(5,1fr);border-top:3px solid var(--white);flex:none;background:var(--blue)}
+nav button{background:var(--blue);color:var(--white);border:0;border-right:2px solid var(--deep);padding:11px 2px 10px;font:inherit;font-size:12px;cursor:pointer}
+nav button:last-child{border-right:0}
+nav button.on{background:var(--orange);color:var(--black)}
+nav button:focus-visible{outline:3px solid var(--orange);outline-offset:-4px}
+.action{flex:none;padding:8px 12px calc(10px + env(safe-area-inset-bottom));border-top:3px solid var(--white)}
+.action .b{margin:0;text-align:center;background:var(--orange);color:var(--black);box-shadow:inset 2px 2px 0 var(--bevel-hi),inset -2px -2px 0 var(--bevel-lo);font-size:16px}
+.action .b:active{background:var(--white)}
+.action .b.quiet{background:var(--blue);color:var(--white);box-shadow:inset 2px 2px 0 var(--white),inset -2px -2px 0 var(--black)}
+.title{padding:60px 0 20px;text-align:center}
+.title .logo{color:var(--orange);font-size:26px;line-height:1.15;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px}
+.title .sub{color:var(--grey);font-size:13px;margin-bottom:40px}
+input{width:100%;font:inherit;padding:12px;background:var(--white);color:var(--black);border:0;box-shadow:inset 2px 2px 0 var(--black),inset -2px -2px 0 var(--white);margin-bottom:10px}
+.clock{font-size:44px;color:var(--orange);text-align:center;margin:6px 0 4px;line-height:1}
+.score{font-size:26px;text-align:center;margin-bottom:10px;line-height:1.2}
+.score small{display:block;font-size:13px;color:var(--grey);margin-top:4px}
+.events{min-height:120px}
+.events div{padding:4px 0}
+.events .us{color:var(--orange)}
+.toast{position:fixed;left:50%;bottom:120px;transform:translateX(-50%);background:var(--black);color:var(--white);padding:10px 14px;max-width:90%;box-shadow:inset 2px 2px 0 var(--white);z-index:9;font-size:14px;pointer-events:none;opacity:0;transition:opacity .2s}
+.toast.show{opacity:1}
+.cursor::after{content:"_";animation:blink 1s steps(1) infinite;color:var(--orange)}
+@keyframes blink{50%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.cursor::after{animation:none}}
+.kv{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--deep)}
+.kv span:last-child{text-align:right}
+.bar{height:12px;background:var(--deep);box-shadow:inset 1px 1px 0 var(--black);margin:6px 0 12px}
+.bar i{display:block;height:100%;background:var(--orange)}
+.wrap{white-space:normal}
+</style>
+</head>
+<body>
+<div id="app">
+  <header id="hdr"></header>
+  <main id="main"></main>
+  <nav id="nav"></nav>
+  <div class="action" id="act"></div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+'use strict';
+// =====================================================================
+//  MPSM Remake - game engine (UI-agnostic)
+// =====================================================================
+
+// ---------- RNG ----------
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+let rand = Math.random;
+function seedRng(s){ rand = mulberry32(s); }
+function rInt(a,b){ return a + Math.floor(rand()*(b-a+1)); }
+function rNorm(m,sd){ const u=1-rand(), v=rand(); return m + sd*Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+function pick(arr){ return arr[Math.floor(rand()*arr.length)]; }
+function shuffle(arr){ for(let i=arr.length-1;i>0;i--){ const j=Math.floor(rand()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; }
+function poisson(lambda){ const L=Math.exp(-lambda); let k=0,p=1; do{ k++; p*=rand(); }while(p>L); return k-1; }
+function clamp(x,a,b){ return Math.max(a,Math.min(b,x)); }
+function round500(x){ return Math.round(x/500)*500; }
+
+// ---------- Tunables ----------
+const CFG = {
+  WEEKS: 42,
+  CUPS: {
+    lc: { name:'League Cup', short:'Lg Cup', weeks:[3,7,11,15,19,23], prize:[3000,6000,15000,30000,60000,150000], runnerUp:60000, finalAtt:30000, finalTicket:8 },
+    fa: { name:'FA Cup', short:'FA Cup', weeks:[26,30,34,37,40,42], prize:[5000,10000,25000,50000,100000,250000], runnerUp:100000, finalAtt:40000, finalTicket:10 },
+  },
+  ST_HOLDER_WALKUP: 0.7,    // fraction of season-ticket holders who would have paid on the gate anyway
+  LOAN_RATE: 0.12,
+  LOAN_WEEKS: 36,
+  EVENT_TV: {0:0, 1:150000, 2:60000, 3:25000, 4:12000},
+  DIV_MEAN: {1:72, 2:60, 3:48, 4:36},
+  SKILL_SD: 7,
+  PRESTIGE_SKILL_SPREAD: 0.7,     // +/- per prestige idx within division
+  BASE_GOALS: 1.22,
+  HOME_ADV: 1.2,
+  CUP_HOME_UNDERDOG: 1.25,
+  AWAY_ADV: 0.82,
+  MID_K: 2.0,                      // possession battle sharpness
+  POSS_POW: 0.8,
+  ATTDEF_POW: 1.2,
+  MATCH_NOISE: 0.15,
+  LATE_EQUALISER: 0.10,
+  UNIT_POW: 0.6,                   // diminishing returns on unit size
+  CAPACITY: {1:[45000,20000], 2:[30000,12000], 3:[16000,7000], 4:[10000,4000]},
+  FILL: {0:0.7, 1:0.65, 2:0.52, 3:0.47, 4:0.43},
+  DEMAND: {1:21000, 2:10800, 3:5600, 4:3000},   // typical home crowd for a mid-table club in each division
+  SUPPORT_BLEND: 0.5,                             // how fast a club's support moves toward its division each season
+  TICKET: {0:8, 1:7, 2:6.5, 3:6, 4:5},      // the going rate in each division (0 = Europe)
+  TICKET_ELASTICITY: 1.3,                     // demand falls this fast as price rises above the going rate
+  TICKET_MIN: 2, TICKET_MAX: 30,
+  TV: {0:0, 1:200000, 2:250000, 3:175000, 4:60000},
+  SPONSOR_BASE: {0:0, 1:250000, 2:110000, 3:45000, 4:20000},
+  PRIZE_TOP: {1:300000, 2:100000, 3:40000, 4:20000},
+  PRIZE_BOT: {1:20000, 2:8000, 3:4000, 4:2000},
+  PROMO_BONUS: {3:40000, 2:100000, 1:250000}, // keyed by division promoted INTO
+  GROUND_COST_PER_SEAT: 0.06,
+  OVERDRAFT_TURNOVER: 0.5,   // the bank lends up to half a season's gate and TV income
+  OVERDRAFT_MIN: 100000,
+  INTEREST_WEEKLY: 0.0025,
+  DEPOSIT_WEEKLY: 0.001,
+  START_BALANCE: {1:[1500000,400000], 2:[500000,120000], 3:[200000,50000], 4:[120000,30000]},
+  WAGE_A: 0.00067, WAGE_P: 3.56,
+  VALUE_MULT: 200,
+  SUMMER_WEEKS: 10,
+  INJURY_BASE: 0.025,
+  RESALE_WEEKS: 26,          // a club will not entertain bids for a player this soon after signing him
+  STAFF_WAGE: [80, 250, 600, 1200],
+  STAFF_DIV_MULT: {0:3, 1:3, 2:2, 3:1.4, 4:1},
+  COACH_MULT: [0.4, 1, 1.6, 2.4],
+  PHYSIO_INJ_CHANCE: [1.2, 1, 0.9, 0.75],
+  PHYSIO_INJ_LEN: [1.3, 1, 0.75, 0.5],
+  PHYSIO_RECOVERY: [0, 1, 2, 4],
+  SCOUT_LIST: [6, 8, 10, 12],
+  TRAIN_BASE: 0.03,
+  TRAIN: { light:{gain:0.5, fit:3, inj:0}, normal:{gain:1, fit:0, inj:0}, hard:{gain:1.7, fit:-2, inj:0.01} },
+  SEAT_COST: 120,
+  BUILD_WEEKS: 10,
+  SAFETY_COST_PER_SEAT: 0.4,
+  SAFETY_DECAY: 0.25,
+  CROWD_TROUBLE_BELOW: 45,
+  SAFETY_RESTRICT_BELOW: 25,
+  EURO: {
+    legWeeks: [[5,8],[13,17],[21,25],[29,33]],
+    finalWeek: 38,
+    crowdMult: 1.3,
+    comps: {
+      ec:   { name:'European Cup',      short:'Euro Cup', size:32, prize:[100000,150000,250000,400000,1000000], runnerUp:400000, finalAtt:70000, finalTicket:15 },
+      cwc:  { name:"Cup Winners' Cup",  short:'CWC',      size:16, prize:[150000,250000,400000,600000],         runnerUp:250000, finalAtt:45000, finalTicket:12 },
+      uefa: { name:'UEFA Cup',          short:'UEFA Cup', size:16, prize:[120000,200000,300000,500000],         runnerUp:200000, finalAtt:45000, finalTicket:12 },
+    },
+  },
+  CONF_START: 55,
+  CONF_REVERT: 0.03,
+  SACK_CONF: 5,
+  OVERDRAFT_SACK_WEEKS: 8,
+};
+
+// ---------- Static data ----------
+const CLUB_DATA = [
+  [1,'Arsenal','Arsenal'],[1,'Liverpool','Liverpool'],[1,'Crystal Palace','C Palace'],[1,'Leeds United','Leeds'],
+  [1,'Manchester City','Man City'],[1,'Manchester United','Man Utd'],[1,'Wimbledon','Wimbledon'],[1,'Nottingham Forest','Nottm Forest'],
+  [1,'Everton','Everton'],[1,'Tottenham Hotspur','Tottenham'],[1,'Chelsea','Chelsea'],[1,'Queens Park Rangers','QPR'],
+  [1,'Sheffield United','Sheff Utd'],[1,'Southampton','Southampton'],[1,'Norwich City','Norwich'],[1,'Coventry City','Coventry'],
+  [2,'Oldham Athletic','Oldham'],[2,'West Ham United','West Ham'],[2,'Sheffield Wednesday','Sheff Wed'],[2,'Notts County','Notts County'],
+  [2,'Millwall','Millwall'],[2,'Brighton & Hove Albion','Brighton'],[2,'Middlesbrough','Middlesbro'],[2,'Barnsley','Barnsley'],
+  [2,'Bristol City','Bristol City'],[2,'Oxford United','Oxford'],[2,'Newcastle United','Newcastle'],[2,'Wolverhampton Wanderers','Wolves'],
+  [2,'Bristol Rovers','Bristol Rov'],[2,'Ipswich Town','Ipswich'],[2,'Port Vale','Port Vale'],[2,'Charlton Athletic','Charlton'],
+  [3,'Cambridge United','Cambridge'],[3,'Southend United','Southend'],[3,'Grimsby Town','Grimsby'],[3,'Bolton Wanderers','Bolton'],
+  [3,'Tranmere Rovers','Tranmere'],[3,'Brentford','Brentford'],[3,'Bury','Bury'],[3,'Bradford City','Bradford'],
+  [3,'Bournemouth','Bournemouth'],[3,'Wigan Athletic','Wigan'],[3,'Huddersfield Town','Huddersfield'],[3,'Birmingham City','Birmingham'],
+  [3,'Leyton Orient','L Orient'],[3,'Stoke City','Stoke'],[3,'Reading','Reading'],[3,'Exeter City','Exeter'],
+  [4,'Darlington','Darlington'],[4,'Stockport County','Stockport'],[4,'Hartlepool United','Hartlepool'],[4,'Peterborough United','Peterboro'],
+  [4,'Blackpool','Blackpool'],[4,'Burnley','Burnley'],[4,'Torquay United','Torquay'],[4,'Scunthorpe United','Scunthorpe'],
+  [4,'Scarborough','Scarborough'],[4,'Northampton Town','Northampton'],[4,'Doncaster Rovers','Doncaster'],[4,'Rochdale','Rochdale'],
+  [4,'Cardiff City','Cardiff'],[4,'Lincoln City','Lincoln'],[4,'Gillingham','Gillingham'],[4,'Walsall','Walsall'],
+];
+const SPONSORS_LOCAL = ['Dawson Double Glazing','Kendrick Kitchens','Pemberton Paints','Speakman Scaffolding','Trident Tyres','Goldstar Bingo','Rialto Video','Sherwood Coaches','Whitworth Windows','Lomax Removals','Yates Insurance','Oakes Plant Hire','Fenwick Motors','Regal Carpets','Bramble Bakeries','Ace Taxis','Marsden Meats','Hollis Haulage'];
+const SPONSORS_NATIONAL = ['Meridian Electrical','Halcyon Holidays','Crown Assurance','Northgate Motors','Pennine Petroleum','Apex Lager','Britannia Building Society','Sovereign Cigarettes','Vantage Computers','Imperial Tobacco Co.','Tudor Crisps','Kingfisher Beer'];
+// ---------- European clubs (appended into the engine) ----------
+const EURO_POOL = [
+  ['AC Milan','Milan',86,'it'],['Juventus','Juventus',82,'it'],['Internazionale','Inter',80,'it'],['Napoli','Napoli',78,'it'],['Sampdoria','Sampdoria',78,'it'],['Roma','Roma',76,'it'],['Torino','Torino',74,'it'],['Parma','Parma',73,'it'],['Lazio','Lazio',72,'it'],['Fiorentina','Fiorentina',72,'it'],
+  ['Real Madrid','Real Madrid',84,'es'],['Barcelona','Barcelona',84,'es'],['Atlético Madrid','Atlético',76,'es'],['Valencia','Valencia',72,'es'],['Athletic Bilbao','Bilbao',70,'es'],['Sevilla','Sevilla',68,'es'],
+  ['Bayern Munich','Bayern',82,'de'],['Werder Bremen','Bremen',76,'de'],['Borussia Dortmund','Dortmund',76,'de'],['Eintracht Frankfurt','Frankfurt',74,'de'],['Kaiserslautern','K\'lautern',72,'de'],['VfB Stuttgart','Stuttgart',72,'de'],['Bayer Leverkusen','Leverkusen',70,'de'],
+  ['PSV Eindhoven','PSV',78,'nl'],['Ajax','Ajax',78,'nl'],['Feyenoord','Feyenoord',74,'nl'],
+  ['Marseille','Marseille',80,'fr'],['Monaco','Monaco',74,'fr'],['Paris Saint-Germain','PSG',72,'fr'],['Auxerre','Auxerre',70,'fr'],['Bordeaux','Bordeaux',70,'fr'],
+  ['Benfica','Benfica',77,'pt'],['Porto','Porto',77,'pt'],['Sporting Lisbon','Sporting',72,'pt'],
+  ['Anderlecht','Anderlecht',73,'nl'],['Club Brugge','Brugge',70,'nl'],['KV Mechelen','Mechelen',68,'nl'],
+  ['Rangers','Rangers',72,'gb'],['Celtic','Celtic',70,'gb'],
+  ['Red Star Belgrade','Red Star',76,'ea'],['Dynamo Kiev','Dyn Kiev',74,'ea'],['Spartak Moscow','Spartak',74,'ea'],['Steaua Bucharest','Steaua',72,'ea'],['Sparta Prague','Sparta',68,'ea'],['Dinamo Zagreb','Din Zagreb',68,'ea'],['Hajduk Split','Hajduk',66,'ea'],['Dinamo Bucharest','Din Buch',66,'ea'],['Legia Warsaw','Legia',64,'ea'],['Ferencváros','Ferencváros',64,'ea'],
+  ['IFK Gothenburg','Gothenburg',70,'no'],['Brøndby','Brøndby',68,'no'],['Malmö FF','Malmö',64,'no'],['Grasshoppers','Grasshoppers',64,'de'],['Austria Vienna','A Vienna',64,'de'],['Rosenborg','Rosenborg',62,'no'],
+  ['Galatasaray','Galatasaray',68,'tr'],['Panathinaikos','Panathinaikos',68,'gr'],['Fenerbahçe','Fenerbahçe',66,'tr'],['Olympiacos','Olympiacos',66,'gr'],['Beşiktaş','Beşiktaş',64,'tr'],
+  ['Levski Sofia','Levski',60,'ea'],['APOEL Nicosia','APOEL',52,'gr'],['Linfield','Linfield',42,'gb'],['Valletta','Valletta',40,'it'],
+];
+const EURO_NAMES = {
+  it: [['Paolo','Marco','Giuseppe','Roberto','Franco','Gianluca','Alessandro','Stefano','Luca','Antonio','Fabio','Claudio','Massimo','Andrea','Riccardo','Daniele','Giovanni','Sandro'],['Rossi','Bianchi','Ferrari','Esposito','Romano','Colombo','Ricci','Marino','Greco','Bruno','Gallo','Conti','De Luca','Costa','Giordano','Mancini','Rizzo','Lombardi','Moretti','Barbieri','Fontana','Caruso','Ferrara','Serra']],
+  es: [['José','Antonio','Manuel','Francisco','Juan','Javier','Miguel','Rafael','Carlos','Fernando','Luis','Alberto','Sergio','Julio','Andoni','Txiki','Quique','Paco'],['García','Fernández','González','Rodríguez','López','Martínez','Sánchez','Pérez','Gómez','Martín','Jiménez','Ruiz','Hernández','Díaz','Moreno','Álvarez','Romero','Alonso','Gutiérrez','Navarro','Torres','Vázquez','Serrano','Blanco']],
+  de: [['Thomas','Michael','Andreas','Stefan','Jürgen','Klaus','Uwe','Lothar','Karl-Heinz','Olaf','Matthias','Jörg','Frank','Dieter','Rudi','Stefan','Bernd','Christian'],['Müller','Schmidt','Schneider','Fischer','Weber','Meyer','Wagner','Becker','Schulz','Hoffmann','Koch','Richter','Klein','Wolf','Neumann','Schwarz','Braun','Zimmermann','Krüger','Hartmann','Lange','Werner','Krause','Lehmann']],
+  nl: [['Jan','Dennis','Ruud','Frank','Ronald','Marco','Wim','Erwin','Bryan','Peter','Aron','Hans','Johnny','Edwin','Pieter','Stan','Marc','Danny'],['de Jong','Jansen','de Vries','van den Berg','van Dijk','Bakker','Visser','Smit','Meijer','de Boer','Mulder','de Groot','Bos','Vos','Peters','Hendriks','van Leeuwen','Dekker','Brouwer','Koster','Willems','Claes','Maes','Wouters']],
+  fr: [['Jean','Pierre','Michel','Philippe','Alain','Laurent','Eric','Didier','Christophe','Franck','Bernard','Patrick','Basile','Jocelyn','Fabien','Manuel','Vincent','Bruno'],['Martin','Bernard','Dubois','Thomas','Robert','Richard','Petit','Durand','Leroy','Moreau','Simon','Laurent','Lefebvre','Michel','Garcia','David','Bertrand','Roux','Vincent','Fournier','Morel','Girard','Andre','Mercier']],
+  pt: [['João','Rui','Paulo','Fernando','Carlos','Nuno','Vítor','Jorge','António','Luís','Pedro','Sérgio','Manuel','José','Ricardo','Domingos','Hélder','Abel'],['Silva','Santos','Ferreira','Pereira','Oliveira','Costa','Rodrigues','Martins','Sousa','Fernandes','Gonçalves','Gomes','Lopes','Marques','Alves','Almeida','Ribeiro','Pinto','Carvalho','Teixeira','Moreira','Correia','Mendes','Nunes']],
+  ea: [['Dragan','Zoran','Dejan','Darko','Goran','Ivan','Milan','Robert','Pavel','Petr','Tomáš','Andrzej','Jerzy','Marek','Gheorghe','Marius','Florin','Oleg','Sergei','Igor','Andrei','Viktor','Tibor','László'],['Petrović','Jovanović','Marković','Popović','Novák','Svoboda','Dvořák','Kowalski','Nowak','Wójcik','Popescu','Ionescu','Dumitrescu','Ivanov','Petrov','Kuznetsov','Bondarenko','Kovalenko','Horváth','Nagy','Kiss','Stojković','Đukić','Vasilev']],
+  no: [['Lars','Anders','Mikael','Henrik','Peter','Kim','Brian','Morten','Jesper','Kenneth','Tomas','Jan','Ole','Thor','Michael','Klas','Stefan','Bo'],['Andersson','Johansson','Karlsson','Nilsson','Eriksson','Larsen','Hansen','Jensen','Nielsen','Pedersen','Olsen','Kristiansen','Berg','Lund','Halvorsen','Dahl','Lindqvist','Bergström','Sørensen','Madsen']],
+  tr: [['Mehmet','Ahmet','Mustafa','Hakan','Rıza','Tanju','Oğuz','Bülent','Erdal','Ünal','Feyyaz','Metin','Uğur','Gökhan'],['Yılmaz','Kaya','Demir','Şahin','Çelik','Yıldız','Aydın','Öztürk','Arslan','Doğan','Kılıç','Aslan','Çetin','Kara']],
+  gr: [['Giorgos','Dimitris','Nikos','Kostas','Vasilis','Yannis','Stelios','Christos','Andreas','Michalis','Panagiotis','Spyros'],['Papadopoulos','Nikolaidis','Georgiou','Antoniou','Ioannou','Konstantinou','Dimitriou','Christodoulou','Pavlou','Vlachos','Alexandrou','Makris']],
+};
+
+const EURO_CLUBS = EURO_POOL.map(x=>x[0]);
+
+const FIRST = ['Dave','Steve','Gary','Paul','Mark','Kevin','Ian','Neil','Andy','Tony','John','Lee','Darren','Wayne','Dean','Craig','Stuart','Alan','Peter','Phil','Colin','Nigel','Trevor','Keith','Barry','Terry','Graham','Martin','Chris','Simon','Nicky','Micky','Danny','Jason','Carl','Jimmy','Robbie','Gordon','Kenny','Roy','Brian','Dennis','Frank','Tommy','Billy','Ray','Les','Vince','Gerry','Clive','Glenn','Dale','Adrian','Scott','Matt','Ashley','Gareth','Owen','Rhys','Alun','Duncan','Iain','Fraser','Brendan','Declan','Liam','Niall','Eamonn','Warren','Russell','Malcolm','Derek','Geoff','Bobby','Ronnie','Mel','Kerry','Trevor','Perry','Jon','Justin','Shaun','Carlton','Ian','Dave','Steve','Paul','Mark'];
+const LAST = ['Smith','Jones','Williams','Taylor','Brown','Davies','Evans','Wilson','Thomas','Roberts','Johnson','Lewis','Walker','Robinson','Wood','Thompson','White','Watson','Jackson','Wright','Green','Harris','Cooper','King','Martin','Clarke','James','Morgan','Hughes','Edwards','Hill','Moore','Harrison','Scott','Young','Morris','Hall','Ward','Turner','Carter','Phillips','Mitchell','Adams','Campbell','Anderson','Allen','Cook','Bailey','Parker','Miller','Murphy','Price','Bell','Baker','Griffiths','Kelly','Simpson','Marshall','Collins','Bennett','Cox','Richardson','Fox','Gray','Chapman','Hunt','Robertson','Shaw','Reynolds','Lloyd','Ellis','Holmes','Mason','Palmer','Barker','Webb','Stevens','Butler','Gibson','Rogers','Knight','Hudson','Pearson','Fletcher','Dixon','Reid','Ferguson','McDonald','McAllister','McCarthy','Sutton','Sharp','Barton','Whelan','Sinclair','Dawson','Nixon','Rudd','Burrows','Fenwick','Hodges','Pemberton','Blackmore','Kendrick','Musgrove','Tanner','Speakman','Heywood','Marsden','Quinn','Molloy','Dwyer','Hanlon','Fairclough','Ashcroft','Thornton','Bradshaw','Duffy','Nolan','Kavanagh','Pritchard','Haynes','Goddard','Wallace','Lowe','Sheridan','Cartwright','Elliott','Foster','Hollis','Kerr','Lomax','Oakes','Slater','Tierney','Vaughan','Whitworth','Yates'];
+
+const POSITIONS = ['GK','DEF','MID','FWD'];
+const SQUAD_TEMPLATE = ['GK','GK','DEF','DEF','DEF','DEF','DEF','MID','MID','MID','MID','MID','FWD','FWD','FWD','FWD'];
+const FORMATIONS = {
+  '4-4-2': {d:4,m:4,f:2}, '4-3-3': {d:4,m:3,f:3}, '5-3-2': {d:5,m:3,f:2},
+  '3-5-2': {d:3,m:5,f:2}, '5-4-1': {d:5,m:4,f:1}, '4-5-1': {d:4,m:5,f:1},
+};
+
+// ---------- Player helpers ----------
+let nextPlayerId = 1;
+function wageFor(skill){ return Math.max(60, Math.round(CFG.WAGE_A*Math.pow(skill, CFG.WAGE_P)/5)*5); }
+function ageFactor(age){
+  if (age<=20) return 1.15; if (age<=23) return 1.1; if (age<=28) return 1.0;
+  if (age===29) return 0.9; if (age===30) return 0.8; if (age===31) return 0.65;
+  if (age===32) return 0.5; if (age===33) return 0.4; return 0.3;
+}
+function valueFor(p){ return round500(wageFor(p.skill)*CFG.VALUE_MULT*ageFactor(p.age)); }
+function randomAge(){ const a = Math.round(rNorm(25.5, 4)); return clamp(a, 17, 34); }
+function makePlayer(state, pos, skill, age, clubId){
+  const grp = (state.clubs[clubId]||{}).group; const pool = grp && EURO_NAMES[grp];
+  const name = pool? pick(pool[0])+' '+pick(pool[1]) : pick(FIRST)+' '+pick(LAST);
+  const p = { id: nextPlayerId++, name, pos, skill: clamp(Math.round(skill),10,99),
+    age, fitness: 100, injury: 0, club: clubId, goals: 0, apps: 0, listed: null };
+  p.pot = clamp(p.skill + (age<=21? rInt(6,26) : age<=24? rInt(3,15) : age<=27? rInt(0,7) : 0), p.skill, 99);
+  state.players[p.id] = p;
+  return p;
+}
+function refreshValues(p){ p.wage = wageFor(p.skill); p.value = valueFor(p); }
+function posPenalty(natural, slot){
+  if (natural===slot) return 1;
+  if (natural==='GK') return 0.5;
+  if (slot==='GK') return 0.45;
+  if ((natural==='DEF'&&slot==='MID')||(natural==='MID'&&slot==='DEF')) return 0.85;
+  if ((natural==='MID'&&slot==='FWD')||(natural==='FWD'&&slot==='MID')) return 0.85;
+  return 0.7;
+}
+function effSkill(p, slot){ return p.skill*(0.8+0.2*p.fitness/100)*posPenalty(p.pos, slot); }
+
+// ---------- Club helpers ----------
+function prestigeFor(div, idx){ return (4-div)*16 + (15-idx); }
+function capacityFor(div, idx){ const [hi,lo] = CFG.CAPACITY[div]; return Math.round((hi - (hi-lo)*idx/15)/100)*100; }
+function squadOf(state, club){ return club.players.map(id=>state.players[id]); }
+function divClubs(state, div){ return state.clubs.filter(c=>c.div===div); }
+function expectedPos(state, club){
+  const peers = divClubs(state, club.div).slice().sort((a,b)=>b.prestige-a.prestige);
+  return peers.indexOf(club)+1;
+}
+
+// ---------- Squad selection ----------
+function autoSelect(state, club, formationName){
+  const fm = FORMATIONS[formationName||club.formation||'4-4-2'];
+  const avail = squadOf(state, club).filter(p=>p.injury===0);
+  const used = new Set(); const xi = [];
+  const need = [['GK',1],['DEF',fm.d],['MID',fm.m],['FWD',fm.f]];
+  // pass 1: natural positions
+  for (const [slot,n] of need){
+    const cands = avail.filter(p=>p.pos===slot && !used.has(p.id)).sort((a,b)=>effSkill(b,slot)-effSkill(a,slot));
+    for (let i=0;i<n && i<cands.length;i++){ used.add(cands[i].id); xi.push({p:cands[i], slot}); }
+  }
+  // pass 2: fill shortages out of position
+  for (const [slot,n] of need){
+    let have = xi.filter(x=>x.slot===slot).length;
+    if (have<n){
+      const cands = avail.filter(p=>!used.has(p.id)).sort((a,b)=>effSkill(b,slot)-effSkill(a,slot));
+      for (const c of cands){ if (have>=n) break; used.add(c.id); xi.push({p:c, slot}); have++; }
+    }
+  }
+  return xi; // may be <11 if squad is decimated
+}
+
+function teamStrength(xi){
+  const grp = s => xi.filter(x=>x.slot===s).map(x=>effSkill(x.p, s));
+  const mean = a => a.length? a.reduce((s,v)=>s+v,0)/a.length : 15;
+  const unit = (arr, ref) => mean(arr)*Math.pow(Math.max(arr.length,0.5)/ref, CFG.UNIT_POW);
+  const gk = mean(grp('GK'));
+  const def = unit(grp('DEF'),4), mid = unit(grp('MID'),4), att = unit(grp('FWD'),2);
+  return { gk, def, mid, att, defEff: 0.7*def+0.3*gk };
+}
+
+// ---------- Match ----------
+function demandTarget(state, club){
+  if (club.div===0) return club.support || Math.round(club.capacity*0.7);
+  const exp = expectedPos(state, club);
+  return Math.round(CFG.DEMAND[club.div]*(0.7 + 0.6*(16-exp)/15));
+}
+function supportOf(state, club){
+  if (club.support===undefined) club.support = Math.round((club.capacity*CFG.FILL[club.div] + demandTarget(state, club))/2);
+  return club.support;
+}
+function attendanceFor(state, home, away, leaguePos, mult=1){
+  const posF = 1 + 0.3*((8.5-leaguePos)/16);
+  const oppF = 1 + 0.3*((away.prestige - home.prestige)/32);
+  const att = supportOf(state, home)*priceFactor(home)*posF*oppF*(0.85+0.3*rand())*mult;
+  const cap = home.safety<CFG.SAFETY_RESTRICT_BELOW? Math.round(home.capacity*0.6) : home.capacity;
+  const hm = managerOf(state, home.id); const sold = (hm && hm.seasonTicket)? hm.seasonTicket.sold : 0;
+  return clamp(Math.max(sold, Math.round(att/50)*50), 500, cap);
+}
+
+function playMatch(state, home, away, opts={}){
+  const xiH = opts.xiH || autoSelect(state, home);
+  const xiA = opts.xiA || autoSelect(state, away);
+  const sH = teamStrength(xiH), sA = teamStrength(xiA);
+  const k = CFG.MID_K;
+  const pH = Math.pow(sH.mid,k)/(Math.pow(sH.mid,k)+Math.pow(sA.mid,k));
+  const underdogHome = opts.knockout && !opts.neutral && home.div>away.div;
+  const hAdv = opts.neutral? 1 : (underdogHome? CFG.CUP_HOME_UNDERDOG : CFG.HOME_ADV), aAdv = opts.neutral? 1 : CFG.AWAY_ADV;
+  const xgH = CFG.BASE_GOALS*hAdv*Math.pow(2*pH,CFG.POSS_POW)*Math.pow(sH.att/sA.defEff,CFG.ATTDEF_POW)*Math.exp(rNorm(0,CFG.MATCH_NOISE));
+  const xgA = CFG.BASE_GOALS*aAdv*Math.pow(2*(1-pH),CFG.POSS_POW)*Math.pow(sA.att/sH.defEff,CFG.ATTDEF_POW)*Math.exp(rNorm(0,CFG.MATCH_NOISE));
+  let gH = poisson(xgH), gA = poisson(xgA);
+  if (Math.abs(gH-gA)===1 && rand()<CFG.LATE_EQUALISER){ if (gH<gA) gH++; else gA++; }
+  const scorers = [];
+  const pickScorer = xi => {
+    const w = xi.map(x=>({x, w: effSkill(x.p,x.slot)*({FWD:5,MID:2.5,DEF:0.7,GK:0.02}[x.slot])}));
+    let t = rand()*w.reduce((s,v)=>s+v.w,0);
+    for (const e of w){ t-=e.w; if (t<=0) return e.x.p; }
+    return w[w.length-1].x.p;
+  };
+  for (let i=0;i<gH;i++) scorers.push({side:'H', p: pickScorer(xiH), min: rInt(1,90)});
+  for (let i=0;i<gA;i++) scorers.push({side:'A', p: pickScorer(xiA), min: rInt(1,90)});
+  scorers.sort((a,b)=>a.min-b.min);
+  let extra = null;
+  if (opts.knockout && gH===gA){
+    // extra time then penalties
+    const eH = poisson(xgH*0.3), eA = poisson(xgA*0.3);
+    if (eH!==eA){ gH+=eH; gA+=eA; extra='aet'; }
+    else { extra = rand()<0.5? 'pens-H':'pens-A'; }
+  }
+  // fitness, apps, injuries, goals
+  const injuries = [];
+  for (const x of [...xiH,...xiA]){
+    x.p.apps++; x.p.fitness = clamp(x.p.fitness-7, 30, 100);
+    const physio = (state.clubs[x.p.club]||{staff:{physio:1}}).staff.physio;
+    const chance = CFG.INJURY_BASE*(x.p.fitness<70?2:1)*CFG.PHYSIO_INJ_CHANCE[physio];
+    if (rand()<chance){ x.p.injury = Math.max(1, Math.round((1+Math.floor(Math.pow(rand(),2)*9))*CFG.PHYSIO_INJ_LEN[physio])); injuries.push(x.p); }
+  }
+  for (const s of scorers) s.p.goals++;
+  const leaguePos = home.leaguePos||8;
+  const att = opts.neutral? opts.finalAtt : attendanceFor(state, home, away, leaguePos, opts.demandMult||1);
+  return { home, away, gH, gA, scorers, extra, att, injuries, xiH, xiA, xgH, xgA };
+}
+
+function recordGate(club, att){
+  const cap = club.safety<CFG.SAFETY_RESTRICT_BELOW? Math.round(club.capacity*0.6) : club.capacity;
+  club.gates = club.gates||[]; club.gates.push({a:att, s:att>=cap}); if (club.gates.length>10) club.gates.shift();
+}
+function gateSummary(state, club){
+  const support = supportOf(state, club); const target = demandTarget(state, club);
+  const g = club.gates||[];
+  const base = { support, target, bigGame: Math.round(support*1.3*1.15), capacity: club.capacity };
+  if (!g.length) return Object.assign(base, { n:0 });
+  const avg = Math.round(g.reduce((s,x)=>s+x.a,0)/g.length); const max = Math.max(...g.map(x=>x.a)); const sellouts = g.filter(x=>x.s).length;
+  return Object.assign(base, { n:g.length, avg, max, sellouts, fill: avg/club.capacity, list:g.map(x=>x.a+(x.s?'*':'')) });
+}
+
+// ---------- Fixtures ----------
+function makeLeagueFixtures(clubIds){
+  const ids = shuffle(clubIds.slice()); const n = ids.length; const rounds = [];
+  for (let r=0;r<n-1;r++){
+    const rd = [];
+    for (let i=0;i<n/2;i++){
+      const a = ids[i], b = ids[n-1-i];
+      rd.push(r%2===0? {h:a,a:b} : {h:b,a:a});
+    }
+    rounds.push(rd);
+    ids.splice(1,0,ids.pop());
+  }
+  const back = rounds.map(rd=>rd.map(m=>({h:m.a,a:m.h})));
+  return rounds.concat(back); // 30 rounds
+}
+function buildSchedule(state){
+  const weeks = [];
+  let lr = 0; const cr = {lc:0, fa:0};
+  for (let w=1; w<=CFG.WEEKS; w++){
+    const key = Object.keys(CFG.CUPS).find(k=>CFG.CUPS[k].weeks.includes(w));
+    if (key) weeks.push({type:'cup', cup:key, round: cr[key]++});
+    else weeks.push({type:'league', round: lr++});
+  }
+  state.schedule = weeks;
+  state.fixtures = {};
+  for (const d of [1,2,3,4]) state.fixtures[d] = makeLeagueFixtures(divClubs(state,d).map(c=>c.id));
+  state.cups = {}; state.cupWinners = {};
+  for (const key in CFG.CUPS){
+    state.cups[key] = { alive: state.clubs.filter(c=>c.div>=1).map(c=>c.id), ties: [], round: 0, history: [] };
+    state.cupWinners[key] = null;
+    for (const c of state.clubs) c.cup[key] = {round:0, out:false};
+    cupDraw(state, key);
+  }
+  buildEuro(state);
+}
+
+// ---------- Europe ----------
+function englishSeeds(state){
+  const d1 = divClubs(state,1).slice().sort((a,b)=>b.prestige-a.prestige);
+  return { ec:[d1[0].id], cwc:[d1[3].id], uefa:[d1[1].id, d1[2].id] };
+}
+function buildEuro(state){
+  const entr = state.euroEntrants || englishSeeds(state);
+  const pool = divClubs(state,0).slice().sort((a,b)=>b.rating-a.rating);
+  const take = (idx) => idx.map(i=>pool[i]).filter(Boolean).map(c=>c.id);
+  const range = (a,b)=>{ const o=[]; for (let i=a;i<=b;i++) o.push(i); return o; };
+  const euros = { ec: take([...range(0,19), ...range(32,36), ...range(58,63)]), cwc: take([...range(20,25), ...range(37,45)]), uefa: take([...range(26,31), ...range(46,53)]) };
+  state.euro = {};
+  for (const c of state.clubs) c.euro = null;
+  for (const key in CFG.EURO.comps){
+    const def = CFG.EURO.comps[key];
+    const alive = shuffle(entr[key].concat(euros[key]).slice(0, def.size));
+    const startRound = def.size===32? 0 : 1;
+    state.euro[key] = { alive, ties: [], round: startRound, winner: null, history: [], entrants: alive.slice() };
+    for (const id of alive) state.clubs[id].euro = { comp:key, round: startRound, out:false };
+    euroDraw(state, key);
+  }
+}
+function euroDraw(state, key){
+  const e = state.euro[key]; const alive = shuffle(e.alive.slice()); e.ties = [];
+  for (let i=0;i<alive.length;i+=2) e.ties.push({ a:alive[i], b:alive[i+1], g1:null, g2:null });
+  for (const t of e.ties) for (const id of [t.a,t.b]) if (isHuman(state, id)){ const opp = state.clubs[id===t.a? t.b : t.a]; newsTo(state, id, `${CFG.EURO.comps[key].name} ${euroRoundName(key, e.round)}: drawn against ${opp.name}, first leg ${id===t.a?'at home':'away'}.`, 'cup'); }
+}
+function euroRoundName(key, round){ const size = CFG.EURO.comps[key].size; return size===32? ['First Round','Second Round','Quarter-Final','Semi-Final','Final'][round] : ['','First Round','Quarter-Final','Semi-Final','Final'][round]; }
+function euroSlot(week){
+  const L = CFG.EURO.legWeeks;
+  for (let i=0;i<L.length;i++){ if (L[i][0]===week) return {slot:i, leg:1}; if (L[i][1]===week) return {slot:i, leg:2}; }
+  if (week===CFG.EURO.finalWeek) return {final:true};
+  return null;
+}
+function euroTieFor(state, clubId){
+  const c = state.clubs[clubId]; if (!c.euro || c.euro.out || !state.euro) return null;
+  const e = state.euro[c.euro.comp]; const t = e.ties.find(x=>x.a===clubId||x.b===clubId);
+  if (!t) return e.alive.length===2? { final:true, opp: state.clubs[e.alive.find(id=>id!==clubId)], comp:c.euro.comp } : null;
+  const opp = state.clubs[t.a===clubId? t.b : t.a];
+  return { tie:t, opp, comp:c.euro.comp, round:e.round, homeFirst: t.a===clubId, g1:t.g1 };
+}
+function euroXI(state, club){
+  const mg = managerOf(state, club.id);
+  return mg? buildXI(state, club, mg.euroSel||[], club.euroFormation||club.formation) : autoSelect(state, club);
+}
+function playEuroWeek(state, results){
+  const es = euroSlot(state.week); if (!es || !state.euro) return;
+  for (const key in CFG.EURO.comps){
+    const def = CFG.EURO.comps[key]; const e = state.euro[key]; if (!e || e.winner!==null) continue;
+    if (es.final){
+      if (e.alive.length!==2) continue;
+      const h = state.clubs[e.alive[0]], a = state.clubs[e.alive[1]];
+      const m = playMatch(state, h, a, { knockout:true, neutral:true, finalAtt: def.finalAtt, xiH: euroXI(state,h), xiA: euroXI(state,a) });
+      m.euro = { comp:key, round: e.round, final:true }; results.push(m);
+      const hWins = m.gH>m.gA || m.extra==='pens-H'; const winner = hWins? h : a, loser = hWins? a : h;
+      const g = Math.round(m.att*def.finalTicket/2); credit(state, h, g, `${def.name} final gate`); credit(state, a, g, `${def.name} final gate`);
+      credit(state, winner, def.prize[def.prize.length-1], `${def.name} winners' prize`); credit(state, loser, def.runnerUp, `${def.name} runners-up`);
+      winner.euro.round++; loser.euro.out = true; e.winner = winner.id; e.alive = [winner.id]; e.ties = [];
+      const wm = managerOf(state, winner.id); if (wm) wm.trophies[key] = (wm.trophies[key]||0)+1;
+      confMatch(winner, loser, 'W', true); confMatch(loser, winner, 'L', true);
+      newsAll(state, `${winner.name} win the ${def.name}, beating ${loser.name} ${Math.max(m.gH,m.gA)}-${Math.min(m.gH,m.gA)}${m.extra?' ('+(m.extra.startsWith('pens')?'on penalties':'aet')+')':''}.`, 'cup');
+      e.history.push({ round:e.round, final:true, h:h.id, a:a.id, gH:m.gH, gA:m.gA, extra:m.extra });
+      continue;
+    }
+    const compRound = es.slot;
+    if (compRound!==e.round || !e.ties.length) continue;
+    const prizeIdx = def.size===32? compRound : compRound-1;
+    const nextAlive = [];
+    for (const t of e.ties){
+      const A = state.clubs[t.a], B = state.clubs[t.b];
+      const home = es.leg===1? A : B, away = es.leg===1? B : A;
+      const m = playMatch(state, home, away, { demandMult: CFG.EURO.crowdMult, xiH: euroXI(state,home), xiA: euroXI(state,away) });
+      m.euro = { comp:key, round: compRound, leg: es.leg };
+      credit(state, home, Math.round(m.att*ticketOf(home)), `${def.name} gate`); recordGate(home, m.att);
+      if (es.leg===1){ t.g1 = [m.gH, m.gA]; results.push(m); const rh = m.gH>m.gA?'W':m.gH<m.gA?'L':'D'; confMatch(home, away, rh, true); confMatch(away, home, rh==='W'?'L':rh==='L'?'W':'D', true); continue; }
+      // second leg: aggregate, away goals, extra time, penalties
+      let gH = m.gH, gA = m.gA;
+      let aggA = t.g1[0] + gA, aggB = t.g1[1] + gH;   // A's goals: home in leg 1 + away in leg 2
+      let winner = null;
+      if (aggA!==aggB) winner = aggA>aggB? A : B;
+      else if (gA!==t.g1[1]) winner = gA>t.g1[1]? A : B;   // away goals: A scored gA away, B scored g1[1] away
+      else {
+        const eH = poisson(m.xgH*0.3), eA = poisson(m.xgA*0.3);
+        if (eH!==eA){ gH+=eH; gA+=eA; aggA+=eA; aggB+=eH; winner = aggA>aggB? A : B; m.extra='aet'; }
+        else { const hp = rand()<0.5; winner = hp? home : away; m.extra = hp? 'pens-H':'pens-A'; }
+      }
+      m.gH = gH; m.gA = gA; m.agg = { a:aggA, b:aggB }; t.g2 = [gH, gA]; m.winner = winner.id; results.push(m);
+      const loser = winner===A? B : A;
+      credit(state, winner, def.prize[prizeIdx], `${def.name} prize money`);
+      winner.euro.round = compRound+1; loser.euro.out = true; nextAlive.push(winner.id);
+      confMatch(winner, loser, 'W', true); confMatch(loser, winner, 'L', true);
+      for (const c of [A,B]) if (isHuman(state, c.id)) newsTo(state, c.id, `${def.name}: ${winner===c? 'through' : 'out'}, ${aggA===aggB? (m.extra&&m.extra.startsWith('pens')? 'on penalties' : m.extra==='aet'? 'after extra time' : 'on away goals') : aggA+'-'+aggB+' on aggregate'} against ${(winner===c? loser : winner).name}.`, winner===c? 'cup':'warn');
+      e.history.push({ round:compRound, a:t.a, b:t.b, g1:t.g1, g2:t.g2, extra:m.extra, winner:winner.id });
+    }
+    if (es.leg!==2) continue;
+    e.alive = nextAlive; e.round = compRound+1;
+    if (nextAlive.length>2) euroDraw(state, key); else { e.ties = []; if (nextAlive.length===2) for (const id of nextAlive) if (isHuman(state,id)) newsTo(state, id, `${def.name} final: ${state.clubs[nextAlive.find(x=>x!==id)].name} at a neutral ground in week ${CFG.EURO.finalWeek}.`, 'cup'); }
+  }
+}
+function euroQualifiers(state, summary){
+  const tb = summary.tables[1].map(r=>r.id);
+  const champ = tb[0]; const faW = summary.cupWinners.fa; const faRU = state.cupRunnersUp? state.cupRunnersUp.fa : null;
+  const cwc = (faW!==null && faW!==undefined && faW!==champ)? faW : (faRU!==null && faRU!==undefined && faRU!==champ? faRU : tb[1]);
+  const uefa = []; for (const id of tb.slice(1)){ if (uefa.length>=2) break; if (id!==champ && id!==cwc) uefa.push(id); }
+  return { ec:[champ], cwc:[cwc], uefa };
+}
+function euroStatus(state, club){
+  if (!club.euro || !state.euro) return null;
+  const def = CFG.EURO.comps[club.euro.comp]; const e = state.euro[club.euro.comp];
+  const won = e.winner===club.id;
+  return { comp: club.euro.comp, name: def.name, short: def.short, out: club.euro.out, won, round: club.euro.round, roundName: euroRoundName(club.euro.comp, Math.min(club.euro.round, def.size===32?4:4)) };
+}
+
+// ---------- League table ----------
+function tableFor(state, div){
+  return divClubs(state, div).slice().sort((a,b)=>{
+    const s=a.st, t=b.st;
+    return (t.pts-s.pts)||((t.gf-t.ga)-(s.gf-s.ga))||(t.gf-s.gf)||a.name.localeCompare(b.name);
+  });
+}
+function updatePositions(state){
+  for (const d of [1,2,3,4]) tableFor(state,d).forEach((c,i)=>c.leaguePos=i+1);
+}
+function recordLeague(m){
+  const h=m.home.st, a=m.away.st;
+  h.p++; a.p++; h.gf+=m.gH; h.ga+=m.gA; a.gf+=m.gA; a.ga+=m.gH;
+  if (m.gH>m.gA){ h.w++; a.l++; h.pts+=3; }
+  else if (m.gH<m.gA){ a.w++; h.l++; a.pts+=3; }
+  else { h.d++; a.d++; h.pts++; a.pts++; }
+}
+
+// ---------- Managers (hot-seat) ----------
+const MGR_FIELDS = ['userClub','managerName','userSel','euroSel','sponsor','seasonTicket','loan','preseason','jobOffer','jobOfferExpires','sackOffer','gameOver','userResults','userEuro','offers','transferList','news','seasonSummary','scoutReport'];
+function isHuman(state, clubId){ return state.managers.some(m=>!m.retired && m.userClub===clubId); }
+function managerOf(state, clubId){ return state.managers.find(m=>!m.retired && m.userClub===clubId) || null; }
+function activeManagers(state){ return state.managers.filter(m=>!m.retired); }
+function setCurrent(state, idx){ const m = state.managers[idx]; if (!m) return; state.cur = idx; for (const f of MGR_FIELDS) state[f] = m[f]; }
+function saveCurrent(state){ const m = state.managers[state.cur]; if (!m) return; for (const f of MGR_FIELDS) m[f] = state[f]; }
+function withManager(state, idx, fn){ const keep = state.cur; saveCurrent(state); setCurrent(state, idx); const r = fn(state); saveCurrent(state); setCurrent(state, keep); return r; }
+function newsTo(state, clubId, text, kind='info'){ const m = managerOf(state, clubId); if (!m) return; const arr = (state.managers[state.cur]===m)? state.news : m.news; arr.unshift({s:state.season, w:state.week, text, kind}); if (arr.length>40) arr.pop(); }
+function newsAll(state, text, kind='info'){ for (const m of activeManagers(state)){ const arr = (state.managers[state.cur]===m)? state.news : m.news; arr.unshift({s:state.season, w:state.week, text, kind}); if (arr.length>40) arr.pop(); } }
+function retireManager(state, idx){
+  const m = state.managers[idx]; if (!m) return; saveCurrent(state); m.retired = true;
+  const c = state.clubs[m.userClub]; if (c.players.length<16) youthFill(state, c, 16);
+  const next = state.managers.findIndex(x=>!x.retired);
+  if (next>=0) setCurrent(state, next);
+}
+function standings(state){
+  return activeManagers(state).map(m=>{ const c = state.clubs[m.userClub]; const h = c.history[c.history.length-1]; const pos = (state.week===1 && h)? h.pos : c.leaguePos; return { m, c, pos, score: (5-c.div)*100 - pos + (c.balance>0? Math.min(c.balance,1e6)/1e7 : 0) }; })
+    .sort((a,b)=>b.score-a.score);
+}
+
+// ---------- Finance ----------
+function turnover(state, club){ return Math.min(supportOf(state, club)*priceFactor(club), club.capacity)*ticketOf(club)*15 + CFG.TV[club.div] + sponsorBase(state, club); }
+function setTicketPrice(state, price){
+  const u = state.clubs[state.userClub];
+  price = Math.round(price*2)/2;
+  if (!isFinite(price) || price<CFG.TICKET_MIN || price>CFG.TICKET_MAX) return `Tickets must be between £${CFG.TICKET_MIN} and £${CFG.TICKET_MAX}.`;
+  u.ticket = price; return null;
+}
+function ticketAdvice(state, club){
+  const going = CFG.TICKET[club.div], cur = ticketOf(club), e = CFG.TICKET_ELASTICITY;
+  const support = supportOf(state, club), cap = club.capacity;
+  const gateAt = p => Math.min(cap, Math.round(support*Math.pow(p/going, -e)));
+  let suggested = going;
+  if (support > cap) suggested = going*Math.pow(support/cap, 1/e);     // the price at which a typical crowd just fills the ground
+  suggested = Math.round(clamp(suggested, going*0.8, going*2.5)*2)/2;
+  return { current: cur, going, suggested, gateNow: gateAt(cur), gateSuggested: gateAt(suggested), revenueNow: Math.round(gateAt(cur)*cur), revenueSuggested: Math.round(gateAt(suggested)*suggested), sellingOut: gateAt(cur)>=cap };
+}
+function overdraftLimit(state, club){ return Math.max(CFG.OVERDRAFT_MIN, round500(turnover(state, club)*CFG.OVERDRAFT_TURNOVER)); }
+function ticketOf(club){ return club.ticket || CFG.TICKET[club.div]; }
+function priceFactor(club){ return Math.pow(ticketOf(club)/CFG.TICKET[club.div], -CFG.TICKET_ELASTICITY); }
+function credit(state, club, amount, label){
+  club.balance += amount;
+  if (isHuman(state, club.id)){ club.ledger.push({s:state.season, w:state.week, label, amount}); if (club.ledger.length>200) club.ledger.shift(); }
+}
+function staffWages(club){ const m = CFG.STAFF_DIV_MULT[club.div]; return Math.round(m*(CFG.STAFF_WAGE[club.staff.coach]+CFG.STAFF_WAGE[club.staff.physio]+CFG.STAFF_WAGE[club.staff.scout])); }
+function weeklyFinance(state, club){
+  const wages = squadOf(state, club).reduce((s,p)=>s+p.wage,0);
+  credit(state, club, -wages, 'Wages');
+  credit(state, club, -staffWages(club), 'Staff wages');
+  credit(state, club, -Math.round(club.capacity*CFG.GROUND_COST_PER_SEAT), 'Ground upkeep');
+  if (club.balance<0) credit(state, club, -Math.round(-club.balance*CFG.INTEREST_WEEKLY), 'Overdraft interest');
+  else if (club.balance>0) credit(state, club, Math.round(club.balance*CFG.DEPOSIT_WEEKLY), 'Bank interest');
+}
+
+// ---------- Board confidence ----------
+function confMatch(club, opp, result, isCup){
+  const strongerOpp = opp.prestige>club.prestige;
+  let d = 0;
+  if (result==='W') d = strongerOpp? 4 : 2;
+  else if (result==='D') d = strongerOpp? 1 : 0;
+  else d = strongerOpp? -2 : -4;
+  if (isCup) d *= 0.5;
+  club.confidence = clamp(club.confidence + d, 0, 100);
+}
+
+// ---------- News ----------
+function news(state, text, kind='info'){ state.news.unshift({s:state.season, w:state.week, text, kind}); if (state.news.length>40) state.news.pop(); }
+
+// ---------- Week ----------
+function cupDraw(state, key){
+  const cup = state.cups[key];
+  const alive = shuffle(cup.alive.slice());
+  cup.ties = [];
+  for (let i=0;i<alive.length;i+=2) cup.ties.push({h:alive[i], a:alive[i+1]});
+}
+const CUP_ROUND_NAMES = ['First Round','Second Round','Third Round','Quarter-Final','Semi-Final','Final'];
+
+function advanceWeek(state){
+  const wk = state.schedule[state.week-1];
+  const results = [];
+  saveCurrent(state);
+  const keepCur = state.cur;
+  for (const m of activeManagers(state)){
+    withManager(state, state.managers.indexOf(m), st=>{
+      if (st.preseason && st.preseason.pending) applyPreseasonDefaults(st);
+      const c = st.clubs[st.userClub]; c.xi = buildXI(st, c, st.userSel||[], c.formation);
+    });
+  }
+  if (wk.type==='league'){
+    for (const d of [1,2,3,4]){
+      for (const f of state.fixtures[d][wk.round]){
+        const h = state.clubs[f.h], a = state.clubs[f.a];
+        const opts = {};
+        if (h.xi) opts.xiH = h.xi;
+        if (a.xi) opts.xiA = a.xi;
+        const m = playMatch(state, h, a, opts);
+        recordLeague(m); results.push(m);
+        const hmg = managerOf(state, h.id); const holders = (hmg && hmg.seasonTicket)? Math.round(hmg.seasonTicket.sold*CFG.ST_HOLDER_WALKUP) : 0;
+        credit(state, h, Math.round(Math.max(0, m.att-holders)*ticketOf(h)), 'Gate receipts');
+        recordGate(h, m.att);
+        const rh = m.gH>m.gA?'W':m.gH<m.gA?'L':'D', ra = rh==='W'?'L':rh==='L'?'W':'D';
+        confMatch(h,a,rh,false); confMatch(a,h,ra,false);
+      }
+    }
+    updatePositions(state);
+  } else {
+    const key = wk.cup, cup = state.cups[key], def = CFG.CUPS[key];
+    const r = wk.round; cup.round = r;
+    const neutral = r===5;
+    const nextAlive = [];
+    for (const t of cup.ties){
+      const h = state.clubs[t.h], a = state.clubs[t.a];
+      const opts = {knockout:true, neutral, finalAtt: def.finalAtt};
+      if (h.xi) opts.xiH = h.xi;
+      if (a.xi) opts.xiA = a.xi;
+      const m = playMatch(state, h, a, opts); m.cup = r; m.cupKey = key; results.push(m);
+      const hWins = m.gH>m.gA || m.extra==='pens-H';
+      const winner = hWins? h : a, loser = hWins? a : h;
+      if (neutral){ const g = Math.round(m.att*def.finalTicket/2); credit(state,h,g,`${def.name} final gate`); credit(state,a,g,`${def.name} final gate`); }
+      else { credit(state, h, Math.round(m.att*ticketOf(h)), `${def.name} gate`); recordGate(h, m.att); }
+      credit(state, winner, def.prize[r], `${def.name} prize money`);
+      if (r===5) credit(state, loser, def.runnerUp, `${def.name} runner-up`);
+      winner.cup[key].round = r+1; loser.cup[key].out = true; nextAlive.push(winner.id);
+      confMatch(winner, loser, 'W', true); confMatch(loser, winner, 'L', true);
+      if (r===5){ state.cupWinners[key] = winner.id; state.cupRunnersUp = state.cupRunnersUp||{}; state.cupRunnersUp[key] = loser.id; const wm = managerOf(state, winner.id); if (wm) wm.trophies[key]++; newsAll(state, `${winner.name} win the ${def.name}, beating ${loser.name} ${Math.max(m.gH,m.gA)}-${Math.min(m.gH,m.gA)}${m.extra?' ('+(m.extra.startsWith('pens')?'on penalties':'aet')+')':''}.`, 'cup'); }
+    }
+    cup.alive = nextAlive;
+    if (nextAlive.length>1) cupDraw(state, key); else cup.ties = [];
+    cup.history.push(results.map(m=>({h:m.home.id,a:m.away.id,gH:m.gH,gA:m.gA,extra:m.extra})));
+  }
+  playEuroWeek(state, results);
+  // recovery + finance for all clubs
+  const fresh = new Set(); for (const m of results) for (const p of m.injuries) fresh.add(p.id);
+  for (const c of state.clubs){
+    c.xi = null;
+    const rec = 5 + CFG.PHYSIO_RECOVERY[c.staff.physio] + (isHuman(state, c.id)? CFG.TRAIN[c.training].fit : 0);
+    for (const p of squadOf(state,c)){
+      if (p.injury>0 && !fresh.has(p.id)) p.injury--;
+      p.fitness = clamp(p.fitness+rec, 30, 100);
+    }
+    weeklyFinance(state, c);
+  }
+  for (const mg of activeManagers(state)){
+    withManager(state, state.managers.indexOf(mg), st=>{
+      const u = st.clubs[st.userClub];
+      trainingWeek(st, u);
+      groundWeek(st, u, results);
+      loanWeek(st, u);
+      eventsWeek(st, u, results);
+      if (st.sponsor && st.sponsor.type==='perwin' && wk.type==='league'){
+        const m = results.find(x=>x.home.id===u.id||x.away.id===u.id);
+        if (m){ const won = (m.home.id===u.id && m.gH>m.gA) || (m.away.id===u.id && m.gA>m.gH); if (won) credit(st, u, st.sponsor.perWin, `${st.sponsor.name} win bonus`); }
+      }
+      const userMatch = results.find(m=>!m.euro && (m.home.id===u.id||m.away.id===u.id));
+      if (userMatch){
+        for (const p of userMatch.injuries) if (p.club===u.id) news(st, `${p.name} injured, out for ${p.injury} week${p.injury>1?'s':''}.`, 'injury');
+        const home = userMatch.home.id===u.id;
+        st.userResults[st.week] = { opp: home? userMatch.away.id : userMatch.home.id, home, gF: home? userMatch.gH : userMatch.gA, gA: home? userMatch.gA : userMatch.gH, extra: userMatch.extra, cup: userMatch.cupKey||null, round: userMatch.cup, club: u.id };
+      }
+      const euroMatch = results.find(m=>m.euro && (m.home.id===u.id||m.away.id===u.id));
+      if (euroMatch){
+        for (const p of euroMatch.injuries) if (p.club===u.id) news(st, `${p.name} injured in Europe, out for ${p.injury} week${p.injury>1?'s':''}.`, 'injury');
+        const home = euroMatch.home.id===u.id;
+        st.userEuro = st.userEuro||{};
+        st.userEuro[st.week] = { opp: home? euroMatch.away.id : euroMatch.home.id, home, gF: home? euroMatch.gH : euroMatch.gA, gA: home? euroMatch.gA : euroMatch.gH, extra: euroMatch.extra, comp: euroMatch.euro.comp, round: euroMatch.euro.round, leg: euroMatch.euro.leg, final: !!euroMatch.euro.final, agg: euroMatch.agg? (euroMatch.home.id===u.id? [euroMatch.agg.b, euroMatch.agg.a] : [euroMatch.agg.a, euroMatch.agg.b]) : null, club: u.id };
+        if (euroMatch.agg && u.id===euroMatch.away.id){ /* away side is A in leg 2 */ st.userEuro[st.week].agg = [euroMatch.agg.a, euroMatch.agg.b]; }
+        if (euroMatch.agg && u.id===euroMatch.home.id){ st.userEuro[st.week].agg = [euroMatch.agg.b, euroMatch.agg.a]; }
+      }
+      transferWeek(st);
+      u.confidence = clamp(u.confidence + CFG.CONF_REVERT*(50-u.confidence), 0, 100);
+      u.overdraftWeeks = u.balance < -overdraftLimit(st, u) ? u.overdraftWeeks+1 : 0;
+      if (u.overdraftWeeks===CFG.OVERDRAFT_SACK_WEEKS-4) news(st, 'The bank is threatening to call in the overdraft. Sort the finances out.', 'warn');
+      if (u.overdraftWeeks>=CFG.OVERDRAFT_SACK_WEEKS){ st.gameOver = 'The bank called in the overdraft. The board have sacked you.'; }
+      if (u.confidence<=CFG.SACK_CONF && st.week>8){ st.gameOver = 'The board have lost patience with results. You have been sacked.'; }
+      midSeasonJobs(st, u);
+      if (st.jobOffer!==null && st.jobOfferExpires!==undefined && st.week>st.jobOfferExpires){ news(st, `${st.clubs[st.jobOffer].name} have appointed someone else.`, 'job'); st.jobOffer = null; }
+      if (st.gameOver && !st.sackOffer) st.sackOffer = bottomClub(st);
+    });
+  }
+  state.lastResults = results;
+  state.lastWeek = wk;
+  state.lastSlim = results.map(m=>({h:m.home.id, a:m.away.id, gH:m.gH, gA:m.gA, extra:m.extra, div:m.home.div, cup:m.cup, cupKey:m.cupKey, att:m.att, euro:m.euro||null, agg:m.agg||null}));
+  state.lastWeekInfo = { season: state.season, week: state.week, type: wk.type, cup: wk.cup, round: wk.round };
+  for (const mg of state.managers) mg.ready = false;
+  if (state.week>=CFG.WEEKS) endSeason(state); else state.week++;
+  setCurrent(state, keepCur);
+  return results;
+}
+
+// ---------- Training and ground ----------
+function trainingWeek(state, club){
+  const t = CFG.TRAIN[club.training]; const coach = CFG.COACH_MULT[club.staff.coach];
+  for (const p of squadOf(state, club)){
+    if (p.injury>0) continue;
+    if (t.inj>0 && rand()<t.inj){ p.injury = Math.max(1, Math.round(rInt(1,4)*CFG.PHYSIO_INJ_LEN[club.staff.physio])); news(state, `${p.name} picked up a knock in training, out ${p.injury} week${p.injury>1?'s':''}.`, 'injury'); continue; }
+    if (p.age>=30 || p.skill>=p.pot) continue;
+    if (rand() < CFG.TRAIN_BASE*coach*t.gain){ p.skill++; p.value = valueFor(p); if (rand()<0.35) news(state, `${p.name} is coming on in training. Skill now ${p.skill}.`, 'info'); }
+  }
+}
+function groundWeek(state, club, results){
+  club.safety = Math.max(0, club.safety - CFG.SAFETY_DECAY);
+  if (club.build){
+    club.build.weeksLeft--;
+    if (club.build.weeksLeft<=0){ club.capacity += club.build.seats; news(state, `The new stand is open. Capacity is now ${fmt(club.capacity)}.`, 'info'); club.build = null; }
+  }
+  const m = results.find(x=>x.home.id===club.id && !x.neutral);
+  if (m && club.safety < CFG.CROWD_TROUBLE_BELOW){
+    const chance = (CFG.CROWD_TROUBLE_BELOW - club.safety)/200;
+    if (rand()<chance){
+      const fine = round500(m.att*2);
+      credit(state, club, -fine, 'Crowd trouble fine');
+      club.safety = Math.max(0, club.safety-3);
+      club.confidence = clamp(club.confidence-3, 0, 100);
+      news(state, `Crowd trouble at the ${m.away.short} game. The FA fine you £${fmt(fine)} and want the ground sorted out.`, 'warn');
+    }
+  }
+  if (club.safety < CFG.SAFETY_RESTRICT_BELOW && state.week%6===0) news(state, 'Your ground is a safety risk. Capacity is restricted until you spend on it.', 'warn');
+}
+function setStaff(state, role, tier){ const u = state.clubs[state.userClub]; if (['coach','physio','scout'].includes(role) && tier>=0 && tier<=3) u.staff[role] = tier; }
+function setTraining(state, level){ if (CFG.TRAIN[level]) state.clubs[state.userClub].training = level; }
+function buildCost(seats){ return seats*CFG.SEAT_COST; }
+function startBuild(state, seats){
+  const u = state.clubs[state.userClub]; const cost = buildCost(seats);
+  if (u.build) return 'Builders are already in.';
+  if (u.balance - cost < -overdraftLimit(state, u)) return 'The bank will not fund that.';
+  credit(state, u, -cost, `New ${fmt(seats)}-seat stand`); u.build = { seats, weeksLeft: CFG.BUILD_WEEKS };
+  news(state, `Work starts on a ${fmt(seats)}-seat stand. Ready in ${CFG.BUILD_WEEKS} weeks.`, 'info');
+  return null;
+}
+function safetyCost(club, points){ return Math.max(5000, round500(club.capacity*CFG.SAFETY_COST_PER_SEAT*points)); }
+function improveSafety(state, points){
+  const u = state.clubs[state.userClub]; const cost = safetyCost(u, points);
+  if (u.safety>=100) return 'The ground is as safe as it gets.';
+  if (u.balance - cost < -overdraftLimit(state, u)) return 'The bank will not fund that.';
+  credit(state, u, -cost, 'Ground safety work'); u.safety = Math.min(100, u.safety+points);
+  return null;
+}
+function canSeePot(state, p){
+  const u = state.clubs[state.userClub]; const scout = u.staff.scout;
+  if (p.club===u.id) return scout>=1;
+  if (state.transferList.some(t=>t.pid===p.id)) return scout>=2;
+  if ((state.scoutReport||[]).includes(p.id)) return scout>=2;
+  return scout>=3;
+}
+const SCOUT_REACH = [0, 1, 4, 4];      // divisions either side of yours the scout will cover
+const SCOUT_RESULTS = [5, 10, 20, 40];
+function scoutSearch(state, brief){
+  const u = state.clubs[state.userClub]; const tier = u.staff.scout;
+  const reach = SCOUT_REACH[tier];
+  const out = [];
+  for (const c of state.clubs){
+    if (c.id===u.id || Math.abs(c.div-u.div)>reach) continue;
+    if (c.div===0 && tier<3) continue;
+    for (const id of c.players){
+      const p = state.players[id];
+      if (brief.pos && brief.pos!=='ANY' && p.pos!==brief.pos) continue;
+      if (brief.ageMin!==undefined && p.age<brief.ageMin) continue;
+      if (brief.ageMax!==undefined && p.age>brief.ageMax) continue;
+      if (brief.minSkill && p.skill<brief.minSkill) continue;
+      if (brief.maxValue && p.value>brief.maxValue) continue;
+      out.push(p);
+    }
+  }
+  out.sort((a,b)=>b.skill-a.skill || a.age-b.age || a.value-b.value);
+  const list = tier===0? shuffle(out).slice(0, SCOUT_RESULTS[0]).sort((a,b)=>b.skill-a.skill) : out.slice(0, SCOUT_RESULTS[tier]);
+  state.scoutReport = list.map(p=>p.id);
+  return { list, total: out.length };
+}
+
+// ---------- Sponsors, season tickets, loans, events ----------
+function sponsorBase(state, club){ const exp = expectedPos(state, club); return round500(CFG.SPONSOR_BASE[club.div]*(0.7 + 0.6*(16-exp)/15)); }
+function sponsorOffers(state, club){
+  const base = sponsorBase(state, club);
+  const pool = club.div<=2? SPONSORS_NATIONAL : SPONSORS_LOCAL;
+  const names = shuffle(pool.slice()).slice(0,3);
+  return [
+    { type:'safe', name:names[0], amount: base },
+    { type:'perwin', name:names[1], perWin: round500(base/12) },
+    { type:'bold', name:names[2], amount: round500(base*1.6), clawback: round500(base*1.3) },
+  ];
+}
+function seasonTicketForecast(state, club, mult){
+  const price = Math.round(ticketOf(club)*mult);
+  const ratio = mult/15;
+  const takeup = ratio<=0.53? 0.9 : ratio<=0.67? 0.7 : ratio<=0.8? 0.45 : 0.15;
+  const last = club.history.length? club.history[club.history.length-1] : null;
+  let form = 1;
+  if (last){ form *= 1 + 0.3*(8.5-last.pos)/16; if (last.div>club.div) form *= 1.2; if (last.div<club.div) form *= 0.85; }
+  const base = club.capacity*CFG.FILL[club.div]*0.5*form;
+  const sold = Math.min(Math.round(base*takeup/10)*10, Math.round(club.capacity*0.6));
+  return { mult, price, sold, income: sold*price };
+}
+function openPreseason(state){
+  const club = state.clubs[state.userClub];
+  state.preseason = { pending:true, offers: sponsorOffers(state, club), sponsorDone:false, ticketsDone:false };
+  state.sponsor = null; state.seasonTicket = null;
+}
+function chooseSponsor(state, idx){
+  const ps = state.preseason; if (!ps || ps.sponsorDone) return 'Already signed.';
+  const o = ps.offers[idx]; if (!o) return 'No such offer.';
+  const u = state.clubs[state.userClub];
+  state.sponsor = Object.assign({}, o);
+  if (o.type!=='perwin') credit(state, u, o.amount, `${o.name} sponsorship`);
+  ps.sponsorDone = true; if (ps.ticketsDone) ps.pending = false;
+  news(state, `${o.name} are the new shirt sponsor.`, 'info');
+  return null;
+}
+function setSeasonTickets(state, mult){
+  const ps = state.preseason; if (!ps || ps.ticketsDone) return 'Season tickets have already gone on sale.';
+  const u = state.clubs[state.userClub];
+  const f = seasonTicketForecast(state, u, mult);
+  state.seasonTicket = { price: f.price, sold: f.sold, mult };
+  credit(state, u, f.income, 'Season tickets');
+  ps.ticketsDone = true; if (ps.sponsorDone) ps.pending = false;
+  news(state, `${fmt(f.sold)} season tickets sold at £${f.price}.`, 'info');
+  return null;
+}
+function applyPreseasonDefaults(state){
+  const ps = state.preseason;
+  if (!ps.sponsorDone) chooseSponsor(state, 0);
+  if (!ps.ticketsDone) setSeasonTickets(state, 12);
+  ps.pending = false;
+}
+function loanMax(state, club){ return 2*overdraftLimit(state, club); }
+function takeLoan(state, amount){
+  const u = state.clubs[state.userClub];
+  if (state.loan) return 'You already have a loan. Pay it off first.';
+  if (amount<=0) return 'Borrow something or nothing.';
+  amount = Math.min(Math.round(amount), loanMax(state, u));
+  const weekly = Math.round(amount*(1+CFG.LOAN_RATE)/CFG.LOAN_WEEKS);
+  state.loan = { amount, weekly, weeksLeft: CFG.LOAN_WEEKS };
+  credit(state, u, amount, 'Bank loan');
+  news(state, `The bank lend you £${fmt(amount)}, repaid at £${fmt(weekly)} a week over ${CFG.LOAN_WEEKS} weeks.`, 'info');
+  return null;
+}
+function repayLoan(state){
+  const u = state.clubs[state.userClub]; const l = state.loan; if (!l) return 'No loan to repay.';
+  const due = round500(l.weekly*l.weeksLeft*0.95);
+  if (u.balance - due < -overdraftLimit(state, u)) return 'You cannot cover that.';
+  credit(state, u, -due, 'Loan settled early'); state.loan = null;
+  return null;
+}
+function loanWeek(state, club){
+  const l = state.loan; if (!l) return;
+  credit(state, club, -l.weekly, 'Loan repayment'); l.weeksLeft--;
+  if (l.weeksLeft<=0){ state.loan = null; news(state, 'The bank loan is paid off.', 'info'); }
+}
+function eventsWeek(state, club, results){
+  const em = results.find(x=>x.euro && x.home.id===club.id && !x.euro.final);
+  if (em && rand()<0.5){ const amount = round500(CFG.EVENT_TV[club.div]*2); credit(state, club, amount, 'European television fee'); news(state, `The ${em.away.short} tie was shown live. Television money: £${fmt(amount)}.`, 'info'); }
+  const m = results.find(x=>!x.euro && (x.home.id===club.id||x.away.id===club.id));
+  const home = m && m.home.id===club.id && !m.neutral;
+  // television
+  if (home){
+    let chance = 0.04 + (club.div===1? 0.1 : club.div===2? 0.04 : 0) + (m.cup!==undefined && m.cup>=2? 0.15 : 0);
+    if (rand()<chance){
+      const amount = round500(CFG.EVENT_TV[club.div]*(m.cup!==undefined? 1.5 : 1));
+      credit(state, club, amount, 'Television fee');
+      news(state, `The cameras were at the ${m.away.short} game. Television money: £${fmt(amount)}.`, 'info');
+    }
+  }
+  // giant-killing bonus
+  if (m && m.cup!==undefined){
+    const opp = m.home.id===club.id? m.away : m.home;
+    const won = (m.home.id===club.id && (m.gH>m.gA||m.extra==='pens-H')) || (m.away.id===club.id && (m.gA>m.gH||m.extra==='pens-A'));
+    if (won && opp.div<=club.div-2){ const bonus = round500(CFG.TV[club.div]*0.15); credit(state, club, bonus, "Chairman's bonus"); news(state, `The chairman is beside himself after the ${opp.short} result and has found £${fmt(bonus)} for you.`, 'info'); }
+  }
+  // bruising match
+  if (m && rand()<0.015){
+    const xi = m.home.id===club.id? m.xiH : m.xiA;
+    const victims = shuffle(xi.filter(x=>x.p.injury===0).slice()).slice(0,2);
+    for (const x of victims){ x.p.injury = Math.max(1, Math.round(rInt(1,4)*CFG.PHYSIO_INJ_LEN[club.staff.physio])); }
+    if (victims.length) news(state, `A bruising game. ${victims.map(x=>x.p.name).join(' and ')} limped off and will miss ${victims.map(x=>x.p.injury).join(' and ')} weeks.`, 'injury');
+  }
+  // the ground bites back
+  if (rand()<0.015){
+    const bill = round500(club.capacity*(0.5+rand()));
+    credit(state, club, -bill, pick(['Floodlight repairs','Roof repairs','Drainage work','Turnstile repairs']));
+    news(state, `${club.ledger[club.ledger.length-1].label} at the ground: £${fmt(bill)}.`, 'warn');
+  }
+}
+
+// ---------- Top scorers ----------
+function topScorers(state, div, n=10){
+  const out = [];
+  for (const c of state.clubs){ if (div && c.div!==div) continue; for (const id of c.players){ const p = state.players[id]; if (p.goals>0) out.push(p); } }
+  out.sort((a,b)=>b.goals-a.goals || a.apps-b.apps || a.name.localeCompare(b.name));
+  return out.slice(0, n);
+}
+
+// ---------- Renaming ----------
+function cleanName(v, max){ return String(v||'').replace(/\s+/g,' ').trim().slice(0,max); }
+function renameClub(state, name, short){
+  const u = state.clubs[state.userClub];
+  name = cleanName(name, 28); short = cleanName(short, 12) || name.slice(0,12);
+  if (name.length<2) return 'The club needs a name.';
+  const old = u.name; u.name = name; u.short = short;
+  if (old!==name) newsAll(state, `${old} will now be known as ${name}.`, 'info');
+  return null;
+}
+function renameAnyClub(state, clubId, name, short){
+  const c = state.clubs[clubId]; if (!c) return 'No such club.';
+  const hm = managerOf(state, clubId); if (hm && clubId!==state.userClub) return `${hm.managerName} manages that club. Only they can rename it.`;
+  name = cleanName(name, 28); short = cleanName(short, 12) || name.slice(0,12);
+  if (name.length<2) return 'The club needs a name.';
+  const old = c.name; c.name = name; c.short = short;
+  if (old!==name) newsAll(state, `${old} will now be known as ${name}.`, 'info');
+  return null;
+}
+function renamePlayer(state, pid, name){
+  const p = state.players[pid];
+  if (!p || p.club!==state.userClub) return 'You can only rename your own players.';
+  name = cleanName(name, 24);
+  if (name.length<2) return 'He needs a name.';
+  const old = p.name; p.name = name;
+  news(state, `${old} is now registered as ${name}.`, 'info');
+  return null;
+}
+
+// ---------- Careers: sackings, resignations, job offers ----------
+function bottomClub(state){
+  const tb = tableFor(state, 4).filter(c=>!isHuman(state, c.id));
+  return tb[tb.length-1].id;
+}
+function moveManager(state, clubId){
+  const old = state.clubs[state.userClub];
+  old.xi = null; for (const p of squadOf(state,old)) p.listed = null;
+  if (old.players.length<16 && !state.managers.some(m=>!m.retired && m!==state.managers[state.cur] && m.userClub===old.id)) youthFill(state, old, 16);
+  const c = state.clubs[clubId];
+  state.userClub = c.id; c.confidence = CFG.CONF_START; c.overdraftWeeks = 0; c.ledger = []; c.xi = null; c.training = 'normal';
+  state.offers = []; state.loan = null; state.jobOffer = null; state.sackOffer = null; state.gameOver = null;
+  if (state.preseason && state.preseason.pending){ state.preseason.offers = sponsorOffers(state, c); state.sponsor = null; state.seasonTicket = null; }
+  else { state.sponsor = null; state.seasonTicket = null; }
+  transferWeek(state);
+}
+function takeSackOffer(state){
+  const id = state.sackOffer; if (id===null || id===undefined) return 'No offer on the table.';
+  const c = state.clubs[id];
+  moveManager(state, id);
+  news(state, `You start again at ${c.name}, bottom of Division 4. The only way is up. Probably.`, 'job');
+  return null;
+}
+function resign(state){
+  const u = state.clubs[state.userClub];
+  state.gameOver = `You resigned from ${u.name}.`;
+  state.sackOffer = bottomClub(state);
+}
+function midSeasonJobs(state, user){
+  if (![12,21,30].includes(state.week) || state.jobOffer!==null || state.gameOver) return;
+  updatePositions(state);
+  const exp = expectedPos(state, user);
+  const cupRun = ['lc','fa'].some(k=>!user.cup[k].out && user.cup[k].round>=3);
+  if (!(user.leaguePos <= exp-4 || cupRun) || rand()>0.3) return;
+  const cands = state.clubs.filter(c=>c.div>=1 && !isHuman(state, c.id) && c.prestige>user.prestige+8 && c.prestige<=user.prestige+24);
+  if (!cands.length) return;
+  const c = pick(cands);
+  state.jobOffer = c.id; state.jobOfferExpires = state.week+2;
+  news(state, `${c.name} have sacked their manager and want to talk to you. Decide within two weeks.`, 'job');
+}
+
+// ---------- Transfers ----------
+function transferWeek(state){
+  const user = state.clubs[state.userClub];
+  // refresh transfer list: 8 fringe players from nearby divisions
+  const pool = [];
+  for (const c of state.clubs){
+    if (isHuman(state, c.id) || c.div===0 || Math.abs(c.div-user.div)>1 || c.players.length<15) continue;
+    const sq = squadOf(state,c).slice().sort((a,b)=>b.skill-a.skill);
+    for (const p of sq.slice(8)) pool.push(p);
+  }
+  shuffle(pool);
+  const n = CFG.SCOUT_LIST[user.staff.scout];
+  let list = pool.slice(0, n);
+  if (user.staff.scout>=2){
+    // a good scout finds a couple of young players with something about them
+    const gems = pool.filter(p=>p.age<=23 && p.pot-p.skill>=10 && !list.includes(p)).slice(0, user.staff.scout>=3? 3 : 2);
+    list = gems.concat(list).slice(0, n);
+  }
+  state.transferList = list.map(p=>({pid:p.id, price: round500(p.value*(0.9+0.2*rand()))}));
+  // offers for listed players
+  state.offers = state.offers.filter(o=>o.expires>state.week && o.season===state.season);
+  for (const p of squadOf(state,user)){
+    if (p.listed===null) continue;
+    const askRatio = p.listed/Math.max(p.value,1);
+    const chance = askRatio<=1? 0.35 : askRatio<=1.3? 0.2 : 0.08;
+    if (rand()<chance){
+      const buyers = state.clubs.filter(c=>!isHuman(state, c.id) && c.div<=Math.min(4,user.div+1) && c.players.length<20);
+      if (!buyers.length) continue;
+      const buyer = pick(buyers);
+      const amount = round500(Math.min(p.listed, p.value*(0.85+0.3*rand())));
+      state.offers.push({pid:p.id, club:buyer.id, name:buyer.name, amount, expires: state.week+2, season: state.season});
+      news(state, `${buyer.name} offer £${fmt(amount)} for ${p.name}.`, 'offer');
+    }
+  }
+  // european raid
+  if (user.div<=3 && rand()<0.04){
+    const best = squadOf(state,user).slice().sort((a,b)=>b.skill-a.skill)[0];
+    const raiders = divClubs(state,0).filter(c=>c.rating>=72 && c.players.length<20);
+    if (best && best.skill>=60 && best.age<=30 && raiders.length){
+      const buyer = pick(raiders);
+      const amount = round500(best.value*(1.8+1.2*rand()));
+      state.offers.push({pid:best.id, club:buyer.id, name:buyer.name, amount, expires: state.week+2, season: state.season, euro:true});
+      news(state, `${buyer.name} want ${best.name}. They are offering £${fmt(amount)}.`, 'offer');
+    }
+  }
+}
+function fmt(n){ return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+
+function buyFromList(state, pid){
+  const user = state.clubs[state.userClub];
+  const entry = state.transferList.find(t=>t.pid===pid); if (!entry) return 'Not on the list any more.';
+  const p = state.players[pid]; const seller = p? state.clubs[p.club] : null;
+  if (!p || !seller || seller.id===user.id){ state.transferList = state.transferList.filter(t=>t.pid!==pid); return 'He is no longer available.'; }
+  if (user.players.length>=20) return 'Squad is full (20 max).';
+  if (user.balance - entry.price < -overdraftLimit(state, user)) return 'The bank will not fund that.';
+  movePlayer(state, p, seller, user, entry.price); credit(state, user, -entry.price, `Bought ${p.name}`);
+  state.transferList = state.transferList.filter(t=>t.pid!==pid);
+  news(state, `Signed ${p.name} from ${seller.name} for £${fmt(entry.price)}.`, 'transfer');
+  return null;
+}
+function bidForPlayer(state, pid, amount){
+  const user = state.clubs[state.userClub];
+  const p = state.players[pid]; const seller = state.clubs[p.club];
+  if (!seller || seller.id===user.id) return 'Not available.';
+  if (user.players.length>=20) return 'Squad is full (20 max).';
+  if (user.balance - amount < -overdraftLimit(state, user)) return 'The bank will not fund that.';
+  const sm = managerOf(state, seller.id);
+  if (sm){
+    if (sm.offers.some(o=>o.pid===p.id && o.human===state.cur)) return 'You already have a bid in for him.';
+    sm.offers.push({pid:p.id, club:user.id, name:`${user.name} (${state.managerName})`, amount, expires: state.week+2, season: state.season, human: state.cur});
+    const arr = sm.news; arr.unshift({s:state.season, w:state.week, text:`${state.managerName} at ${user.name} have bid £${fmt(amount)} for ${p.name}.`, kind:'offer'}); if (arr.length>40) arr.pop();
+    news(state, `Bid of £${fmt(amount)} for ${p.name} sent to ${sm.managerName}. They decide on their turn.`, 'transfer');
+    return null;
+  }
+  if (seller.players.length<=14) return `${seller.name} will not sell, they are short of players.`;
+  const since = weeksSinceSigning(state, p);
+  if (since < CFG.RESALE_WEEKS) return `${seller.name} only signed him ${since===0? 'this week' : since+' week'+(since===1?'':'s')+' ago'}. They are not listening.`;
+  const ratio = amount/Math.max(p.value, p.paid||0);
+  const acc = ratio>=1.6? 0.95 : ratio>=1.3? 0.55 : ratio>=1.1? 0.2 : 0.03;
+  if (rand()>acc){ news(state, `${seller.name} reject your £${fmt(amount)} bid for ${p.name}.`, 'transfer'); return 'Bid rejected.'; }
+  movePlayer(state, p, seller, user, amount); credit(state, user, -amount, `Bought ${p.name}`);
+  state.transferList = state.transferList.filter(t=>t.pid!==pid);
+  news(state, `Signed ${p.name} from ${seller.name} for £${fmt(amount)}.`, 'transfer');
+  return null;
+}
+function acceptOffer(state, offerIdx){
+  const user = state.clubs[state.userClub];
+  const o = state.offers[offerIdx]; if (!o) return 'Offer gone.';
+  const p = state.players[o.pid];
+  if (user.players.length<=11) return 'You cannot go below 11 players.';
+  if (o.human!==undefined){
+    const buyer = state.clubs[o.club]; const bm = state.managers[o.human];
+    if (!bm || bm.retired || bm.userClub!==buyer.id){ state.offers = state.offers.filter(x=>x!==o); return 'That manager has moved on. Bid withdrawn.'; }
+    if (buyer.players.length>=20){ state.offers = state.offers.filter(x=>x!==o); return `${buyer.name} have a full squad now. Bid withdrawn.`; }
+    if (buyer.balance - o.amount < -overdraftLimit(state, buyer)){ state.offers = state.offers.filter(x=>x!==o); return `${bm.managerName} can no longer afford it. Bid withdrawn.`; }
+    movePlayer(state, p, user, buyer, o.amount);
+    credit(state, user, o.amount, `Sold ${p.name}`); credit(state, buyer, -o.amount, `Bought ${p.name}`);
+    const arr = bm.news; arr.unshift({s:state.season, w:state.week, text:`${state.managerName} accepted. ${p.name} joins ${buyer.name} for £${fmt(o.amount)}.`, kind:'transfer'}); if (arr.length>40) arr.pop();
+    news(state, `${p.name} sold to ${buyer.name} for £${fmt(o.amount)}.`, 'transfer');
+    state.offers = state.offers.filter(x=>x.pid!==o.pid);
+    return null;
+  }
+  if (o.euro && o.club<0){ removePlayer(state, p, user); } else { movePlayer(state, p, user, state.clubs[o.club], o.amount); }
+  credit(state, user, o.amount, `Sold ${p.name}`);
+  news(state, `${p.name} sold to ${o.name} for £${fmt(o.amount)}.`, 'transfer');
+  state.offers = state.offers.filter(x=>x.pid!==o.pid);
+  return null;
+}
+function weeksSinceSigning(state, p){ if (p.signedS===undefined) return 999; return (state.season-p.signedS)*CFG.WEEKS + (state.week-p.signedW); }
+function movePlayer(state, p, from, to, price){
+  from.players = from.players.filter(id=>id!==p.id); to.players.push(p.id); p.club = to.id; p.listed = null;
+  p.paid = price!==undefined? price : p.value; p.signedS = state.season; p.signedW = state.week;
+  if (from.players.length<14 && !isHuman(state, from.id)) youthFill(state, from, 14);
+}
+function humanListings(state){
+  const out = [];
+  for (const m of activeManagers(state)){ if (m.userClub===state.userClub) continue; for (const id of state.clubs[m.userClub].players){ const p = state.players[id]; if (p.listed!==null) out.push({p, m}); } }
+  return out;
+}
+function removePlayer(state, p, from){ from.players = from.players.filter(id=>id!==p.id); p.club = -1; }
+
+// ---------- Season end ----------
+function prizeFor(div, pos){ const top = CFG.PRIZE_TOP[div], bot = CFG.PRIZE_BOT[div]; return Math.round(top - (top-bot)*(pos-1)/15); }
+function youthFill(state, club, target){
+  const sq = squadOf(state, club);
+  const mean = sq.length? sq.reduce((s,p)=>s+p.skill,0)/sq.length : (club.div===0? club.rating : CFG.DIV_MEAN[club.div]);
+  while (club.players.length<target){
+    const counts = {GK:0,DEF:0,MID:0,FWD:0}; squadOf(state,club).forEach(p=>counts[p.pos]++);
+    const want = counts.GK<2?'GK':counts.DEF<5?'DEF':counts.MID<5?'MID':counts.FWD<4?'FWD':pick(['DEF','MID','FWD']);
+    const p = makePlayer(state, want, Math.max(15, rNorm(mean-9, 5)), rInt(17,19), club.id); refreshValues(p); club.players.push(p.id);
+    if (isHuman(state, club.id)) newsTo(state, club.id, `${p.name}, ${p.age}, promoted from the youth team.`, 'info');
+  }
+}
+function developPlayers(state){
+  for (const c of state.clubs){
+    for (const p of squadOf(state,c)){
+      p.age++;
+      let d;
+      if (p.age<=27){ const room = p.pot - p.skill; d = room>0? Math.min(room, rInt(0,1) + Math.round(room/10)) : rInt(-1,0); }
+      else if (p.age<=30) d = rInt(-2,1); else d = rInt(-6,-2);
+      p.skill = clamp(p.skill+d, 10, 99);
+      if (p.age>=28) p.pot = p.skill;
+      p.fitness = 100; p.injury = 0; p.goals = 0; p.apps = 0;
+      if ((p.age>=34 && rand()<0.5) || p.age>=36){ p.retired = true; }
+      refreshValues(p);
+    }
+    const retired = squadOf(state,c).filter(p=>p.retired);
+    for (const p of retired){ removePlayer(state,p,c); if (isHuman(state, c.id)) newsTo(state, c.id, `${p.name} has retired.`, 'info'); }
+  }
+}
+function aiStrengthen(state){
+  for (const c of state.clubs){
+    if (isHuman(state, c.id)) continue;
+    const target = c.div===0? c.rating : CFG.DIV_MEAN[c.div] + (7.5 - (expectedPos(state,c)-1))*CFG.PRESTIGE_SKILL_SPREAD;
+    let sq = squadOf(state,c).slice().sort((a,b)=>a.skill-b.skill);
+    let mean = sq.reduce((s,p)=>s+p.skill,0)/sq.length;
+    if (mean > target+2){
+      const n = clamp(Math.ceil((mean-target)/2), 1, 3);
+      for (let i=0;i<n;i++){
+        const star = sq[sq.length-1-i]; removePlayer(state, star, c);
+        const np = makePlayer(state, star.pos, rNorm(target-4, 5), randomAge(), c.id); refreshValues(np); c.players.push(np.id);
+      }
+    } else if (mean < target-1){
+      const n = clamp(Math.ceil((target-mean)/1.2), 1, 8);
+      for (let i=0;i<n && i<sq.length;i++){
+        const old = sq[i]; removePlayer(state, old, c);
+        const np = makePlayer(state, old.pos, rNorm(target+4, 5), randomAge(), c.id); refreshValues(np); c.players.push(np.id);
+      }
+    }
+    youthFill(state, c, 16);
+  }
+}
+function endSeason(state){
+  saveCurrent(state); const keepCur = state.cur;
+  const summary = { season: state.season, tables: {}, promoted: [], relegated: [], cupWinners: Object.assign({}, state.cupWinners) };
+  updatePositions(state);
+  // prizes, promotion, relegation
+  const moves = [];
+  for (const d of [1,2,3,4]){
+    const tb = tableFor(state,d); summary.tables[d] = tb.map(c=>({id:c.id, name:c.name, st:{...c.st}}));
+    tb.forEach((c,i)=>{
+      const pos=i+1; credit(state, c, prizeFor(d,pos), 'League prize money');
+      credit(state, c, CFG.TV[d], 'Television money');
+      if (!isHuman(state, c.id)) credit(state, c, sponsorBase(state, c), 'Sponsorship');
+      credit(state, c, -squadOf(state,c).reduce((s,p)=>s+p.wage,0)*CFG.SUMMER_WEEKS, 'Summer wages');
+      const exp = expectedPos(state,c);
+      c.confidence = clamp(c.confidence + (exp-pos)*2.5, 0, 100);
+      if (pos<=2 && d>1){ moves.push({c, to:d-1}); summary.promoted.push(c.id); c.confidence = clamp(c.confidence+15,0,100); credit(state,c,CFG.PROMO_BONUS[d-1],'Promotion bonus'); }
+      if (pos>=15 && d<4){ moves.push({c, to:d+1}); summary.relegated.push(c.id); c.confidence = clamp(c.confidence-15,0,100); }
+      if (pos===16 && d===4 && isHuman(state, c.id)) newsTo(state, c.id, 'You have won the League Joker trophy. It is not a compliment.', 'warn');
+      { const mg = managerOf(state, c.id); if (mg){ if (pos===1) mg.trophies.league++; if (pos<=2 && d>1) mg.trophies.promo++; } }
+      c.history.push({season: state.season, div: d, pos, pts: c.st.pts, lc: c.cup.lc.round, fa: c.cup.fa.round, euro: (c.euro && state.euro)? {comp:c.euro.comp, round:c.euro.round, won: state.euro[c.euro.comp].winner===c.id} : null});
+      // prestige drifts toward performance
+      c.prestige = 0.8*c.prestige + 0.2*prestigeFor(d, pos-1);
+    });
+  }
+  for (const mg of activeManagers(state)){
+    withManager(state, state.managers.indexOf(mg), st=>{
+      const user = st.clubs[st.userClub];
+      const sm = Object.assign({}, summary);
+      sm.userPos = user.leaguePos; sm.userDiv = user.div; sm.userExpected = expectedPos(st,user); sm.userClubId = user.id;
+      sm.summerWages = squadOf(st,user).reduce((s,p)=>s+p.wage,0)*CFG.SUMMER_WEEKS;
+      if (st.sponsor && st.sponsor.type==='bold'){
+        const down = sm.relegated.includes(user.id) || (user.div===4 && user.leaguePos>=13);
+        if (down){ credit(st, user, -st.sponsor.clawback, `${st.sponsor.name} clawback`); sm.clawback = st.sponsor.clawback; news(st, `${st.sponsor.name} invoke the relegation clause and take back £${fmt(st.sponsor.clawback)}.`, 'warn'); }
+      }
+      sm.userBalance = user.balance; sm.userConfidence = user.confidence;
+      sm.euro = euroStatus(st, user); sm.euroWinners = {}; if (st.euro) for (const k in st.euro) sm.euroWinners[k] = st.euro[k].winner;
+      const q = euroQualifiers(st, sm); sm.qualified = Object.keys(q).find(k=>q[k].includes(user.id)) || null;
+      if (user.confidence<=CFG.SACK_CONF) st.gameOver = 'The board reviewed the season and decided to make a change. You have been sacked.';
+      st.jobOffer = null;
+      if (!st.gameOver){
+        const overach = (sm.userExpected - sm.userPos) >= 4 || sm.promoted.includes(user.id);
+        if (overach && rand()<0.45){
+          const cands = st.clubs.filter(c=>c.div>=1 && !isHuman(st, c.id) && c.prestige>user.prestige+8 && c.prestige<=user.prestige+28 && !sm.relegated.includes(c.id));
+          if (cands.length){ const c = pick(cands); st.jobOffer = c.id; st.jobOfferExpires = 2; news(st, `${c.name} have approached you about their vacant manager's job.`, 'job'); }
+        }
+      }
+      st.seasonSummary = sm; mg.pendingReview = true;
+    });
+  }
+  for (const mv of moves){ const up = mv.to<mv.c.div; mv.c.div = mv.to; mv.c.prestige = up? Math.max(mv.c.prestige, prestigeFor(mv.to,12)) : Math.min(mv.c.prestige, prestigeFor(mv.to,3)); }
+  state.euroEntrants = euroQualifiers(state, summary);
+  for (const c of state.clubs){ if (c.div>=1) c.support = Math.round((1-CFG.SUPPORT_BLEND)*supportOf(state, c) + CFG.SUPPORT_BLEND*demandTarget(state, c)); }
+  developPlayers(state);
+  aiStrengthen(state);
+  for (const mg of activeManagers(state)){ const c = state.clubs[mg.userClub]; if (c.players.length<16) youthFill(state, c, 16); }
+  for (const id in state.players) if (state.players[id].club===-1) delete state.players[id];
+  for (const c of state.clubs){ c.st = {p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0}; }
+  state.season++; state.week = 1;
+  buildSchedule(state); updatePositionsByPrestige(state);
+  for (const mg of activeManagers(state)){
+    withManager(state, state.managers.indexOf(mg), st=>{
+      openPreseason(st);
+      st.userResults = {}; st.userEuro = {};
+      if (st.gameOver && !st.sackOffer) st.sackOffer = bottomClub(st);
+      st.offers = []; st.transferList = [];
+      transferWeek(st);
+    });
+  }
+  setCurrent(state, keepCur);
+}
+function updatePositionsByPrestige(state){ for (const d of [1,2,3,4]) divClubs(state,d).slice().sort((a,b)=>b.prestige-a.prestige).forEach((c,i)=>c.leaguePos=i+1); }
+function acceptJob(state){
+  const c = state.clubs[state.jobOffer]; if (!c) return;
+  moveManager(state, c.id);
+  news(state, `You have taken over at ${c.name}.`, 'job');
+}
+
+// ---------- New game ----------
+function newGame(opts={}){
+  if (opts.seed!==undefined) seedRng(opts.seed);
+  nextPlayerId = 1;
+  const state = { season: 1, week: 1, players: {}, clubs: [], managers: [], cur: 0, cupWinners: {}, lastSlim: [], lastWeekInfo: null };
+  CLUB_DATA.forEach(([div,name,short],i)=>{
+    const idx = i%16;
+    const c = { id:i, name, short, div, prestige: prestigeFor(div,idx), capacity: capacityFor(div,idx),
+      balance: 0, players: [], formation:'4-4-2', confidence: CFG.CONF_START, overdraftWeeks:0, ledger: [], history: [],
+      st:{p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0}, leaguePos: idx+1, cup:{lc:{round:0,out:false}, fa:{round:0,out:false}}, xi:null,
+      staff:{coach:1, physio:1, scout:1}, training:'normal', safety: clamp(Math.round(45 + prestigeFor(div,idx)/64*40 + rInt(-8,8)), 20, 95), build:null };
+    const [bHi,bLo] = CFG.START_BALANCE[div]; c.balance = round500(bHi - (bHi-bLo)*idx/15);
+    c.support = Math.round(c.capacity*CFG.FILL[div]);
+    const mean = CFG.DIV_MEAN[div] + (7.5-idx)*CFG.PRESTIGE_SKILL_SPREAD;
+    for (const pos of SQUAD_TEMPLATE){ const p = makePlayer(state, pos, rNorm(mean, CFG.SKILL_SD), randomAge(), c.id); refreshValues(p); c.players.push(p.id); }
+    state.clubs.push(c);
+  });
+  makeEuroClubs(state);
+  const names = opts.managers && opts.managers.length? opts.managers : [opts.managerName || 'The Gaffer'];
+  return finishNewGame(state, opts, names);
+}
+function makeEuroClubs(state){
+  if (state.clubs.some(c=>c.div===0)) return;
+  EURO_POOL.forEach(([name,short,rating,group],k)=>{
+    const id = state.clubs.length;
+    const capacity = Math.round((8000 + (rating-40)*1600)/100)*100;
+    const c = { id, name, short, div:0, rating, group, prestige: clamp((rating-36)*1.4, 0, 70), capacity, support: Math.round(capacity*0.7), ticket: 8,
+      balance: 3000000, players: [], formation:'4-4-2', confidence: 60, overdraftWeeks:0, ledger: [], history: [],
+      st:{p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0}, leaguePos: 8, cup:{lc:{round:0,out:false}, fa:{round:0,out:false}}, xi:null,
+      staff:{coach:2, physio:2, scout:2}, training:'normal', safety: 85, build:null, euro:null };
+    state.clubs.push(c);
+    for (const pos of SQUAD_TEMPLATE){ const p = makePlayer(state, pos, rNorm(rating, 6), randomAge(), c.id); refreshValues(p); c.players.push(p.id); }
+  });
+}
+function finishNewGame(state, opts, names){
+  const pool = shuffle(divClubs(state,4).map(c=>c.id));
+  state.managers = names.slice(0,8).map((name,i)=>({ userClub: (i===0 && opts.userClub!==undefined)? opts.userClub : pool[i], managerName: name, userSel: [], sponsor:null, seasonTicket:null, loan:null, preseason:null,
+    jobOffer:null, jobOfferExpires:undefined, sackOffer:null, gameOver:null, userResults:{}, userEuro:{}, euroSel:[], offers:[], transferList:[], news:[], seasonSummary:null, scoutReport:[], retired:false, ready:false, pendingReview:false, trophies:{league:0, lc:0, fa:0, promo:0, ec:0, cwc:0, uefa:0} }));
+  if (opts.userClub!==undefined) for (let i=1;i<state.managers.length;i++) if (state.managers[i].userClub===opts.userClub) state.managers[i].userClub = pool[8];
+  buildSchedule(state);
+  for (let i=0;i<state.managers.length;i++){
+    setCurrent(state, i);
+    openPreseason(state); transferWeek(state);
+    news(state, `Welcome to ${state.clubs[state.userClub].name}, ${state.managerName}. The board expect a mid-table finish. Prove them wrong.`, 'info');
+    saveCurrent(state);
+  }
+  setCurrent(state, 0);
+  return state;
+}
+
+
+// ---------- UI helpers ----------
+function nextFixture(state){
+  const wk = state.schedule[state.week-1]; const uid = state.userClub;
+  if (wk.type==='league'){
+    const f = state.fixtures[state.clubs[uid].div][wk.round].find(x=>x.h===uid||x.a===uid);
+    return {type:'league', home: f.h===uid, opp: state.clubs[f.h===uid?f.a:f.h]};
+  }
+  const t = state.cups[wk.cup].ties.find(x=>x.h===uid||x.a===uid);
+  if (!t) return {type:'none', cup: wk.cup, round: wk.round};
+  return {type:'cup', cup: wk.cup, round: wk.round, home: t.h===uid, opp: state.clubs[t.h===uid?t.a:t.h], neutral: wk.round===5};
+}
+function buildXI(state, club, selectedIds, formationName){
+  const fm = FORMATIONS[formationName||club.formation||'4-4-2'];
+  const sel = (selectedIds||[]).map(id=>state.players[id]).filter(p=>p && p.club===club.id && p.injury===0);
+  const need = [['GK',1],['DEF',fm.d],['MID',fm.m],['FWD',fm.f]];
+  const used = new Set(); const xi = [];
+  for (const [slot,n] of need){
+    const c = sel.filter(p=>p.pos===slot&&!used.has(p.id)).sort((a,b)=>b.skill-a.skill);
+    for (let i=0;i<n&&i<c.length;i++){ used.add(c[i].id); xi.push({p:c[i],slot}); }
+  }
+  const fill = (pool) => {
+    for (const [slot,n] of need){
+      let have = xi.filter(x=>x.slot===slot).length; if (have>=n) continue;
+      const c = pool.filter(p=>!used.has(p.id)).sort((a,b)=>effSkill(b,slot)-effSkill(a,slot));
+      for (const p of c){ if (have>=n) break; used.add(p.id); xi.push({p,slot}); have++; }
+    }
+  };
+  fill(sel);
+  if (xi.length<11){
+    const rest = squadOf(state,club).filter(p=>p.injury===0 && !used.has(p.id));
+    for (const [slot,n] of need){
+      let have = xi.filter(x=>x.slot===slot).length; if (have>=n) continue;
+      const c = rest.filter(p=>p.pos===slot && !used.has(p.id)).sort((a,b)=>b.skill-a.skill);
+      for (const p of c){ if (have>=n) break; used.add(p.id); xi.push({p,slot}); have++; }
+    }
+    fill(rest);
+  }
+  return xi;
+}
+function listPlayer(state, pid, price){ const p = state.players[pid]; if (p && p.club===state.userClub) p.listed = price; }
+function unlistPlayer(state, pid){ const p = state.players[pid]; if (p) p.listed = null; state.offers = state.offers.filter(o=>o.pid!==pid); }
+function rejectOffer(state, idx){ state.offers.splice(idx,1); }
+function declineJob(state){ state.jobOffer = null; }
+function boardMood(conf){ return conf>=75?'delighted':conf>=55?'content':conf>=35?'uneasy':conf>=18?'worried':'furious'; }
+const SAVE_VERSION = 3;
+function migrate(state){
+  const from = state.v||1;
+  if (!state.managers){ // pre-multiplayer save: wrap the single manager
+    state.managers = [{ userClub: state.userClub, managerName: state.managerName||'The Gaffer', userSel: state.userSel||[], sponsor: state.sponsor||null, seasonTicket: state.seasonTicket||null, loan: state.loan||null, preseason: state.preseason||null,
+      jobOffer: state.jobOffer===undefined? null : state.jobOffer, jobOfferExpires: state.jobOfferExpires, sackOffer: state.sackOffer||null, gameOver: state.gameOver||null, userResults: state.userResults||{}, offers: state.offers||[], transferList: state.transferList||[], news: state.news||[], seasonSummary: state.seasonSummary||null, retired:false, ready:false, pendingReview:false, trophies:{league:0, lc:0, fa:0, promo:0} }];
+    state.cur = 0;
+  }
+  for (const m of state.managers){ m.euroSel = m.euroSel||[]; m.userEuro = m.userEuro||{}; m.scoutReport = m.scoutReport||[]; m.trophies = Object.assign({league:0, lc:0, fa:0, promo:0, ec:0, cwc:0, uefa:0}, m.trophies||{}); }
+  for (const c of state.clubs){
+    c.staff = c.staff||{coach:1, physio:1, scout:1}; c.training = c.training||'normal'; if (c.safety===undefined) c.safety = 55; if (c.build===undefined) c.build = null;
+    c.cup = c.cup||{lc:{round:0,out:false}, fa:{round:0,out:false}}; if (c.euro===undefined) c.euro = null; c.gates = c.gates||[];
+  }
+  if (!state.clubs.some(c=>c.div===0)){ makeEuroClubs(state); state.euro = null; for (const c of state.clubs) c.euro = null; }   // Europe starts next season
+  if (!state.cups && state.cup){ state.cups = { fa: state.cup }; }
+  state.v = SAVE_VERSION;
+  return from;
+}
+function restore(state){ let m=0; for (const id in state.players) m=Math.max(m, +id); nextPlayerId = m+1; migrate(state); if (state.managers) setCurrent(state, state.cur||0); return state; }
+
+// ---------- Exports ----------
+const Engine = { CFG, CLUB_DATA, FORMATIONS, newGame, advanceWeek, endSeason, autoSelect, tableFor, squadOf, divClubs, expectedPos,
+  buyFromList, bidForPlayer, acceptOffer, acceptJob, teamStrength, effSkill, fmt, seedRng, CUP_ROUND_NAMES, refreshValues, wageFor, valueFor,
+  nextFixture, buildXI, listPlayer, unlistPlayer, rejectOffer, declineJob, boardMood, restore, prizeFor, overdraftLimit,
+  setStaff, setTraining, startBuild, buildCost, improveSafety, safetyCost, canSeePot, staffWages,
+  chooseSponsor, setSeasonTickets, seasonTicketForecast, takeLoan, repayLoan, loanMax, sponsorBase,
+  takeSackOffer, resign, bottomClub, updatePositions,
+  isHuman, managerOf, activeManagers, setCurrent, saveCurrent, withManager, retireManager, standings, humanListings, renameClub, renamePlayer, scoutSearch, topScorers, gateSummary, supportOf, demandTarget, turnover, ticketOf, setTicketPrice, ticketAdvice, renameAnyClub,
+  euroSlot, euroTieFor, euroStatus, euroRoundName, EURO_POOL, SAVE_VERSION, migrate };
+if (typeof module!=='undefined') module.exports = Engine;
+
+</script>
+<script>
+(function(){
+'use strict';
+const E = Engine;
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const money = n => (n<0?'-':'')+'£'+E.fmt(Math.abs(n));
+const SAVE_KEY = 'sm91-save';
+const APP_VERSION = '1.0.0';
+const FEEDBACK_URL = '';   // put a Google Form (or similar) link here to show a feedback button
+
+// ---------- storage: artifact storage, then localStorage, then memory ----------
+const mem = {};
+const Store = {
+  async get(k){
+    if (window.storage && window.storage.get){ try{ const r = await window.storage.get(k, false); return r? r.value : null; }catch(e){ return null; } }
+    try{ return localStorage.getItem(k); }catch(e){ return mem[k]||null; }
+  },
+  async set(k,v){
+    if (window.storage && window.storage.set){ try{ await window.storage.set(k, v, false); return; }catch(e){} }
+    try{ localStorage.setItem(k,v); return; }catch(e){ mem[k]=v; }
+  },
+  async del(k){
+    if (window.storage && window.storage.delete){ try{ await window.storage.delete(k, false); return; }catch(e){} }
+    try{ localStorage.removeItem(k); }catch(e){ delete mem[k]; }
+  }
+};
+function serialize(state){
+  const copy = Object.assign({}, state, { lastResults: null, lastWeek: null, v: E.SAVE_VERSION, app: APP_VERSION });
+  copy.clubs = state.clubs.map(c=>Object.assign({}, c, { xi: null }));
+  return JSON.stringify(copy);
+}
+async function save(){ if (!S.state) return; try{ E.saveCurrent(S.state); await Store.set(SAVE_KEY, serialize(S.state)); }catch(e){} }
+const SLOT_INDEX = 'sm91-slots';
+async function listSlots(){ try{ const raw = await Store.get(SLOT_INDEX); return raw? JSON.parse(raw) : []; }catch(e){ return []; } }
+async function saveSlot(name){
+  const st = S.state; E.saveCurrent(st);
+  const slots = await listSlots(); const id = Date.now(); const key = 'sm91-slot-'+id;
+  await Store.set(key, serialize(st));
+  slots.unshift({ id, key, name, club: user().name, manager: st.managerName, managers: E.activeManagers(st).length, season: st.season, week: st.week, ts: id });
+  while (slots.length>8){ const drop = slots.pop(); await Store.del(drop.key); }
+  await Store.set(SLOT_INDEX, JSON.stringify(slots));
+  return slots;
+}
+async function loadSlot(id){
+  const slots = await listSlots(); const s = slots.find(x=>x.id===id); if (!s) return 'That save has gone.';
+  const raw = await Store.get(s.key); if (!raw) return 'That save is empty.';
+  S.state = E.restore(JSON.parse(raw)); S.hasSave = true; S.pendingReview = false; S.results = null; S.tab.report = null;
+  await save(); return null;
+}
+async function deleteSlot(id){ const slots = await listSlots(); const s = slots.find(x=>x.id===id); if (s) await Store.del(s.key); await Store.set(SLOT_INDEX, JSON.stringify(slots.filter(x=>x.id!==id))); }
+function multi(){ return S.state && E.activeManagers(S.state).length>1; }
+function mgr(){ return S.state.managers[S.state.cur]; }
+async function load(){ try{ const raw = await Store.get(SAVE_KEY); if (!raw) return null; const st = JSON.parse(raw); return E.restore(st); }catch(e){ return null; } }
+
+// ---------- app state ----------
+const S = { state:null, screen:'title', tab:{transfers:'list', table:null, scout:{}, club:'money', results:null, brief:{pos:'ANY', age:'any', skill:0, value:0}, report:null}, hasSave:false, results:null, pendingReview:false, anim:null, prevSeason:1 };
+
+function user(){ return S.state.clubs[S.state.userClub]; }
+function sel(){ const st = S.state; if (!st.userSel) st.userSel = []; if (!st.euroSel) st.euroSel = []; return S.xiMode==='euro'? st.euroSel : st.userSel; }
+function inEurope(u){ return !!(u.euro && !u.euro.out); }
+function euroComp(k){ return E.CFG.EURO.comps[k]; }
+function fmtEuroTie(t){ if (!t) return ''; if (t.final) return `${euroComp(t.comp).name} final v ${esc(t.opp.name)} (neutral)`; return `${euroComp(t.comp).name} ${E.euroRoundName(t.comp, t.round)}, ${t.g1? '2nd' : '1st'} leg v ${esc(t.opp.name)} (${t.g1? (t.homeFirst? 'A' : 'H') : (t.homeFirst? 'H' : 'A')})${t.g1? `, first leg ${t.homeFirst? t.g1[0]+'-'+t.g1[1] : t.g1[1]+'-'+t.g1[0]}` : ''}`; }
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(()=>t.classList.remove('show'), 2200); }
+function go(screen){ S.screen = screen; render(); $('#main').scrollTop = 0; }
+
+// ---------- rendering ----------
+function render(){
+  const st = S.state;
+  const hdr = $('#hdr'), main = $('#main'), nav = $('#nav'), act = $('#act');
+  if (!st || S.screen==='title' || S.screen==='setup' || S.screen==='pass' || ((S.screen==='saves'||S.screen==='help') && !st)){
+    hdr.innerHTML = ''; hdr.style.display='none'; nav.style.display='none';
+  } else {
+    hdr.style.display=''; nav.style.display='';
+    const u = user();
+    hdr.innerHTML = `<div class="club">${esc(u.name)}${multi()? `<br><span style="font-size:12px;color:var(--grey);text-transform:none;letter-spacing:0">${esc(st.managerName)}</span>`:''}</div><div class="meta">Div ${u.div}, season ${st.season}<br>Week ${st.week} of ${E.CFG.WEEKS}<br><span class="${u.balance<0?'neg':''}">${money(u.balance)}</span></div>`;
+    nav.innerHTML = ['home','squad','transfers','table','club'].map(k=>`<button data-nav="${k}" class="${S.screen===k?'on':''}">${{home:'Home',squad:'Squad',transfers:'Market',table:'Table',club:'Club'}[k]}</button>`).join('');
+  }
+  const r = SCREENS[S.screen];
+  const out = r();
+  main.innerHTML = out.main;
+  act.innerHTML = out.action || '';
+  act.style.display = out.action? '' : 'none';
+}
+
+const SCREENS = {
+  title(){
+    return { main: `<div class="title"><div class="logo">Soccer<br>Manager '91</div><div class="sub">Four divisions. Sixteen players. One overdraft.</div>
+      ${S.hasSave? `<button class="b" data-a="continue">Continue current game</button>`:''}
+      ${S.slotCount? `<button class="b" data-a="saves">Load a saved game</button>`:''}
+      <button class="b" data-a="setup">${S.hasSave?'Start a new game':'Start'}</button>
+      <button class="b" data-a="help">How to play</button>
+      ${FEEDBACK_URL? `<a class="b" href="${esc(FEEDBACK_URL)}" target="_blank" rel="noopener" style="text-decoration:none;text-align:left">Send feedback</a>`:''}
+      <p class="dim" style="margin-top:24px;font-size:12px">Version ${APP_VERSION}. A tribute to the 1991 Amiga original. Real club names belong to their clubs.</p></div>` };
+  },
+  setup(){
+    const n = S.setupCount || 1;
+    return { main: `<h1>Who's managing?</h1><p class="dim">One phone, up to eight managers, everyone starts in Division 4 at a random club. Pass the phone round each week.</p>
+      <div class="grid2" style="grid-template-columns:repeat(8,1fr)">${[1,2,3,4,5,6,7,8].map(k=>`<button class="b ${n===k?'on':''}" data-a="setupcount" data-n="${k}" style="padding:10px 0;text-align:center">${k}</button>`).join('')}</div>
+      ${Array.from({length:n}).map((_,i)=>`<input class="mgrname" maxlength="18" placeholder="Manager ${i+1}" autocomplete="off" value="${esc((S.setupNames||[])[i]||'')}">`).join('')}
+      <button class="b" data-a="start">${n===1? 'Take the job' : 'Start the season'}</button>` };
+  },
+  help(){
+    const st = S.state;
+    return { main: `<h1>How to play</h1>
+      <p>You've been handed a Division 4 club and a modest bank balance. Get promoted, win cups, get to Europe, don't go bust. Each week you pick a team, do your business, then play the match.</p>
+      <h2>The week</h2><p>Home shows this week's fixture, the board's mood and the news. Squad is where you pick the XI, set a formation and choose how hard to train. Play the match from Home. On cup weeks you might have no game, which is a good week for hard training.</p>
+      <h2>Money</h2><p>Gates, sponsorship and television money in; wages, staff and ground upkeep out. Summer wages land in one lump at the season review. The overdraft limit is half your turnover; eight weeks past it and the bank has you sacked. Loans are separate and cheaper than the overdraft. Cash in the bank earns interest.</p>
+      <h2>Pre-season</h2><p>Each season starts with a sponsor to choose (safe money, per-win money, or a bigger cheque with a relegation clause) and a season ticket price. Cheap season tickets bring cash now but most of those fans would have paid on the gate anyway.</p>
+      <h2>Players</h2><p>Skill is what he is now; the ▲ is how far he could go, and you only see that with a scout. Players improve in training until about 30 (faster with a better coach), then decline. Fitness under 70 doubles the injury risk. Wages reset to match skill every summer.</p>
+      <h2>The market</h2><p>The weekly list is other clubs' fringe players at fair prices. The scout will search on a brief (position, age, skill, price) or you can browse any club and bid for anyone; clubs want well over the value and won't sell someone they just signed. List your own players and offers arrive over the following weeks. European clubs will come for your best player once you're in Division 3.</p>
+      <h2>Staff and ground</h2><p>Coach speeds up training, physio shortens injuries, scout widens the search and reveals potential. Ground safety falls slowly; let it slide and you'll get crowd trouble and fines. Build a stand only when the Ground tab says you're turning people away. Set your own ticket price there too.</p>
+      <h2>Cups and Europe</h2><p>League Cup in the first half of the season, FA Cup in the second, both straight knockout. Win the league for the European Cup, the FA Cup for the Cup Winners' Cup, or finish second or third for the UEFA Cup. European ties are two legs midweek on top of the league, with their own XI.</p>
+      <h2>Several managers</h2><p>Up to eight on one phone, passing it round each week. You can bid for each other's players (they decide on their turn), rename each other's rivals, and the managers' table settles who's winning.</p>
+      <h2>Saves</h2><p>The game autosaves every week. Saves on the home screen keeps named copies you can load later, for instance before a cup final.</p>`,
+      action: `<button class="b quiet" data-a="${st? 'back' : 'title'}">Back</button>` };
+  },
+  saves(){
+    const st = S.state; const slots = S.slots||[];
+    const when = ts => { const d = new Date(ts); return d.toLocaleDateString(undefined,{day:'numeric',month:'short'})+' '+d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'}); };
+    const cur = st? `<h2>Save this game</h2><p class="dim">Saves the whole game${multi()? ' for every manager':''} as it is right now. Up to eight saves are kept; the oldest is dropped.</p>
+      <input id="slotname" maxlength="30" value="${esc(S.slotName||`${user().short}, season ${st.season} week ${st.week}`)}" autocomplete="off"><button class="b" data-a="saveslot">Save</button>` : '';
+    const list = slots.length? slots.map(s=>`<div style="margin:12px 0 4px"><span class="hot">${esc(s.name)}</span><br><span class="dim">${esc(s.club)}, ${esc(s.manager)}${s.managers>1? ' +'+(s.managers-1) : ''}. Season ${s.season}, week ${s.week}. ${when(s.ts)}</span></div>
+      <div class="grid2"><button class="b" data-a="loadslot" data-i="${s.id}">Load</button><button class="b ${S.confirmDel===s.id?'on':''}" data-a="delslot" data-i="${s.id}">${S.confirmDel===s.id? 'Really delete?' : 'Delete'}</button></div>`).join('') : '<p class="dim">No saved games yet.</p>';
+    return { main: `<h1>Saved games</h1>${cur}<h2>Saved games</h2><p class="dim">Loading one replaces the game in progress. Cowards' corner is open.</p>${list}`,
+      action: `<button class="b quiet" data-a="${st? 'back' : 'title'}">Back</button>` };
+  },
+  pass(){
+    const st = S.state; const m = mgr(); const c = st.clubs[m.userClub];
+    return { main: `<div class="title"><div class="logo">${esc(m.managerName)}</div><div class="sub">${esc(c.name)}, Division ${c.div}. Week ${st.week}.</div>
+      <p class="dim">Pass the phone over. Nobody else should be looking.</p>
+      <button class="b" data-a="taketurn">I'm ${esc(m.managerName)}</button></div>` };
+  },
+  weekmulti(){
+    const st = S.state; const R = S.results;
+    const lines = E.activeManagers(st).map(m=>{ const c = st.clubs[m.userClub]; const r = R.results.find(x=>x.home.id===c.id||x.away.id===c.id);
+      if (!r){ const er0 = R.results.find(x=>x.euro && (x.home.id===c.id||x.away.id===c.id)); return `<div class="kv"><span class="wrap"><span class="hot">${esc(m.managerName)}</span> ${esc(c.short)}</span><span class="dim">no game</span></div>${er0? `<div class="kv"><span class="wrap"><span class="dim">${euroComp(er0.euro.comp).short}</span> ${esc(er0.home.short)} v ${esc(er0.away.short)}</span><span>${er0.gH}-${er0.gA}${er0.extra?'*':''}</span></div>`:''}`; }
+      const home = r.home.id===c.id; const won = home? r.gH>r.gA||r.extra==='pens-H' : r.gA>r.gH||r.extra==='pens-A'; const drew = r.gH===r.gA && !r.extra;
+      const er = R.results.find(x=>x.euro && (x.home.id===c.id||x.away.id===c.id));
+      const euroLine = er? `<div class="kv"><span class="wrap"><span class="dim">${euroComp(er.euro.comp).short}</span> ${esc(er.home.short)} v ${esc(er.away.short)}</span><span>${er.gH}-${er.gA}${er.extra?'*':''}${er.agg? ` <span class="dim">(agg)</span>`:''}</span></div>` : '';
+      return `<div class="kv"><span class="wrap"><span class="hot">${esc(m.managerName)}</span> ${esc(r.home.short)} v ${esc(r.away.short)}</span><span class="${won?'hot':''}">${r.gH}-${r.gA}${r.extra?'*':''} ${won?'W':drew?'D':'L'}</span></div>${euroLine}`; }).join('');
+    const label = R.type==='cup'? E.CFG.CUPS[R.cup].name : 'League';
+    return { main: `<h1>Week ${R.week}: ${label}</h1>${lines}${sleighBogey(st)}<button class="b" data-a="results" style="margin-top:12px">All results</button><button class="b" data-a="standings">Managers' table</button>`,
+      action: `<button class="b" data-a="nextround">${S.pendingReview? 'Season over. Standings' : 'Next week'}</button>` };
+  },
+  standings(){
+    const st = S.state; const rows = E.standings(st).map((r,i)=>`<tr class="${r.m===mgr()?'me':''}"><td class="n">${i+1}</td><td class="wrap">${esc(r.m.managerName)}<br><span class="dim">${esc(r.c.short)}</span></td><td class="n">D${r.c.div}</td><td class="n">${ordinal(r.pos)}</td><td class="n">${money(r.c.balance)}</td><td class="n">${r.m.trophies.league}/${r.m.trophies.lc}/${r.m.trophies.fa}/${r.m.trophies.promo}/${(r.m.trophies.ec||0)+(r.m.trophies.cwc||0)+(r.m.trophies.uefa||0)}</td></tr>`).join('');
+    const retired = st.managers.filter(m=>m.retired).map(m=>esc(m.managerName)).join(', ');
+    return { main: `<h1>Managers' table</h1><table class="tight"><tr><th class="n">#</th><th>Manager</th><th class="n">Div</th><th class="n">Pos</th><th class="n">Bank</th><th class="n">Ttl/LC/FA/Up/Eur</th></tr>${rows}</table>
+      <p class="dim" style="margin-top:8px">Ranked by division, then league position, then bank balance. Trophies: titles, League Cups, FA Cups, promotions, European trophies.</p>${retired? `<p class="dim">Walked away: ${retired}.</p>`:''}`,
+      action: `<button class="b quiet" data-a="back">Back</button>` };
+  },
+  home(){
+    const st = S.state, u = user();
+    const nf = E.nextFixture(st);
+    const exp = E.expectedPos(st,u);
+    let fix;
+    if (nf.type==='none') fix = `<p>No match this week. You're out of the ${E.CFG.CUPS[nf.cup].name}, so the ground stays quiet. A good week for hard training.</p>`;
+    else {
+      const comp = nf.type==='cup'? `${E.CFG.CUPS[nf.cup].name} ${E.CUP_ROUND_NAMES[nf.round]}` : 'League';
+      const where = nf.neutral? 'at a neutral ground' : nf.home? 'at home' : 'away';
+      fix = `<p>${comp}: <span class="hot">${esc(nf.opp.name)}</span> ${where}<br><span class="dim">Division ${nf.opp.div}, ${nf.opp.div===u.div? 'currently '+ordinal(nf.opp.leaguePos) : 'a '+(nf.opp.div<u.div?'bigger':'smaller')+' club'}</span></p>`;
+    }
+    const es = E.euroSlot(st.week); const et = inEurope(u)? E.euroTieFor(st, u.id) : null;
+    const euroLine = (es && et && ((es.final && et.final) || (!es.final && !et.final && et.round===es.slot)))? `<p>Also this week: <span class="hot">${fmtEuroTie(et)}</span>. Two games in a week; pick your European XI on the Squad screen.</p>` : '';
+    const table = E.tableFor(st,u.div);
+    const pos = st.week>1? `${ordinal(u.leaguePos)} in Division ${u.div}, ${u.st.pts} pts from ${u.st.p}` : `Season ${st.season}, pre-season`;
+    const news = st.news.filter(n=>n.s===st.season || st.week<=2).slice(0,8);
+    const pre = st.preseason && st.preseason.pending;
+    return { main: `<h1>This week</h1>${pre? `<p class="hot">Pre-season: the sponsor and season ticket prices need sorting before the first game.</p>`:''}${fix}${euroLine}
+      <div class="kv"><span>League</span><span>${pos}</span></div>
+      <div class="kv"><span>Board</span><span>${E.boardMood(u.confidence)}, expect ${ordinal(exp)}</span></div>
+      <div class="kv"><span>League Cup</span><span>${cupStatus(u,'lc')}</span></div>
+      <div class="kv"><span>FA Cup</span><span>${cupStatus(u,'fa')}</span></div>
+      ${u.euro? `<div class="kv"><span>${euroComp(u.euro.comp).short}</span><span>${euroStatusText(u)}</span></div>` : ''}
+      ${st.sponsor? `<div class="kv"><span>Sponsor</span><span>${esc(st.sponsor.name)}</span></div>`:''}
+      <div class="kv"><span>Selected</span><span>${selectionSummary()}</span></div>
+      ${u.build? `<div class="kv"><span>Builders</span><span>${E.fmt(u.build.seats)} seats, ${u.build.weeksLeft} wk to go</span></div>`:''}
+      ${u.safety<E.CFG.CROWD_TROUBLE_BELOW? `<div class="kv"><span>Ground</span><span class="hot">${u.safety<E.CFG.SAFETY_RESTRICT_BELOW?'capacity restricted':'crowd trouble risk'}</span></div>`:''}
+      ${st.jobOffer!==null? jobOfferPanel() : ''}
+      <div class="grid2" style="grid-template-columns:repeat(4,1fr);margin-top:12px"><button class="b" data-a="fixtures" style="padding:12px 4px;text-align:center">Fixtures</button><button class="b" data-a="results" style="padding:12px 4px;text-align:center">Results</button><button class="b" data-a="saves" style="padding:12px 4px;text-align:center">Saves</button><button class="b ${S.confirmResign?'on':''}" data-a="resign" style="padding:12px 4px;text-align:center">${S.confirmResign?'Really?':'Resign'}</button></div>
+      <h2>News</h2>${news.length? `<ul class="news">${news.map(n=>`<li class="${n.kind==='warn'?'warn':''}"><span class="dim">Wk ${n.w}</span> ${esc(n.text)}</li>`).join('')}</ul>` : '<p class="dim">Nothing yet.</p>'}
+      <p class="dim" style="margin-top:14px">Manager: ${esc(st.managerName)}. <button class="b small" data-a="help" style="display:inline;width:auto;margin-top:6px">How to play</button> ${multi()? `<button class="b small ${S.confirmRetire?'on':''}" data-a="retire" style="display:inline;width:auto;margin-top:6px">${S.confirmRetire?'Really retire? Tap again':'Retire from the game'}</button>` : `<button class="b small ${S.confirmQuit?'on':''}" data-a="quit" style="display:inline;width:auto;margin-top:6px">${S.confirmQuit?'Really abandon? Tap again':'Abandon this game'}</button>`}</p>`,
+      action: pre? `<button class="b" data-a="preseason">Pre-season decisions</button>` : multi()? `<button class="b" data-a="ready">${nf.type==='none'? 'Ready (no game this week)' : 'Ready for kick-off'}</button>` : nf.type==='none'? `<button class="b" data-a="play">Skip to next week</button>` : `<button class="b" data-a="play">Play the match</button>` };
+  },
+  preseason(){
+    const st = S.state, u = user(); const ps = st.preseason;
+    if (!ps) return SCREENS.home();
+    const typeText = { safe: 'Paid in full now. No strings.', perwin: 'Paid per league win, week by week. Back yourselves.', bold: 'Bigger cheque now, but relegation (or bottom four in Division 4) means paying most of it back.' };
+    const sponsor = ps.sponsorDone? `<p>Signed with <span class="hot">${esc(st.sponsor.name)}</span>: ${st.sponsor.type==='perwin'? money(st.sponsor.perWin)+' per league win' : money(st.sponsor.amount)+(st.sponsor.type==='bold'? ', '+money(st.sponsor.clawback)+' back if you go down' : '')}.</p>`
+      : ps.offers.map((o,i)=>`<button class="b" data-a="sponsor" data-i="${i}"><span class="hot">${esc(o.name)}</span><br>${o.type==='perwin'? money(o.perWin)+' per win' : money(o.amount)+(o.type==='bold'? ', clawback '+money(o.clawback) : '')}<br><span class="dim">${typeText[o.type]}</span></button>`).join('');
+    const tickets = ps.ticketsDone? `<p>${E.fmt(st.seasonTicket.sold)} sold at ${money(st.seasonTicket.price)}, ${money(st.seasonTicket.sold*st.seasonTicket.price)} in the bank.</p>`
+      : `<p class="dim">Match tickets are £${E.ticketOf(u)} (change that on the Ground tab first if you want to). Holders get all 15 home league games. Cheap tickets bring cash now but most of those fans would have paid on the gate anyway.</p>` +
+        [8,10,12,15].map(m=>{ const f = E.seasonTicketForecast(st,u,m); return `<button class="b" data-a="tickets" data-m="${m}">£${f.price} <span class="dim">(${m} games' worth)</span><br><span class="dim">about ${E.fmt(f.sold)} sold, ${money(f.income)} now</span></button>`; }).join('');
+    return { main: `<h1>Pre-season, season ${st.season}</h1><h2>Shirt sponsor</h2>${sponsor}<h2>Season tickets</h2>${tickets}`,
+      action: ps.pending? `<button class="b quiet" data-a="home">Decide later (defaults apply at kick-off)</button>` : `<button class="b" data-a="home">Done</button>` };
+  },
+  squad(){
+    const st = S.state, u = user();
+    if (!inEurope(u)) S.xiMode = 'league';
+    const euroMode = S.xiMode==='euro';
+    const ids = sel();
+    const fmName = euroMode? (u.euroFormation||u.formation) : u.formation;
+    const xi = E.buildXI(st, u, ids, fmName);
+    const slotOf = {}; xi.forEach(x=>slotOf[x.p.id]=x.slot);
+    const str = E.teamStrength(xi);
+    const sq = E.squadOf(st,u).slice().sort((a,b)=>posOrder(a.pos)-posOrder(b.pos)||b.skill-a.skill);
+    const fms = Object.keys(E.FORMATIONS);
+    const rows = sq.map(p=>{
+      const on = ids.includes(p.id) && p.injury===0;
+      const inXI = slotOf[p.id];
+      const oop = inXI && inXI!==p.pos? `<span class="mark">@${inXI}</span>` : '';
+      return `<tr class="tap ${on?'sel':''}" data-a="toggle" data-id="${p.id}"><td>${on?'<span class="mark">■</span>':'□'}</td><td>${p.pos}</td><td class="wrap">${esc(p.name)} ${oop}${p.listed!==null?'<span class="pill">sale</span>':''}</td><td class="n">${p.skill}${potTag(p)}</td><td class="n">${p.age}</td><td class="n">${p.injury>0?`<span class="mark">inj ${p.injury}</span>`:p.fitness}</td><td><button class="b small" data-a="player" data-id="${p.id}">›</button></td></tr>`;
+    }).join('');
+    const modeBar = inEurope(u)? `<div class="grid2"><button class="b ${!euroMode?'on':''}" data-a="ximode" data-m="league">League XI</button><button class="b ${euroMode?'on':''}" data-a="ximode" data-m="euro">European XI</button></div><p class="dim">${euroMode? 'This side plays your '+euroComp(u.euro.comp).name+' ties. Leave it empty and the league XI is used.' : 'This side plays league and domestic cup games.'}</p>` : '';
+    return { main: `<h1>Squad and tactics</h1>${modeBar}
+      <div class="grid3">${fms.map(f=>`<button class="b ${fmName===f?'on':''}" data-a="formation" data-f="${f}">${f}</button>`).join('')}</div>
+      <div class="row"><button class="b" data-a="autopick">Pick the best XI</button><button class="b" data-a="clearpick">Clear</button></div>
+      <p class="dim" style="margin:12px 0 6px">Training this week</p>
+      <div class="grid3">${['light','normal','hard'].map(k=>`<button class="b ${u.training===k?'on':''}" data-a="training" data-t="${k}">${{light:'Light',normal:'Normal',hard:'Hard'}[k]}</button>`).join('')}</div>
+      <p class="dim">${{light:'Rest and recover. Fitness comes back faster, nobody improves much.',normal:'A normal week. Younger players edge forward if the coach is any good.',hard:'Push them. Faster improvement, tired legs and the odd training knock.'}[u.training]} ${u.staff.scout>=1?'':'Hire a scout to see who has room to improve.'}</p>
+      <p class="dim">Team: defence ${Math.round(str.defEff)}, midfield ${Math.round(str.mid)}, attack ${Math.round(str.att)}. ${xi.length}/11 picked${ids.length>11?', extras sit out':''}.</p>
+      <table><tr><th></th><th>Pos</th><th>Player</th><th class="n">Sk</th><th class="n">Age</th><th class="n">Fit</th><th></th></tr>${rows}</table>
+      <p class="dim" style="margin-top:10px">Tap a row to pick or drop. ■ picked, @ playing out of position. Fitness under 70 doubles the injury risk.</p>` };
+  },
+  player(){
+    const st = S.state, u = user(), p = st.players[S.pid];
+    if (!p) return SCREENS.squad();
+    const mine = p.club===u.id;
+    const club = st.clubs[p.club];
+    if (!club) return { main: `<h1>${esc(p.name)}</h1><p class="dim">He has left the league.</p>`, action: `<button class="b quiet" data-a="back">Back</button>` };
+    const on = sel().includes(p.id);
+    let actions = '';
+    if (mine){
+      actions = `<button class="b" data-a="toggle" data-id="${p.id}" data-back="1">${on?'Drop from the XI':'Pick for the XI'}</button>`;
+      if (p.listed===null) actions += `<h2>Put up for sale</h2><p class="dim">Valued at ${money(p.value)}. Cheaper sells faster.</p><div class="grid3">
+        <button class="b" data-a="setamt" data-amt="${Math.round(p.value*0.8/500)*500}">Quick<br><span class="dim">${money(Math.round(p.value*0.8/500)*500)}</span></button>
+        <button class="b" data-a="setamt" data-amt="${p.value}">Fair<br><span class="dim">${money(p.value)}</span></button>
+        <button class="b" data-a="setamt" data-amt="${Math.round(p.value*1.3/500)*500}">Dear<br><span class="dim">${money(Math.round(p.value*1.3/500)*500)}</span></button></div>
+        <input id="amt" inputmode="numeric" value="${p.value}" autocomplete="off"><button class="b" data-a="list" data-id="${p.id}">List him at this price</button>`;
+      else actions += `<p>Listed at ${money(p.listed)}. Offers arrive over the coming weeks.</p><button class="b" data-a="unlist" data-id="${p.id}">Take off the market</button>`;
+      actions += `<h2>Rename</h2><input id="pname" maxlength="24" value="${esc(p.name)}" autocomplete="off"><button class="b" data-a="renameplayer" data-id="${p.id}">Change his name</button>`;
+    } else {
+      const fair = Math.round(p.value*1.3/500)*500, gen = Math.round(p.value*1.65/500)*500;
+      const tl = st.transferList.find(t=>t.pid===p.id);
+      const rival = E.managerOf(st, p.club);
+      if (rival){
+        const ask = p.listed!==null? p.listed : null;
+        const start = ask!==null? ask : p.value;
+        actions = `<h2>Bid for ${esc(rival.managerName)}'s player</h2><p class="dim">${ask!==null? `Listed at ${money(ask)}. ` : ''}Valued at ${money(p.value)}. ${esc(rival.managerName)} decides on their turn and the money moves when they accept. Bid whatever you like; it's between the two of you.</p>
+          <div class="grid3">${[Math.round(p.value*0.5/500)*500, start, Math.round(p.value*1.5/500)*500].map(a=>`<button class="b" data-a="setamt" data-amt="${a}">${money(a)}</button>`).join('')}</div>
+          <input id="amt" inputmode="numeric" value="${start}" autocomplete="off"><button class="b" data-a="bid" data-id="${p.id}">Send the bid</button>`;
+      } else
+      actions = (tl? `<button class="b" data-a="buy" data-id="${p.id}" data-back="1">Sign him for ${money(tl.price)}</button>` : '') + `<h2>${tl?'Or haggle':'Make a bid'}</h2><p class="dim">${esc(club.name)} value him at ${money(p.value)}. Clubs rarely sell for less than that, and they hate selling at all. Around ${money(fair)} might work; ${money(gen)} is hard to refuse.</p>
+        <div class="grid3">${[p.value, fair, gen].map(a=>`<button class="b" data-a="setamt" data-amt="${a}">${money(a)}</button>`).join('')}</div>
+        <input id="amt" inputmode="numeric" value="${fair}" autocomplete="off"><button class="b" data-a="bid" data-id="${p.id}">Bid this amount</button>`;
+    }
+    return { main: `<h1>${esc(p.name)}</h1>
+      <div class="kv"><span>Club</span><span>${esc(club? club.name : 'Abroad')}${club && club.div===0? ' <span class="dim">(Europe)</span>':''}</span></div>
+      <div class="kv"><span>Position</span><span>${p.pos}</span></div>
+      <div class="kv"><span>Skill</span><span>${p.skill}${potTag(p)}</span></div>
+      ${E.canSeePot(st,p)? `<div class="kv"><span>Potential</span><span>${p.pot>p.skill? `could reach ${p.pot}` : p.age>=30? 'past his best' : 'as good as he gets'}</span></div>` : ''}
+      <div class="kv"><span>Age</span><span>${p.age}</span></div>
+      <div class="kv"><span>Fitness</span><span>${p.injury>0? `injured, ${p.injury} wk` : p.fitness}</span></div>
+      <div class="kv"><span>Wage</span><span>${money(p.wage)} a week</span></div>
+      <div class="kv"><span>Value</span><span>${money(p.value)}</span></div>
+      <div class="kv"><span>This season</span><span>${p.apps} apps, ${p.goals} goals</span></div>
+      ${p.signedS!==undefined? `<div class="kv"><span>Signed</span><span>season ${p.signedS}, week ${p.signedW}${p.paid? ' for '+money(p.paid) : ''}</span></div>` : ''}
+      <div style="height:12px"></div>${actions}`,
+      action: `<button class="b quiet" data-a="back">Back</button>` };
+  },
+  transfers(){
+    const st = S.state, u = user(); const t = S.tab.transfers;
+    const tabs = `<div class="grid3">${['list','offers','scout'].map(k=>`<button class="b ${t===k?'on':''}" data-a="ttab" data-t="${k}">${{list:'For sale',offers:`Offers${st.offers.length?' ('+st.offers.length+')':''}`,scout:'Scout'}[k]}</button>`).join('')}</div>`;
+    let body = '';
+    if (t==='list'){
+      body = `<p class="dim">Squad ${u.players.length}/20. Overdraft limit ${money(E.overdraftLimit(st, u))}.</p><table><tr><th>Pos</th><th>Player</th><th class="n">Sk</th><th class="n">Age</th><th class="n">Price</th></tr>`+
+        st.transferList.filter(tl=>{ const p = st.players[tl.pid]; return p && p.club>=0 && p.club!==u.id; }).map(tl=>{ const p = st.players[tl.pid]; const c = st.clubs[p.club]; return `<tr class="tap" data-a="player" data-id="${p.id}"><td>${p.pos}</td><td class="wrap">${esc(p.name)}<br><span class="dim">${esc(c.short)}, D${c.div}</span></td><td class="n">${p.skill}${potTag(p)}</td><td class="n">${p.age}</td><td class="n">${money(tl.price)}<br><button class="b small" data-a="buy" data-id="${p.id}">Buy</button></td></tr>`; }).join('')+`</table>${humanMarket()}<p class="dim" style="margin-top:10px">The list changes every week. ${['A useless scout brings you six names and no opinions.','An average scout brings eight names.','A good scout brings ten names and picks out a couple with room to grow.','An excellent scout brings twelve names and can tell you about any player in the game.'][u.staff.scout]}</p>`;
+    } else if (t==='offers'){
+      body = st.offers.length? st.offers.map((o,i)=>{ const p = st.players[o.pid]; if (!p || p.club!==u.id) return ''; return `<p><span class="hot">${esc(o.name)}</span> offer <span class="hot">${money(o.amount)}</span> for ${esc(p.name)} (${p.pos} ${p.skill}, valued ${money(p.value)}).${o.human!==undefined? ' <span class="dim">A rival manager. They pay when you accept.</span>':''}<br><span class="dim">Expires week ${o.expires}.</span></p><div class="grid2"><button class="b" data-a="accept" data-i="${i}">Accept</button><button class="b" data-a="reject" data-i="${i}">Reject</button></div>`; }).join('')
+        : `<p class="dim">No offers on the table. Put a player up for sale from his page in the Squad screen and clubs will come sniffing.</p>`;
+    } else {
+      const sc = S.tab.scout;
+      if (sc.club===undefined || sc.club===null){
+        const div = sc.div!==undefined? sc.div : u.div;
+        body = scoutBrief() + `<h2>Or browse a club</h2><p class="dim">Bid for any player in the game. You'll pay over the odds.${u.staff.scout<2? ' A good scout can also browse Europe.' : ''}</p><div class="grid2" style="grid-template-columns:repeat(5,1fr)">${[1,2,3,4].map(d=>`<button class="b ${div===d?'on':''}" data-a="scoutdiv" data-d="${d}" style="padding:10px 2px;font-size:12px;text-align:center">Div ${d}</button>`).join('')}<button class="b ${div===0?'on':''}" data-a="scoutdiv" data-d="0" style="padding:10px 2px;font-size:12px;text-align:center">Europe</button></div>`+
+          (div===0 && u.staff.scout<2? `<p class="dim">Your scout doesn't have the contacts abroad. Hire a good one.</p>` :
+          E.divClubs(st,div).filter(c=>c.id!==u.id).sort((a,b)=>div===0? b.rating-a.rating : a.name.localeCompare(b.name)).map(c=>{ const hm = E.managerOf(st,c.id); return `<button class="b" data-a="scoutclub" data-c="${c.id}">${esc(c.name)}${div===0? ` <span class="dim">${c.rating}</span>`:''}${hm? ` <span class="dim">(${esc(hm.managerName)})</span>`:''}</button>`; }).join(''));
+      } else {
+        const c = st.clubs[sc.club];
+        const sq = E.squadOf(st,c).slice().sort((a,b)=>posOrder(a.pos)-posOrder(b.pos)||b.skill-a.skill);
+        body = `<button class="b" data-a="scoutback">‹ ${esc(c.name)}, ${c.div? 'Division '+c.div : 'Europe'}</button><table><tr><th>Pos</th><th>Player</th><th class="n">Sk</th><th class="n">Age</th><th class="n">Value</th></tr>`+
+          sq.map(p=>`<tr class="tap" data-a="player" data-id="${p.id}"><td>${p.pos}</td><td class="wrap">${esc(p.name)}</td><td class="n">${p.skill}${potTag(p)}</td><td class="n">${p.age}</td><td class="n">${money(p.value)}</td></tr>`).join('')+`</table>`;
+      }
+    }
+    return { main: `<h1>Transfer market</h1>${tabs}${body}` };
+  },
+  table(){
+    const st = S.state, u = user(); const d = S.tab.table || u.div;
+    const tb = E.tableFor(st,d);
+    const rows = tb.map((c,i)=>`<tr class="${c.id===u.id?'me':''} ${i===1&&d>1?'line-promo':''} ${i===14&&d<4?'line-releg':''}"><td class="n">${i+1}</td><td class="wrap">${esc(c.short)}</td><td class="n">${c.st.p}</td><td class="n">${c.st.w}</td><td class="n">${c.st.d}</td><td class="n">${c.st.l}</td><td class="n">${c.st.gf-c.st.ga>0?'+':''}${c.st.gf-c.st.ga}</td><td class="n">${c.st.pts}</td></tr>`).join('');
+    const cupLines = ['lc','fa'].map(k=>`<h2>${E.CFG.CUPS[k].name}</h2><p class="dim">${st.cups[k].history.length? cupSummary(k) : 'First round draw: '+cupTie(u,k)}</p>`).join('') + euroSection();
+    return { main: `<h1>League tables</h1><div class="grid2" style="grid-template-columns:repeat(4,1fr)">${[1,2,3,4].map(x=>`<button class="b ${d===x?'on':''}" data-a="tdiv" data-d="${x}">Div ${x}</button>`).join('')}</div>
+      <table class="tight"><tr><th class="n">#</th><th>Club</th><th class="n">P</th><th class="n">W</th><th class="n">D</th><th class="n">L</th><th class="n">GD</th><th class="n">Pts</th></tr>${rows}</table>
+      <p class="dim" style="margin-top:8px">Top two go up, bottom two go down.</p>${multi()? `<button class="b" data-a="standings">Managers' table</button>`:''}${scorersTable(d)}${cupLines}` };
+  },
+  club(){
+    const t = S.tab.club;
+    const tabs = `<div class="grid2" style="grid-template-columns:repeat(4,1fr)">${['money','ground','staff','name'].map(k=>`<button class="b ${t===k?'on':''}" data-a="ctab" data-t="${k}">${{money:'Money',ground:'Ground',staff:'Staff',name:'Name'}[k]}</button>`).join('')}</div>`;
+    const body = t==='ground'? groundScreen() : t==='staff'? staffScreen() : t==='name'? nameScreen() : SCREENS.money().main;
+    return { main: tabs + body };
+  },
+  money(){
+    const st = S.state, u = user();
+    const wages = E.squadOf(st,u).reduce((s,p)=>s+p.wage,0);
+    const ground = Math.round(u.capacity*E.CFG.GROUND_COST_PER_SEAT);
+    const ledger = u.ledger.slice(-25).reverse();
+    const rn = r => r>=6?'won':r===5?'final':r===4?'SF':r===3?'QF':'R'+(r+1);
+    const hist = u.history.slice().reverse().map(h=>`<div class="kv"><span>Season ${h.season}</span><span>Div ${h.div}, ${ordinal(h.pos)}, ${h.pts} pts, LC ${rn(h.lc||0)}, FA ${rn(h.fa||0)}</span></div>`).join('');
+    return { main: `<h1>Finances</h1>
+      <div class="kv"><span>Balance</span><span class="${u.balance<0?'hot':''}">${money(u.balance)}</span></div>
+      <div class="kv"><span>Overdraft limit</span><span>${money(E.overdraftLimit(st, u))}</span></div>
+      <div class="kv"><span>Turnover</span><span>about ${money(Math.round(E.turnover(st,u)/1000)*1000)} a season</span></div>
+      <div class="kv"><span>Player wages</span><span>${money(wages)} a week</span></div>
+      <div class="kv"><span>Staff wages</span><span>${money(E.staffWages(u))} a week</span></div>
+      <div class="kv"><span>Ground upkeep</span><span>${money(ground)} a week</span></div>
+      <div class="kv"><span>Ground</span><span>${E.fmt(u.capacity)} capacity</span></div>
+      <div class="kv"><span>Ticket price</span><span>£${E.ticketOf(u)} <span class="dim">(set it on the Ground tab)</span></span></div>
+      <div class="kv"><span>Sponsor</span><span>${st.sponsor? esc(st.sponsor.name)+(st.sponsor.type==='perwin'? ', '+money(st.sponsor.perWin)+' a win' : st.sponsor.type==='bold'? ', clawback '+money(st.sponsor.clawback) : '') : 'not yet signed'}</span></div>
+      <div class="kv"><span>Season tickets</span><span>${st.seasonTicket? E.fmt(st.seasonTicket.sold)+' at £'+st.seasonTicket.price : 'not yet on sale'}</span></div>
+      <h2>Bank loan</h2>
+      ${st.loan? `<p>${money(st.loan.amount)} borrowed, ${money(st.loan.weekly)} a week, ${st.loan.weeksLeft} payments left.</p><button class="b" data-a="repay">Settle it now for ${money(Math.round(st.loan.weekly*st.loan.weeksLeft*0.95/500)*500)}</button>`
+        : `<p class="dim">Up to ${money(E.loanMax(st, u))} at 12%, repaid over 36 weeks. Separate from the overdraft, which is ${money(E.overdraftLimit(st, u))}.</p><div class="grid3">${[0.25,0.5,1].map(f=>{ const mx = E.loanMax(st, u); const a = f===1? mx : Math.floor(mx*f/5000)*5000; return `<button class="b" data-a="loan" data-amt="${a}">${money(a)}<br><span class="dim">${money(Math.round(a*1.12/36))}/wk</span></button>`; }).join('')}</div>`}
+      <p class="dim" style="margin-top:10px">Money in the bank earns 0.1% a week (about 5% a year). Anything below zero costs 0.25% a week. Eight weeks past the overdraft limit and the bank pulls the plug. The limit is half your turnover (gates, television and sponsorship), so it grows as the club does.</p>
+      <h2>Recent</h2>${ledger.length? ledger.map(l=>`<div class="kv"><span class="dim">Wk ${l.w}</span><span>${esc(l.label)} <span class="${l.amount<0?'':'hot'}">${money(l.amount)}</span></span></div>`).join('') : '<p class="dim">Nothing yet.</p>'}
+      ${hist? `<h2>Past seasons</h2>${hist}`:''}` };
+  },
+  match(){
+    const m = S.results.userMatch; const st = S.state, u = user();
+    const us = m.home.id===u.id;
+    const comp = m.euro? `${euroComp(m.euro.comp).name} ${E.euroRoundName(m.euro.comp, m.euro.round)}${m.euro.leg? ', '+(m.euro.leg===1?'first':'second')+' leg' : ''}` : m.cup!==undefined? `${E.CFG.CUPS[m.cupKey].name} ${E.CUP_ROUND_NAMES[m.cup]}` : `League, week ${S.results.week}`;
+    return { main: `<p class="dim" style="text-align:center">${comp}</p>
+      <div class="clock" id="clock">0'</div>
+      <div class="score" id="score"><span class="${us?'hot':''}">${esc(m.home.short)}</span> 0 - 0 <span class="${!us?'hot':''}">${esc(m.away.short)}</span><small id="scoresub">Attendance ${E.fmt(m.att)}</small></div>
+      <div class="events" id="events"></div>`,
+      action: `<button class="b quiet" data-a="skipanim" id="skipbtn">Skip</button>` };
+  },
+  fixtures(){
+    const st = S.state, u = user();
+    const rows = st.schedule.map((wk,i)=>{
+      const w = i+1; const r = st.userResults[w];
+      let comp, oppName, where, res = '';
+      if (r){
+        const opp = st.clubs[r.opp]; comp = r.cup? E.CFG.CUPS[r.cup].short+' '+ROUND_SHORT[r.round] : 'League';
+        oppName = opp.short; where = r.home? 'H':'A';
+        const won = r.gF>r.gA || (r.extra==='pens-H'&&r.home) || (r.extra==='pens-A'&&!r.home);
+        res = `<span class="${won?'hot':''}">${r.gF}-${r.gA}${r.extra?'*':''}</span>`;
+        if (r.club!==u.id) oppName += ` <span class="dim">(with ${esc(st.clubs[r.club].short)})</span>`;
+      } else if (wk.type==='league'){
+        const f = st.fixtures[u.div][wk.round].find(x=>x.h===u.id||x.a===u.id);
+        comp = 'League'; oppName = st.clubs[f.h===u.id? f.a : f.h].short; where = f.h===u.id? 'H':'A';
+      } else {
+        const cup = E.CFG.CUPS[wk.cup]; comp = cup.short+' '+ROUND_SHORT[wk.round];
+        const mine = u.cup[wk.cup];
+        const t = (!mine.out && wk.round===mine.round)? st.cups[wk.cup].ties.find(x=>x.h===u.id||x.a===u.id) : null;
+        if (mine.out){ oppName = '<span class="dim">out</span>'; where=''; }
+        else if (t){ oppName = st.clubs[t.h===u.id? t.a : t.h].short; where = wk.round===5? 'N' : t.h===u.id? 'H':'A'; }
+        else { oppName = '<span class="dim">if still in</span>'; where=''; }
+      }
+      let euroRow = '';
+      const ue = (st.userEuro||{})[w]; const slot = E.euroSlot(w);
+      if (ue){ const won = ue.gF>ue.gA || (ue.extra==='pens-H'&&ue.home) || (ue.extra==='pens-A'&&!ue.home); euroRow = `<tr class="${w===st.week?'me':''}"><td></td><td>${euroComp(ue.comp).short}</td><td class="wrap">${esc(st.clubs[ue.opp].short)}${ue.agg? ` <span class="dim">agg ${ue.agg[0]}-${ue.agg[1]}</span>`:''}</td><td>${ue.final?'N':ue.home?'H':'A'}</td><td class="n"><span class="${won?'hot':''}">${ue.gF}-${ue.gA}${ue.extra?'*':''}</span></td></tr>`; }
+      else if (slot && inEurope(u) && w>=st.week){ const et = E.euroTieFor(st, u.id); const mine = (slot.final && et && et.final) || (et && !et.final && !slot.final && et.round===slot.slot); euroRow = `<tr class="${w===st.week?'me':''}"><td></td><td>${euroComp(u.euro.comp).short}</td><td class="wrap">${mine? esc(et.opp.short) : '<span class="dim">if still in</span>'}</td><td>${mine? (slot.final?'N': (slot.leg===1? (et.homeFirst?'H':'A') : (et.homeFirst?'A':'H'))) : ''}</td><td></td></tr>`; }
+      return `<tr class="${w===st.week?'me':''}"><td class="n">${w}</td><td>${comp}</td><td class="wrap">${oppName}</td><td>${where}</td><td class="n">${res}</td></tr>${euroRow}`;
+    }).join('');
+    return { main: `<h1>Season ${st.season} fixtures</h1><table class="tight"><tr><th class="n">Wk</th><th>Comp</th><th>Opponent</th><th></th><th class="n">Score</th></tr>${rows}</table><p class="dim" style="margin-top:8px">* after extra time or penalties. N is a neutral ground.</p>`,
+      action: `<button class="b quiet" data-a="back">Back</button>` };
+  },
+  results(){
+    const st = S.state, u = user(); const info = st.lastWeekInfo;
+    if (!info) return { main: `<h1>Results</h1><p class="dim">No games played yet.</p>`, action: `<button class="b quiet" data-a="back">Back</button>` };
+    let body = '';
+    if (info.type==='league'){
+      const d = S.tab.results || u.div;
+      body = `<div class="grid2" style="grid-template-columns:repeat(4,1fr)">${[1,2,3,4].map(x=>`<button class="b ${d===x?'on':''}" data-a="rdiv" data-d="${x}">Div ${x}</button>`).join('')}</div>` + resultLines(st.lastSlim.filter(m=>m.div===d));
+    } else {
+      body = `<p class="dim">${E.CFG.CUPS[info.cup].name} ${E.CUP_ROUND_NAMES[info.round]}</p>` + resultLines(st.lastSlim);
+    }
+    const euroRes = st.lastSlim.filter(m=>m.euro);
+    if (euroRes.length){ body += `<h2>Europe</h2>` + ['ec','cwc','uefa'].map(k=>{ const ms = euroRes.filter(m=>m.euro.comp===k); return ms.length? `<p class="dim" style="margin-bottom:4px">${euroComp(k).name} ${E.euroRoundName(k, ms[0].euro.round)}${ms[0].euro.leg? ', '+(ms[0].euro.leg===1?'first':'second')+' legs' : ''}</p>` + resultLines(ms) : ''; }).join(''); }
+    return { main: `<h1>Week ${info.week} results</h1>${body}${sleighBogey(st)}`, action: `<button class="b quiet" data-a="back">Back</button>` };
+  },
+  sacked(){
+    const st = S.state, u = user(); const c = st.clubs[st.sackOffer];
+    const resigned = /resigned/.test(st.gameOver||'');
+    return { main: `<div class="title" style="padding-top:30px"><div class="logo">${resigned? 'Resigned' : 'Sacked'}</div><p>${esc(st.gameOver)}</p>
+      <p class="dim">${esc(st.managerName)} leaves ${esc(u.name)} after ${u.history.length} full season${u.history.length===1?'':'s'}, with the club ${ordinal(u.leaguePos)} in Division ${u.div} and ${money(u.balance)} in the bank.</p></div>
+      ${c? `<h2>One door closes</h2><p><span class="hot">${esc(c.name)}</span>, bottom of Division 4, will take anyone. They have ${money(c.balance)} in the bank and a ${E.fmt(c.capacity)} seat ground.</p>
+      <div class="grid2"><button class="b" data-a="takesack">Take the job</button><button class="b" data-a="walkaway">Walk away</button></div>` : `<button class="b" data-a="walkaway">Start again</button>`}` };
+  },
+  weekdone(){
+    const st = S.state, u = user(); const R = S.results;
+    let mine = '';
+    if (R.userMatch){
+      const m = R.userMatch; const us = m.home.id===u.id;
+      const res = m.gH===m.gA? 'Draw' : (m.gH>m.gA)===us? 'Win' : 'Defeat';
+      const scorers = m.scorers.map(s=>`${esc(s.p.name)} ${s.min}'`+(s.side==='H'?'':' (a)')).join(', ');
+      mine = `<h1>${res}: ${esc(m.home.short)} ${m.gH} - ${m.gA} ${esc(m.away.short)}${m.extra? (m.extra.startsWith('pens')? ' (pens)':' (aet)'):''}</h1><p class="dim">${scorers||'No goals.'}${m.extra&&m.extra.startsWith('pens')? ' Won on penalties by '+(m.extra==='pens-H'?esc(m.home.short):esc(m.away.short))+'.':''}</p>`;
+    } else mine = `<h1>No match this week</h1>`;
+    if (R.euroMatch){ const m = R.euroMatch; const us = m.home.id===u.id; const agg = m.agg? (us? `${m.agg.b}-${m.agg.a}` : `${m.agg.a}-${m.agg.b}`) : null; const through = m.winner!==undefined? m.winner===u.id : (m.euro.final? ((m.gH>m.gA||m.extra==='pens-H')===us) : null);
+      mine += `<h2>${euroComp(m.euro.comp).name}${m.euro.leg? ' '+(m.euro.leg===1?'first':'second')+' leg' : ' final'}: ${esc(m.home.short)} ${m.gH} - ${m.gA} ${esc(m.away.short)}${m.extra? (m.extra.startsWith('pens')? ' (pens)':' (aet)'):''}</h2><p class="dim">${m.scorers.map(s=>esc(s.p.name)+' '+s.min+"'").join(', ')||'No goals.'}${agg? ` Aggregate ${agg}.`:''}${through===true? ' <span class="hot">Through.</span>' : through===false? ' Out.' : ''}</p>`; }
+    const others = R.results.filter(m=>m!==R.userMatch && (R.type==='cup' || m.home.div===u.div));
+    const list = others.map(m=>`<div class="kv"><span class="wrap">${esc(m.home.short)} v ${esc(m.away.short)}</span><span>${m.gH}-${m.gA}${m.extra?'*':''}</span></div>`).join('');
+    const label = R.type==='cup'? `${E.CFG.CUPS[R.cup].name} results` : `Division ${u.div} results`;
+    const inj = R.userMatch? R.userMatch.injuries.filter(p=>p.club===u.id) : [];
+    return { main: `${mine}${inj.length? `<p class="hot">Injured: ${inj.map(p=>esc(p.name)+' ('+p.injury+' wk)').join(', ')}</p>`:''}
+      ${st.week>1 && R.type==='league'? `<p>Now ${ordinal(u.leaguePos)} in Division ${u.div}.</p>`:''}
+      <h2>${label}</h2>${list||'<p class="dim">None.</p>'}${R.type==='cup'? '<p class="dim">* after extra time or penalties</p>':''}${sleighBogey(st)}
+      <button class="b" data-a="results" style="margin-top:10px">All results</button>`,
+      action: `<button class="b" data-a="continue-week">${mgr().pendingReview? 'Season review' : st.gameOver? 'See the board' : 'Continue'}</button>` };
+  },
+  review(){
+    const st = S.state, u = user(); const sm = st.seasonSummary;
+    const old = st.clubs[sm.userClubId!==undefined? sm.userClubId : u.id];
+    const moved = old.id!==u.id;
+    const prize = E.prizeFor(sm.userDiv, sm.userPos);
+    const promoted = sm.promoted.includes(old.id), relegated = sm.relegated.includes(old.id);
+    const cupLine = ['lc','fa'].map(k=>sm.cupWinners[k]!==null? `${E.CFG.CUPS[k].short}: ${esc(st.clubs[sm.cupWinners[k]].short)}` : '').filter(Boolean).join(', ');
+    let verdict = promoted? `${esc(old.short)} go up to Division ${old.div}. The board are thrilled and the bank is nervous.` : relegated? `${esc(old.short)} go down to Division ${old.div}. The board are not thrilled.` : sm.userPos<=sm.userExpected-3? `A better season than the board expected.` : sm.userPos>=sm.userExpected+3? `Below what the board expected. They've noticed.` : `About what the board expected.`;
+    const tb = sm.tables[sm.userDiv];
+    const rows = tb.map((c,i)=>`<tr class="${c.id===old.id?'me':''}"><td class="n">${i+1}</td><td class="wrap">${esc(st.clubs[c.id].short)}</td><td class="n">${c.st.pts}</td></tr>`).join('');
+    let job = '';
+    if (st.jobOffer!==null) job = jobOfferPanel();
+    return { main: `<h1>Season ${sm.season} review</h1>
+      <p>${moved? esc(old.short)+' finished' : 'Finished'} <span class="hot">${ordinal(sm.userPos)}</span> in Division ${sm.userDiv} (board expected ${ordinal(sm.userExpected)}). ${verdict}</p>${moved? `<p class="hot">You have moved to ${esc(u.name)} in Division ${u.div}.</p>`:''}
+      <div class="kv"><span>League prize money</span><span>${money(prize)}</span></div>
+      <div class="kv"><span>Television money</span><span>${money(E.CFG.TV[sm.userDiv])}</span></div>
+      <div class="kv"><span>Summer wages</span><span>${money(-(sm.summerWages||0))}</span></div>
+      <div class="kv"><span>Cups</span><span>${cupLine}</span></div>
+      ${sm.euro? `<div class="kv"><span>${esc(sm.euro.name)}</span><span>${sm.euro.won? '<span class="hot">Winners!</span>' : 'out in the '+E.euroRoundName(sm.euro.comp, sm.euro.round).toLowerCase()}</span></div>` : ''}
+      ${sm.euroWinners? `<div class="kv"><span>Europe</span><span class="wrap">${['ec','cwc','uefa'].map(k=>sm.euroWinners[k]!==null&&sm.euroWinners[k]!==undefined? euroComp(k).short+': '+esc(st.clubs[sm.euroWinners[k]].short) : '').filter(Boolean).join(', ')}</span></div>` : ''}
+      ${sm.qualified? `<div class="kv"><span>Next season</span><span class="hot">${euroComp(sm.qualified).name}</span></div>` : ''}
+      ${sm.clawback? `<div class="kv"><span>Sponsor clawback</span><span class="hot">${money(-sm.clawback)}</span></div>`:''}
+      <div class="kv"><span>Board mood</span><span>${E.boardMood(u.confidence)}</span></div>
+      <div class="kv"><span>Bank</span><span class="${u.balance<0?'hot':''}">${money(u.balance)}</span></div>
+      ${job}<h2>Final table</h2><table><tr><th class="n">#</th><th>Club</th><th class="n">Pts</th></tr>${rows}</table>
+      <p class="dim" style="margin-top:10px">Players have aged a year. Check the squad before the new season: some will have retired and the youth team has filled the gaps.</p>`,
+      action: st.jobOffer!==null? '' : `<button class="b" data-a="newseason">${multi()? 'On to season '+st.season : 'Start season '+st.season}</button>` };
+  },
+  gameover(){
+    const st = S.state, u = user();
+    return { main: `<div class="title"><div class="logo">Sacked</div><p>${esc(st.gameOver)}</p><p class="dim">${esc(st.managerName)} leaves ${esc(u.name)} after ${u.history.length} full season${u.history.length===1?'':'s'}, with the club ${ordinal(u.leaguePos)} in Division ${u.div} and ${money(u.balance)} in the bank.</p></div>`,
+      action: `<button class="b" data-a="setup">Start again</button>` };
+  },
+};
+
+// ---------- ground and staff ----------
+function groundScreen(){
+  const st = S.state, u = user();
+  const restricted = u.safety < E.CFG.SAFETY_RESTRICT_BELOW;
+  const risk = u.safety < E.CFG.CROWD_TROUBLE_BELOW;
+  const safetyWord = u.safety>=80?'excellent':u.safety>=60?'sound':u.safety>=45?'tired':u.safety>=25?'poor':'dangerous';
+  return `<h1>${esc(u.name)}'s ground</h1>${ticketLines(u)}
+    <h2>The ground</h2>
+    <div class="kv"><span>Capacity</span><span>${E.fmt(u.capacity)}${restricted? ` <span class="hot">(restricted to ${E.fmt(Math.round(u.capacity*0.6))})</span>`:''}</span></div>
+    <div class="kv"><span>Upkeep</span><span>${money(Math.round(u.capacity*E.CFG.GROUND_COST_PER_SEAT))} a week</span></div>
+    ${gateLines(u)}
+    <div class="kv"><span>Safety</span><span>${Math.round(u.safety)}/100, ${safetyWord}</span></div>
+    <div class="bar"><i style="width:${Math.round(u.safety)}%"></i></div>
+    ${risk? `<p class="hot">${restricted? 'The FA has restricted your capacity until the ground is made safe.' : 'Below 45 there is a growing risk of crowd trouble, and fines to go with it.'}</p>`:''}
+    <p class="dim">Safety falls slowly every week. Spend on it before the FA notices.</p>
+    <h2>Safety work</h2>
+    <div class="grid2">
+      <button class="b" data-a="safety" data-p="10">+10 safety<br><span class="dim">${money(E.safetyCost(u,10))}</span></button>
+      <button class="b" data-a="safety" data-p="25">+25 safety<br><span class="dim">${money(E.safetyCost(u,25))}</span></button>
+    </div>
+    <h2>New stand</h2>
+    ${u.build? `<p>Builders are in: a ${E.fmt(u.build.seats)}-seat stand, ready in ${u.build.weeksLeft} week${u.build.weeksLeft===1?'':'s'}.</p>`
+      : `<p class="dim">£${E.CFG.SEAT_COST} a seat, paid up front, ${E.CFG.BUILD_WEEKS} weeks to build. Only worth it if you're turning people away.</p>
+      <div class="grid3">${[1000,2500,5000].map(n=>`<button class="b" data-a="build" data-n="${n}">+${E.fmt(n)}<br><span class="dim">${money(E.buildCost(n))}</span></button>`).join('')}</div>`}`;
+}
+const STAFF_INFO = {
+  coach: { name:'Coach', blurb:['Useless. Training barely moves anyone.','Average. Steady progress for the younger lads.','Good. Players improve noticeably faster.','Excellent. The best young players fly.'] },
+  physio: { name:'Physio', blurb:['Useless. Injuries drag on and fitness is slow to return.','Average. Normal injury times.','Good. Shorter lay-offs, quicker recovery.','Excellent. Half the lay-off, fitness back in days.'] },
+  scout: { name:'Scout', blurb:['Useless. A short list and no idea about potential.','Average. Sees potential in your own squad.','Good. Longer list, spots young players with room to grow.','Excellent. Knows every player in the game.'] },
+};
+function staffScreen(){
+  const st = S.state, u = user();
+  const tiers = ['Useless','Average','Good','Excellent'];
+  const mult = E.CFG.STAFF_DIV_MULT[u.div];
+  return `<h1>Backroom staff</h1><p class="dim">Paid weekly, no notice needed. Division ${u.div} rates.</p>` +
+    ['coach','physio','scout'].map(r=>`<h2>${STAFF_INFO[r].name}: ${tiers[u.staff[r]]}</h2><p class="dim">${STAFF_INFO[r].blurb[u.staff[r]]}</p>
+      <div class="grid2" style="grid-template-columns:repeat(4,1fr)">${tiers.map((t,i)=>`<button class="b ${u.staff[r]===i?'on':''}" data-a="staff" data-r="${r}" data-t="${i}" style="padding:8px 2px;font-size:12px">${t}<br><span class="dim">${money(Math.round(E.CFG.STAFF_WAGE[i]*mult))}</span></button>`).join('')}</div>`).join('') +
+    `<p class="dim" style="margin-top:8px">Total ${money(E.staffWages(u))} a week.</p>`;
+}
+function nameScreen(){
+  const u = user();
+  return `<h1>Club name</h1><p class="dim">Call it what you like. The short name is what shows in tables and results, so keep it under 12 characters.</p>
+    <p class="dim" style="margin-bottom:4px">Full name</p><input id="clubname" maxlength="28" value="${esc(u.name)}" autocomplete="off">
+    <p class="dim" style="margin-bottom:4px">Short name</p><input id="clubshort" maxlength="12" value="${esc(u.short)}" autocomplete="off">
+    <button class="b" data-a="renameclub">Save the name</button>
+    <p class="dim">Players are renamed from their own page in the Squad screen.</p>
+    <h2>Other clubs</h2><p class="dim">Rename any club in the game (except one another manager is running). Handy if you've borrowed a name and there are now two of them.</p>
+    ${otherClubRename()}`;
+}
+function otherClubRename(){
+  const st = S.state, u = user(); const t = S.tab.rename || (S.tab.rename = {div:u.div, club:null});
+  const tabs = `<div class="grid2" style="grid-template-columns:repeat(5,1fr)">${[1,2,3,4].map(d=>`<button class="b ${t.div===d?'on':''}" data-a="rndiv" data-d="${d}" style="padding:10px 2px;font-size:12px;text-align:center">Div ${d}</button>`).join('')}<button class="b ${t.div===0?'on':''}" data-a="rndiv" data-d="0" style="padding:10px 2px;font-size:12px;text-align:center">Europe</button></div>`;
+  if (t.club!==null && t.club!==undefined){
+    const c = st.clubs[t.club];
+    return tabs + `<p>Renaming <span class="hot">${esc(c.name)}</span></p>
+      <p class="dim" style="margin-bottom:4px">Full name</p><input id="oname" maxlength="28" value="${esc(c.name)}" autocomplete="off">
+      <p class="dim" style="margin-bottom:4px">Short name</p><input id="oshort" maxlength="12" value="${esc(c.short)}" autocomplete="off">
+      <div class="grid2"><button class="b" data-a="renameother" data-c="${c.id}">Save</button><button class="b" data-a="rnclub" data-c="">Cancel</button></div>`;
+  }
+  return tabs + E.divClubs(st, t.div).filter(c=>c.id!==u.id).sort((a,b)=>a.name.localeCompare(b.name)).map(c=>{ const hm = E.managerOf(st,c.id); return `<button class="b" data-a="rnclub" data-c="${c.id}" ${hm?'disabled':''}>${esc(c.name)} <span class="dim">(${esc(c.short)})${hm? ', '+esc(hm.managerName):''}</span></button>`; }).join('');
+}
+function potTag(p){ const st = S.state; if (!E.canSeePot(st,p) || p.pot<=p.skill) return ''; return ` <span class="mark">▲${p.pot-p.skill}</span>`; }
+
+const ROUND_SHORT = ['R1','R2','R3','QF','SF','Final'];
+function humanMarket(){
+  const st = S.state; if (!multi()) return '';
+  const list = E.humanListings(st);
+  if (!list.length) return `<h2>Rival managers' players</h2><p class="dim">Nobody has listed anyone. You can still bid for any of their players from the Scout tab; they decide on their turn.</p>`;
+  return `<h2>Rival managers' players for sale</h2><table><tr><th>Pos</th><th>Player</th><th class="n">Sk</th><th class="n">Age</th><th class="n">Asking</th></tr>` +
+    list.filter(({p})=>st.clubs[p.club]).map(({p,m})=>`<tr class="tap" data-a="player" data-id="${p.id}"><td>${p.pos}</td><td class="wrap">${esc(p.name)}<br><span class="dim">${esc(m.managerName)}, ${esc(st.clubs[p.club].short)}</span></td><td class="n">${p.skill}${potTag(p)}</td><td class="n">${p.age}</td><td class="n">${money(p.listed)}</td></tr>`).join('') + `</table>`;
+}
+const AGE_BANDS = { any:{label:'Any age'}, u22:{label:'Under 22', max:21}, mid:{label:'22 to 26', min:22, max:26}, prime:{label:'27 to 30', min:27, max:30}, vet:{label:'Over 30', min:31} };
+function scoutBrief(){
+  const st = S.state, u = user(); const b = S.tab.brief; const tier = u.staff.scout;
+  const tierNote = ['Your scout is useless: he covers your own division and comes back with five names, picked more or less at random.','Your scout covers the divisions either side of yours and brings back the ten best matches.','Your scout covers the whole league, brings back twenty names and can tell you how far each one might go.','Your scout covers the whole league, brings back forty names with potential for every one of them.'][tier];
+  const seg = (key, opts, cur) => `<div class="grid2" style="grid-template-columns:repeat(${opts.length},1fr)">${opts.map(([v,l])=>`<button class="b ${String(cur)===String(v)?'on':''}" data-a="brief" data-k="${key}" data-v="${v}" style="padding:8px 2px;font-size:12px;text-align:center">${l}</button>`).join('')}</div>`;
+  let results = '';
+  if (S.tab.report){
+    const r = S.tab.report;
+    const live = r.list.filter(p=>st.players[p.id] && p.club>=0 && p.club!==u.id);
+    results = `<p class="dim">${r.total} match${r.total===1?'':'es'}${live.length<r.total? `, showing the best ${live.length}` : ''}.</p>` + (live.length? `<table><tr><th>Pos</th><th>Player</th><th class="n">Sk</th><th class="n">Age</th><th class="n">Value</th></tr>` +
+      live.map(p=>{ const c = st.clubs[p.club]; const hm = E.managerOf(st, c.id); return `<tr class="tap" data-a="player" data-id="${p.id}"><td>${p.pos}</td><td class="wrap">${esc(p.name)}<br><span class="dim">${esc(c.short)}, ${c.div? 'D'+c.div : 'Europe'}${hm? ' ('+esc(hm.managerName)+')' : ''}</span></td><td class="n">${p.skill}${potTag(p)}</td><td class="n">${p.age}</td><td class="n">${money(p.value)}</td></tr>`; }).join('') + `</table>` : `<p class="dim">Nobody fits the brief. Loosen it.</p>`);
+  }
+  return `<h2>Brief the scout</h2><p class="dim">${tierNote}</p>
+    ${seg('pos', [['ANY','Any'],['GK','GK'],['DEF','DEF'],['MID','MID'],['FWD','FWD']], b.pos)}
+    ${seg('age', Object.entries(AGE_BANDS).map(([k,v])=>[k,v.label]), b.age)}
+    ${seg('skill', [[0,'Any skill'],[30,'30+'],[40,'40+'],[50,'50+'],[60,'60+'],[70,'70+']], b.skill)}
+    ${seg('value', [[0,'Any price'],[50000,'To £50k'],[150000,'To £150k'],[500000,'To £500k']], b.value)}
+    <button class="b" data-a="scoutgo">Send him out</button>${results}`;
+}
+function ticketLines(u){
+  const st = S.state; const a = E.ticketAdvice(st, u);
+  const fmtP = p => '£'+(Number.isInteger(p)? p : p.toFixed(2));
+  const why = a.sellingOut? `You're selling out at ${fmtP(a.current)}. ${a.suggested>a.current? `Raising it toward ${fmtP(a.suggested)} would still fill the ground and take more on the day.` : 'Prices are about right for the crowd you can hold.'}`
+    : a.current>a.going*1.15? `${fmtP(a.current)} is well above the Division ${u.div} going rate of ${fmtP(a.going)}, and it's costing you bodies on the terraces.`
+    : a.current<a.going*0.85? `${fmtP(a.current)} is cheap for Division ${u.div}. The crowd likes it, the bank less so.`
+    : `Around the Division ${u.div} going rate of ${fmtP(a.going)}. ${a.suggested>a.current? `You could go to ${fmtP(a.suggested)} without emptying the ground.` : 'Fine where it is.'}`;
+  return `<h2>Ticket price: ${fmtP(a.current)}</h2>
+    <div class="kv"><span>Typical gate at this price</span><span>${E.fmt(a.gateNow)}, ${money(a.revenueNow)} a game</span></div>
+    <div class="kv"><span>At ${fmtP(a.suggested)} (suggested)</span><span>${E.fmt(a.gateSuggested)}, ${money(a.revenueSuggested)} a game</span></div>
+    <p class="dim">${why} Dearer tickets thin the crowd, cheaper ones fill it; the trick is a price that just fills the ground on a normal week.</p>
+    <div class="grid2" style="grid-template-columns:repeat(5,1fr)">${[[-1,'-£1'],[-0.5,'-50p'],[0.5,'+50p'],[1,'+£1']].map(([d,l])=>`<button class="b" data-a="ticket" data-p="${a.current+d}" style="text-align:center;padding:10px 2px">${l}</button>`).join('')}<button class="b" data-a="ticket" data-p="${a.suggested}" style="text-align:center;padding:10px 2px;font-size:12px">Use ${fmtP(a.suggested)}</button></div>`;
+}
+function gateLines(u){
+  const st = S.state; const g = E.gateSummary(st, u);
+  const room = g.capacity - g.support;
+  const demand = `<div class="kv"><span>Support</span><span>about ${E.fmt(g.support)} a game</span></div>
+    <div class="kv"><span>Big game</span><span>up to ${E.fmt(g.bigGame)}</span></div>`;
+  const trend = g.target>g.support*1.1? `Support is growing: a club of your standing in Division ${u.div} draws about ${E.fmt(g.target)}, and yours is heading there season by season.` : g.target<g.support*0.9? `Support is drifting down toward the ${E.fmt(g.target)} a club of your standing draws in Division ${u.div}.` : `Support is about right for a club of your standing in Division ${u.div}.`;
+  const verdict = g.bigGame<=g.capacity*0.8? 'Plenty of room, even for the big games. Spend on players, not concrete.' : g.support>=g.capacity*0.95? `<span class="hot">Demand has outgrown the ground. Every extra seat would sell most weeks.</span>` : `Big games will sell out. A stand of ${E.fmt(Math.max(1000, Math.round((g.bigGame-g.capacity)/500)*500))} seats would cover them.`;
+  if (!g.n) return demand + `<p class="dim">${trend} ${verdict}</p><div class="kv"><span>Home crowds</span><span class="dim">no home games yet</span></div>`;
+  return demand + `<div class="kv"><span>Home crowds (last ${g.n})</span><span>avg ${E.fmt(g.avg)}, best ${E.fmt(g.max)}</span></div>
+    <div class="kv"><span>Sold out</span><span>${g.sellouts} of ${g.n}</span></div>
+    <div class="bar"><i style="width:${Math.min(100, Math.round(g.fill*100))}%"></i></div>
+    <p class="dim" style="margin-top:-6px">Average fill ${Math.round(g.fill*100)}% of capacity. ${trend} ${verdict}</p>
+    <p class="dim">Last ${g.n}: ${g.list.join(', ')}${g.sellouts? ' (* sold out)':''}</p>`;
+}
+function scorersTable(div){
+  const st = S.state, u = user();
+  const list = E.topScorers(st, div, 10);
+  if (!list.length) return `<h2>Top scorers, Division ${div}</h2><p class="dim">No goals yet.</p>`;
+  return `<h2>Top scorers, Division ${div}</h2><table class="tight"><tr><th class="n">#</th><th>Player</th><th>Club</th><th class="n">Gls</th><th class="n">Apps</th></tr>` +
+    list.map((p,i)=>`<tr class="${p.club===u.id?'me':''}"><td class="n">${i+1}</td><td class="wrap">${esc(p.name)}</td><td class="wrap">${esc(st.clubs[p.club].short)}</td><td class="n">${p.goals}</td><td class="n">${p.apps}</td></tr>`).join('') +
+    `</table><p class="dim" style="margin-top:6px">League and cup goals this season.</p>`;
+}
+function euroStatusText(u){
+  const st = S.state; const s = E.euroStatus(st, u); if (!s) return '';
+  if (s.won) return 'Winners!';
+  if (s.out) return `Out in the ${E.euroRoundName(s.comp, Math.max(0, s.round)).toLowerCase()}`;
+  return `In the ${E.euroRoundName(s.comp, s.round).toLowerCase()}`;
+}
+function euroSection(){
+  const st = S.state, u = user(); if (!st.euro) return '';
+  return ['ec','cwc','uefa'].map(k=>{ const e = st.euro[k]; const def = euroComp(k);
+    const eng = e.entrants.filter(id=>st.clubs[id].div>=1).map(id=>{ const c = st.clubs[id]; const s = E.euroStatus(st, c); return `${esc(c.short)}: ${s.won? 'winners' : s.out? 'out, '+E.euroRoundName(k, Math.max(0,s.round)) : 'in, '+E.euroRoundName(k, s.round)}`; }).join('; ');
+    const win = e.winner!==null? ` ${esc(st.clubs[e.winner].name)} won it.` : e.alive.length===2? ` Final: ${esc(st.clubs[e.alive[0]].short)} v ${esc(st.clubs[e.alive[1]].short)}, week ${E.CFG.EURO.finalWeek}.` : e.alive.length<=8? ` Still in: ${e.alive.map(id=>esc(st.clubs[id].short)).join(', ')}.` : '';
+    const mine = (u.euro && u.euro.comp===k && !u.euro.out)? ` <span class="hot">Next: ${fmtEuroTie(E.euroTieFor(st, u.id))}</span>` : '';
+    return `<h2>${def.name}</h2><p class="dim">English clubs: ${eng||'none'}.${win}${mine}</p>`; }).join('');
+}
+function readAmount(){ const i = $('#amt'); if (!i) return null; const raw = i.value.trim().toLowerCase().replace(/[£,\s]/g,''); let v = raw.endsWith('k')? parseFloat(raw)*1000 : raw.endsWith('m')? parseFloat(raw)*1e6 : parseFloat(raw); if (!isFinite(v) || v<1) return null; return Math.round(v); }
+function jobOfferPanel(){
+  const st = S.state; const c = st.clubs[st.jobOffer]; const cw = E.squadOf(st,c).reduce((s,p)=>s+p.wage,0);
+  return `<h2>Job offer</h2><p><span class="hot">${esc(c.name)}</span> of Division ${c.div} want you as their manager. They have ${money(c.balance)} in the bank, a ${E.fmt(c.capacity)} seat ground and a wage bill of ${money(cw)} a week.${st.jobOfferExpires? ` Decide by week ${st.jobOfferExpires}.`:''}</p><div class="grid2"><button class="b" data-a="acceptjob">Take it</button><button class="b" data-a="declinejob">Stay put</button></div>`;
+}
+function resultLines(list){
+  const st = S.state, u = user();
+  return list.map(m=>{ const me = m.h===u.id||m.a===u.id; return `<div class="kv"><span class="wrap ${me?'hot':''}">${esc(st.clubs[m.h].short)} v ${esc(st.clubs[m.a].short)}</span><span class="${me?'hot':''}">${m.gH}-${m.gA}${m.extra?'*':''}${m.agg? ` <span class="dim">(${m.agg.b}-${m.agg.a} agg)</span>`:''}</span></div>`; }).join('') || '<p class="dim">No games.</p>';
+}
+function sleighBogey(st){ return ((st.season*97 + st.week*31) % 173 === 0)? `<div class="kv"><span class="hot">Sleigh Bogey</span><span class="dim">v nobody, abandoned</span></div>` : ''; }
+
+// ---------- helpers ----------
+function ordinal(n){ const s=['th','st','nd','rd'], v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]); }
+function posOrder(p){ return {GK:0,DEF:1,MID:2,FWD:3}[p]; }
+function cupStatus(u,k){ const c = u.cup[k]; if (c.out) return `Out in the ${E.CUP_ROUND_NAMES[c.round].toLowerCase()}`; if (c.round>=6) return 'Winners!'; return `In the ${E.CUP_ROUND_NAMES[c.round].toLowerCase()}`; }
+function cupTie(u,k){ const st=S.state; const t = st.cups[k].ties.find(x=>x.h===u.id||x.a===u.id); if (!t) return 'not involved'; const home = t.h===u.id; const opp = st.clubs[home?t.a:t.h]; return `${esc(opp.name)} ${home?'(home)':'(away)'}`; }
+function cupSummary(k){ const st=S.state, u=user(); const cup = st.cups[k]; const alive = cup.alive.map(id=>st.clubs[id].short); let s = cupStatus(u,k)+'. '; if (st.cupWinners[k]!==null && st.cupWinners[k]!==undefined) s += `${esc(st.clubs[st.cupWinners[k]].name)} won it.`; else if (alive.length<=8) s += `Still in: ${alive.map(esc).join(', ')}.`; else s += `${alive.length} clubs left.`; if (!u.cup[k].out && cup.ties.length) s += ` Next: ${cupTie(u,k)}.`; return s; }
+function selectionSummary(){ const st=S.state,u=user(); const cnt = ids => (ids||[]).filter(id=>st.players[id]&&st.players[id].club===u.id&&st.players[id].injury===0).length; const lg = cnt(st.userSel); let s = lg>=11? `${u.formation}, XI set` : lg>0? `${lg} picked, rest auto` : `auto pick (${u.formation})`; if (inEurope(u)){ const eu = cnt(st.euroSel); s += `; Europe: ${eu>=11? 'XI set' : eu>0? eu+' picked' : 'same as league'}`; } return s; }
+
+// ---------- match animation ----------
+let animToken = 0;
+function startAnimation(){
+  if (S.anim){ clearTimeout(S.anim); S.anim = null; }
+  const token = ++animToken;
+  const m = S.results.userMatch; const u = user(); const us = m.home.id===u.id;
+  const ev = m.scorers.slice(); let gH=0, gA=0, t=0, i=0;
+  const clock = $('#clock'), score = $('#score'), events = $('#events');
+  const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const step = () => {
+    if (token!==animToken) return;
+    t++;
+    while (i<ev.length && ev[i].min<=t){ const s = ev[i++]; if (s.side==='H') gH++; else gA++;
+      const ours = (s.side==='H')===us;
+      events.insertAdjacentHTML('beforeend', `<div class="${ours?'us':''}">${s.min}' GOAL ${esc(s.p.name)} (${esc(s.side==='H'?m.home.short:m.away.short)}) ${gH}-${gA}</div>`); }
+    clock.textContent = t+"'";
+    score.innerHTML = `<span class="${us?'hot':''}">${esc(m.home.short)}</span> ${gH} - ${gA} <span class="${!us?'hot':''}">${esc(m.away.short)}</span><small>Attendance ${E.fmt(m.att)}</small>`;
+    if (t>=90){ finish(); return; }
+    S.anim = setTimeout(step, 60);
+  };
+  const finish = () => {
+    if (token!==animToken) return;
+    clearTimeout(S.anim); S.anim = null;
+    clock.textContent = 'FT';
+    let extra = '';
+    if (m.extra==='aet') extra = `<div>After extra time: ${m.gH}-${m.gA}</div>`;
+    else if (m.extra && m.extra.startsWith('pens')) extra = `<div>Level after extra time. ${esc(m.extra==='pens-H'?m.home.short:m.away.short)} win on penalties.</div>`;
+    events.innerHTML = m.scorers.map(s=>`<div class="${(s.side==='H')===us?'us':''}">${s.min}' GOAL ${esc(s.p.name)} (${esc(s.side==='H'?m.home.short:m.away.short)})</div>`).join('') + extra;
+    score.innerHTML = `<span class="${us?'hot':''}">${esc(m.home.short)}</span> ${m.gH} - ${m.gA} <span class="${!us?'hot':''}">${esc(m.away.short)}</span><small>Attendance ${E.fmt(m.att)}</small>`;
+    $('#act').innerHTML = `<button class="b" data-a="afteranim">Full time</button>`;
+  };
+  if (reduced){ finish(); return; }
+  S.anim = setTimeout(step, 400);
+  S.finishAnim = finish;
+}
+
+// ---------- actions ----------
+async function act(a, d){
+  const st = S.state;
+  switch(a){
+    case 'setup': go('setup'); setTimeout(()=>{ const i=document.querySelector('.mgrname'); if(i) i.focus(); }, 50); break;
+    case 'setupcount': S.setupNames = Array.from(document.querySelectorAll('.mgrname')).map(i=>i.value); S.setupCount = +d.n; render(); break;
+    case 'start': {
+      const names = Array.from(document.querySelectorAll('.mgrname')).map((i,k)=>i.value.trim() || (S.setupCount>1? 'Manager '+(k+1) : 'The Gaffer'));
+      S.state = E.newGame({ managers: names });
+      S.hasSave = true; await save(); startTurn(0); break; }
+    case 'continue': startTurn(st.cur); break;
+    case 'taketurn': arriveAtTurn(); break;
+    case 'ready': await endTurn(); break;
+    case 'nextround': { if (S.pendingReview){ S.pendingReview=false; S.from='afterseason'; go('standings'); } else startTurn(firstActive()); } break;
+    case 'standings': S.from = S.screen; go('standings'); break;
+    case 'retire': if (!multi()) break; if (!S.confirmRetire){ S.confirmRetire = true; render(); toast('Tap again to leave the game to the others.'); setTimeout(()=>{ S.confirmRetire=false; if (S.screen==='home') render(); }, 4000); } else { S.confirmRetire=false; E.retireManager(st, st.cur); await save(); toast('Off into the sunset.'); startTurn(firstActive()); } break;
+    case 'quit': if (multi()) { toast('Only the last manager standing can abandon the game.'); break; } if (!S.confirmQuit){ S.confirmQuit = true; render(); toast('Tap again to confirm.'); setTimeout(()=>{ S.confirmQuit=false; if (S.screen==='home') render(); }, 4000); } else { S.confirmQuit=false; await Store.del(SAVE_KEY); S.state=null; S.hasSave=false; go('title'); } break;
+    case 'toggle': {
+      const id = +d.id; const p = st.players[id]; if (!p) break;
+      const ids = sel(); const k = ids.indexOf(id);
+      if (k>=0) ids.splice(k,1); else if (p.injury>0) { toast(p.name+' is injured.'); break; } else ids.push(id);
+      if (d.back) go('player'); else render(); break; }
+    case 'formation': if (S.xiMode==='euro') user().euroFormation = d.f; else user().formation = d.f; render(); break;
+    case 'autopick': { const xi = E.autoSelect(st, user(), S.xiMode==='euro'? (user().euroFormation||user().formation) : user().formation); const ids = xi.map(x=>x.p.id); if (S.xiMode==='euro') st.euroSel = ids; else st.userSel = ids; render(); toast('Best available XI picked.'); break; }
+    case 'clearpick': if (S.xiMode==='euro') st.euroSel = []; else st.userSel = []; render(); break;
+    case 'player': S.pid = +d.id; S.from = S.screen==='player'? S.from : S.screen; go('player'); break;
+    case 'back': if (S.from==='afterseason'){ S.from=null; startTurn(firstActive()); } else if (S.from==='title'){ go('title'); } else go(S.from||'squad'); break;
+    case 'setamt': { const i = $('#amt'); if (i) i.value = d.amt; break; }
+    case 'list': { const p = st.players[+d.id]; const amt = readAmount(); if (amt===null){ toast('Enter a price.'); break; } E.listPlayer(st, p.id, amt); await save(); render(); toast(p.name+' is up for sale.'); break; }
+    case 'unlist': E.unlistPlayer(st, +d.id); render(); break;
+    case 'bid': { const amt = readAmount(); if (amt===null){ toast('Enter an amount.'); break; } const rival = E.managerOf(st, st.players[+d.id].club); const err = E.bidForPlayer(st, +d.id, amt); if (err) toast(err); else { toast(rival? `Bid sent to ${rival.managerName}.` : 'Deal done.'); await save(); go(S.from||'transfers'); } break; }
+    case 'buy': { const err = E.buyFromList(st, +d.id); if (err) toast(err); else { toast('Signed.'); await save(); if (d.back) go('transfers'); else render(); } break; }
+    case 'accept': { const err = E.acceptOffer(st, +d.i); if (err) toast(err); else { toast('Sold.'); await save(); render(); } break; }
+    case 'reject': E.rejectOffer(st, +d.i); render(); break;
+    case 'ttab': S.tab.transfers = d.t; render(); break;
+    case 'scoutdiv': S.tab.scout = {div:+d.d}; render(); break;
+    case 'ximode': S.xiMode = d.m; render(); break;
+    case 'brief': { const b = S.tab.brief; b[d.k] = (d.k==='pos'||d.k==='age')? d.v : +d.v; render(); break; }
+    case 'scoutgo': { const b = S.tab.brief; const band = AGE_BANDS[b.age]||{}; S.tab.report = E.scoutSearch(st, { pos: b.pos, ageMin: band.min, ageMax: band.max, minSkill: b.skill, maxValue: b.value }); await save(); render(); break; }
+    case 'scoutclub': S.tab.scout.club = +d.c; render(); break;
+    case 'scoutback': S.tab.scout.club = null; render(); break;
+    case 'tdiv': S.tab.table = +d.d; render(); break;
+    case 'ctab': S.tab.club = d.t; render(); break;
+    case 'rndiv': S.tab.rename = {div:+d.d, club:null}; render(); break;
+    case 'rnclub': S.tab.rename.club = d.c===''? null : +d.c; render(); break;
+    case 'renameother': { const err = E.renameAnyClub(st, +d.c, $('#oname').value, $('#oshort').value); if (err) toast(err); else { toast('Done.'); S.tab.rename.club = null; await save(); render(); } break; }
+    case 'renameclub': { const err = E.renameClub(st, $('#clubname').value, $('#clubshort').value); if (err) toast(err); else { toast('Done.'); await save(); render(); } break; }
+    case 'renameplayer': { const err = E.renamePlayer(st, +d.id, $('#pname').value); if (err) toast(err); else { toast('Done.'); await save(); render(); } break; }
+    case 'preseason': go('preseason'); break;
+    case 'fixtures': S.from = S.screen; go('fixtures'); break;
+    case 'saves': S.from = S.screen==='title'? 'title' : S.screen; S.slots = await listSlots(); S.slotName = null; go('saves'); break;
+    case 'help': S.from = S.screen==='title'? 'title' : S.screen; go('help'); break;
+    case 'title': S.slots = await listSlots(); S.slotCount = S.slots.length; go('title'); break;
+    case 'saveslot': { const name = ($('#slotname')&&$('#slotname').value.trim()) || `Season ${st.season} week ${st.week}`; S.slots = await saveSlot(name); S.slotCount = S.slots.length; toast('Saved.'); render(); break; }
+    case 'loadslot': { const err = await loadSlot(+d.i); if (err){ toast(err); break; } toast('Loaded.'); startTurn(S.state.cur); break; }
+    case 'delslot': { if (S.confirmDel!==+d.i){ S.confirmDel = +d.i; render(); setTimeout(()=>{ if (S.confirmDel===+d.i){ S.confirmDel=null; if (S.screen==='saves') render(); } }, 4000); break; } S.confirmDel=null; await deleteSlot(+d.i); S.slots = await listSlots(); S.slotCount = S.slots.length; render(); break; }
+    case 'results': S.from = (S.screen==='weekdone'||S.screen==='weekmulti')? S.screen : 'home'; go('results'); break;
+    case 'rdiv': S.tab.results = +d.d; render(); break;
+    case 'resign': if (!S.confirmResign){ S.confirmResign = true; render(); toast('Tap again to hand in your notice.'); setTimeout(()=>{ S.confirmResign=false; if (S.screen==='home') render(); }, 4000); } else { S.confirmResign=false; E.resign(st); await save(); go('sacked'); } break;
+    case 'takesack': { const err = E.takeSackOffer(st); if (err) toast(err); else { st.userSel = []; await save(); if (mgr().pendingReview) go('review'); else go('home'); } } break;
+    case 'walkaway': {
+      if (multi()){ E.retireManager(st, st.cur); if (E.activeManagers(st).length){ await save(); toast('Off into the sunset.'); startTurn(firstActive()); break; } }
+      await Store.del(SAVE_KEY); S.state=null; S.hasSave=false; go('title'); break; }
+    case 'home': go('home'); break;
+    case 'sponsor': { const err = E.chooseSponsor(st, +d.i); if (err) toast(err); else { await save(); render(); } break; }
+    case 'tickets': { const err = E.setSeasonTickets(st, +d.m); if (err) toast(err); else { await save(); render(); } break; }
+    case 'loan': { const err = E.takeLoan(st, +d.amt); if (err) toast(err); else { toast('Money in.'); await save(); render(); } break; }
+    case 'repay': { const err = E.repayLoan(st); if (err) toast(err); else { toast('Loan cleared.'); await save(); render(); } break; }
+    case 'training': E.setTraining(st, d.t); render(); break;
+    case 'staff': E.setStaff(st, d.r, +d.t); await save(); render(); break;
+    case 'ticket': { const err = E.setTicketPrice(st, parseFloat(d.p)); if (err) toast(err); else { await save(); render(); } break; }
+    case 'safety': { const err = E.improveSafety(st, +d.p); if (err) toast(err); else { toast('Work done.'); await save(); render(); } break; }
+    case 'build': { const err = E.startBuild(st, +d.n); if (err) toast(err); else { toast('Builders booked.'); await save(); render(); } break; }
+    case 'play': await playWeek(); break;
+    case 'skipanim': if (S.finishAnim) S.finishAnim(); break;
+    case 'afteranim': if (S.matchQueue && S.matchQueue.length){ S.results.userMatch = S.matchQueue.shift(); go('match'); startAnimation(); } else { S.results.userMatch = S.results.results.find(m=>!m.euro && (m.home.id===user().id||m.away.id===user().id)) || null; go('weekdone'); } break;
+    case 'continue-week':
+      if (st.gameOver){ S.pendingReview=false; go('sacked'); } else if (mgr().pendingReview){ S.pendingReview=false; go('review'); } else go('home');
+      break;
+    case 'acceptjob': E.acceptJob(st); st.userSel = []; await save(); render(); toast('New club, new problems.'); break;
+    case 'declinejob': E.declineJob(st); await save(); render(); break;
+    case 'newseason': st.userSel = (st.userSel||[]).filter(id=>st.players[id]&&st.players[id].club===st.userClub); mgr().pendingReview = false; await save(); go('home'); break;
+  }
+}
+
+function firstActive(){ const st = S.state; const i = st.managers.findIndex(m=>!m.retired); return i<0? 0 : i; }
+function startTurn(idx){
+  const st = S.state; E.saveCurrent(st); E.setCurrent(st, idx);
+  if (multi()) go('pass'); else arriveAtTurn();
+}
+function arriveAtTurn(){
+  const st = S.state; const m = mgr();
+  if (st.gameOver) go('sacked');
+  else if (m.pendingReview) go('review');
+  else go('home');
+}
+async function endTurn(){
+  const st = S.state; const m = mgr(); m.ready = true; E.saveCurrent(st); await save();
+  const next = st.managers.findIndex(x=>!x.retired && !x.ready);
+  if (next>=0) startTurn(next); else await playWeek();
+}
+async function playWeek(){
+  const st = S.state, u = user();
+  const before = st.season;
+  const week = st.week; const wk = st.schedule[week-1];
+  if (!multi() && E.buildXI(st, u, sel(), u.formation).length<11) toast('Fewer than 11 fit players. Playing short.');
+  const results = E.advanceWeek(st);
+  S.pendingReview = st.season>before;
+  S.results = { results, userMatch: null, week, type: wk.type, cup: wk.cup };
+  await save();
+  if (multi()){ go('weekmulti'); return; }
+  const userMatch = results.find(m=>!m.euro && (m.home.id===u.id||m.away.id===u.id)) || null;
+  const euroMatch = results.find(m=>m.euro && (m.home.id===u.id||m.away.id===u.id)) || null;
+  S.results.userMatch = userMatch; S.results.euroMatch = euroMatch;
+  S.matchQueue = [userMatch, euroMatch].filter(Boolean);
+  if (S.matchQueue.length){ S.results.userMatch = S.matchQueue.shift(); go('match'); startAnimation(); }
+  else go('weekdone');
+}
+
+// ---------- wiring ----------
+let busy = false;
+document.addEventListener('click', async e => {
+  const n = e.target.closest('[data-nav]'); if (n){ if (S.anim || busy) return; go(n.dataset.nav); return; }
+  const t = e.target.closest('[data-a]'); if (!t) return;
+  if (S.anim && t.dataset.a!=='skipanim') return;
+  if (busy) return;
+  busy = true;
+  try { await act(t.dataset.a, t.dataset); } catch(err){ console.error(err); } finally { busy = false; }
+});
+document.addEventListener('keydown', e => { if (e.key==='Enter' && S.screen==='setup' && (S.setupCount||1)===1) act('start',{}); });
+
+window.__sm91 = { S, E, render, go };
+if ('serviceWorker' in navigator && /^https?:/.test(location.protocol) && document.querySelector('link[rel="manifest"]')){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+(async function init(){
+  const saved = await load();
+  if (saved){ S.state = saved; S.hasSave = true; }
+  S.slots = await listSlots(); S.slotCount = S.slots.length;
+  go('title');
+})();
+})();
+</script>
+</body>
+</html>
