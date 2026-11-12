@@ -84,6 +84,24 @@ input{width:100%;font:inherit;padding:12px;background:var(--white);color:var(--b
 .bar{height:12px;background:var(--deep);box-shadow:inset 1px 1px 0 var(--black);margin:6px 0 12px}
 .bar i{display:block;height:100%;background:var(--orange)}
 .wrap{white-space:normal}
+/* matchday viewer */
+.md-board{display:flex;justify-content:space-between;align-items:center;font-size:17px;line-height:1.2;margin-bottom:4px}
+.md-board .t{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:uppercase}
+.md-board .t.a{text-align:right}
+.md-board .s{font-size:30px;color:var(--orange);padding:0 10px;white-space:nowrap}
+.md-clock{text-align:center;color:var(--grey);font-size:13px;margin-bottom:6px;white-space:pre}
+.md-stage{height:min(64vh,560px);background:#1E5F2A;box-shadow:inset 2px 2px 0 var(--black),inset -2px -2px 0 var(--white);margin-bottom:6px;overflow:hidden}
+@media (orientation:landscape) and (max-height:500px){.md-stage{height:min(60vh,300px)}}
+@media (min-width:600px) and (min-height:501px){.md-stage{height:min(64vh,400px)}}
+.md-comm{min-height:42px;padding:6px 8px;background:var(--deep);font-size:14px;margin-bottom:6px}
+.md-log{font-size:13px;max-height:160px;overflow-y:auto}
+.md-log div{padding:3px 0;border-bottom:1px solid var(--deep)}
+.md-log .us{color:var(--orange)}
+.md-controls{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr 1.2fr;gap:6px}
+.md-controls .b{margin:0;padding:11px 4px;font-size:14px;text-align:center}
+.md-controls2{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
+.md-controls2 .b{margin:0;font-size:13px;padding:9px 8px;text-align:center}
+.md-tie{font-size:20px;text-align:center;margin:18px 0;line-height:1.3}
 </style>
 </head>
 <body>
@@ -376,22 +394,16 @@ function playMatch(state, home, away, opts={}){
   let gH = poisson(xgH), gA = poisson(xgA);
   if (Math.abs(gH-gA)===1 && rand()<CFG.LATE_EQUALISER){ if (gH<gA) gH++; else gA++; }
   const scorers = [];
-  const pickScorer = xi => {
-    const w = xi.map(x=>({x, w: effSkill(x.p,x.slot)*({FWD:5,MID:2.5,DEF:0.7,GK:0.02}[x.slot])}));
-    let t = rand()*w.reduce((s,v)=>s+v.w,0);
-    for (const e of w){ t-=e.w; if (t<=0) return e.x.p; }
-    return w[w.length-1].x.p;
-  };
   for (let i=0;i<gH;i++) scorers.push({side:'H', p: pickScorer(xiH), min: rInt(1,90)});
   for (let i=0;i<gA;i++) scorers.push({side:'A', p: pickScorer(xiA), min: rInt(1,90)});
-  scorers.sort((a,b)=>a.min-b.min);
   let extra = null;
   if (opts.knockout && gH===gA){
-    // extra time then penalties
+    // extra time then penalties; extra-time goals are credited like any other
     const eH = poisson(xgH*0.3), eA = poisson(xgA*0.3);
-    if (eH!==eA){ gH+=eH; gA+=eA; extra='aet'; }
+    if (eH!==eA){ gH+=eH; gA+=eA; extra='aet'; creditExtraTime(scorers, xiH, xiA, eH, eA); }
     else { extra = rand()<0.5? 'pens-H':'pens-A'; }
   }
+  scorers.sort((a,b)=>a.min-b.min);
   // fitness, apps, injuries, goals
   const injuries = [];
   for (const x of [...xiH,...xiA]){
@@ -424,6 +436,16 @@ function playMatch(state, home, away, opts={}){
   return { home, away, gH, gA, scorers, extra, att, injuries, cards, bans, xiH, xiA, xgH, xgA };
 }
 
+function pickScorer(xi){
+  const w = xi.map(x=>({x, w: effSkill(x.p,x.slot)*({FWD:5,MID:2.5,DEF:0.7,GK:0.02}[x.slot])}));
+  let t = rand()*w.reduce((s,v)=>s+v.w,0);
+  for (const e of w){ t-=e.w; if (t<=0) return e.x.p; }
+  return w[w.length-1].x.p;
+}
+function creditExtraTime(scorers, xiH, xiA, eH, eA){
+  for (let i=0;i<eH;i++){ const p = pickScorer(xiH); p.goals++; scorers.push({side:'H', p, min: rInt(91,120), et:true}); }
+  for (let i=0;i<eA;i++){ const p = pickScorer(xiA); p.goals++; scorers.push({side:'A', p, min: rInt(91,120), et:true}); }
+}
 function recordGate(club, att){
   const cap = club.safety<CFG.SAFETY_RESTRICT_BELOW? Math.round(club.capacity*0.6) : club.capacity;
   club.gates = club.gates||[]; club.gates.push({a:att, s:att>=cap}); if (club.gates.length>10) club.gates.shift();
@@ -556,7 +578,7 @@ function playEuroWeek(state, results){
       else if (gA!==t.g1[1]) winner = gA>t.g1[1]? A : B;   // away goals: A scored gA away, B scored g1[1] away
       else {
         const eH = poisson(m.xgH*0.3), eA = poisson(m.xgA*0.3);
-        if (eH!==eA){ gH+=eH; gA+=eA; aggA+=eA; aggB+=eH; winner = aggA>aggB? A : B; m.extra='aet'; }
+        if (eH!==eA){ gH+=eH; gA+=eA; aggA+=eA; aggB+=eH; winner = aggA>aggB? A : B; m.extra='aet'; creditExtraTime(m.scorers, m.xiH, m.xiA, eH, eA); m.scorers.sort((a,b)=>a.min-b.min); }
         else { const hp = rand()<0.5; winner = hp? home : away; m.extra = hp? 'pens-H':'pens-A'; }
       }
       m.gH = gH; m.gA = gA; m.agg = { a:aggA, b:aggB }; t.g2 = [gH, gA]; m.winner = winner.id; results.push(m);
@@ -1827,6 +1849,1340 @@ if (typeof module!=='undefined') module.exports = Engine;
 
 </script>
 <script>
+// ============================================================================
+//  Matchday: schema
+//  The MatchPresentation contract shared by the capture adapter, the timeline
+//  builder, the scene model and every renderer. Versioned; validate() is the
+//  gate every presentation passes before it is shown.
+//
+//  Coordinates: x and y are normalised 0..1 over the pitch. x runs along the
+//  length of the pitch, y across it. In the FIRST HALF the home side attacks
+//  towards x = 1 (left to right). At half-time the sides swap ends: the scene
+//  model mirrors positions (x -> 1 - x) for the second half and extra time, so
+//  events always store the direction they were played in, and renderers never
+//  need to know which half it is. z is an optional elevation channel (0..1,
+//  ground to high ball) reserved for later renderers.
+// ============================================================================
+(function(root){
+  const MD = (root.Matchday = root.Matchday || {});
+  const SCHEMA_VERSION = 1;
+
+  // Event types. provenance is 'official' (from the game's authoritative
+  // record) or 'illustrative' (choreography invented by the timeline builder;
+  // it never changes a score or a statistic).
+  const EVENT = {
+    KICK_OFF:'KICK_OFF', HALF_TIME:'HALF_TIME', SECOND_HALF:'SECOND_HALF', FULL_TIME:'FULL_TIME',
+    ET_START:'ET_START', ET_HALF:'ET_HALF', ET_END:'ET_END', PENALTIES:'PENALTIES', SHOOTOUT_RESULT:'SHOOTOUT_RESULT',
+    GOAL:'GOAL', CARD:'CARD', SENT_OFF:'SENT_OFF',
+    PASS:'PASS', RUN:'RUN', TACKLE:'TACKLE', SHOT_SAVED:'SHOT_SAVED', SHOT_WIDE:'SHOT_WIDE', SHOT_BLOCKED:'SHOT_BLOCKED', CORNER:'CORNER', CLEARANCE:'CLEARANCE', FOUL:'FOUL', GOAL_KICK:'GOAL_KICK',
+  };
+  const OFFICIAL_TYPES = new Set([EVENT.KICK_OFF, EVENT.HALF_TIME, EVENT.SECOND_HALF, EVENT.FULL_TIME, EVENT.ET_START, EVENT.ET_HALF, EVENT.ET_END, EVENT.PENALTIES, EVENT.SHOOTOUT_RESULT, EVENT.GOAL, EVENT.CARD, EVENT.SENT_OFF]);
+
+  // Periods in match seconds. Extra time is 2 x 15 minutes.
+  const PERIODS = {
+    regulation: { start: 0, half: 45*60, end: 90*60 },
+    extraTime:  { start: 90*60, half: 105*60, end: 120*60 },
+  };
+
+  function isNum(v){ return typeof v==='number' && isFinite(v); }
+  function inUnit(v){ return isNum(v) && v>=0 && v<=1; }
+
+  // Validates a presentation. Returns { ok, errors }. Cheap enough to run on
+  // every match; strict enough that a renderer can trust what it gets.
+  function validate(p){
+    const errors = [];
+    const err = (m) => errors.push(m);
+    if (!p || typeof p!=='object') return { ok:false, errors:['not an object'] };
+    if (p.schemaVersion!==SCHEMA_VERSION) err('schemaVersion must be '+SCHEMA_VERSION);
+    if (!p.matchId) err('matchId missing');
+    if (!p.teams || !p.teams.home || !p.teams.away) err('teams.home and teams.away required');
+    const teamIds = new Set(p.teams? [p.teams.home.id, p.teams.away.id] : []);
+    if (teamIds.size!==2) err('team ids must be two distinct values');
+    const playerIds = new Set();
+    for (const pl of p.players||[]){
+      if (!pl.id) err('player without id'); else if (playerIds.has(pl.id)) err('duplicate player id '+pl.id); else playerIds.add(pl.id);
+      if (!teamIds.has(pl.teamId)) err('player '+pl.id+' has unknown team');
+      if (!['GK','DEF','MID','FWD'].includes(pl.role)) err('player '+pl.id+' bad role');
+    }
+    const o = p.official;
+    if (!o) err('official missing');
+    else {
+      if (!isNum(o.homeGoals) || !isNum(o.awayGoals)) err('official goals must be numbers');
+      const h = (o.scorers||[]).filter(s=>s.teamId===p.teams.home.id).length, a = (o.scorers||[]).filter(s=>s.teamId===p.teams.away.id).length;
+      if (h>o.homeGoals || a>o.awayGoals) err('more scorers than goals');
+      for (const s of o.scorers||[]){
+        if (!teamIds.has(s.teamId)) err('scorer with unknown team');
+        if (s.playerId!==null && s.playerId!==undefined && !playerIds.has(s.playerId)) err('scorer '+s.playerId+' not in players');
+        if (!isNum(s.minute) || s.minute<1 || s.minute>120) err('scorer minute out of range');
+      }
+      if (o.extra && !['aet','pens'].includes(o.extra)) err('official.extra must be aet, pens or null');
+      if (o.extra==='pens' && !teamIds.has(o.penaltiesWinnerTeamId)) err('penalties need a winner team');
+    }
+    if (!p.period || !isNum(p.period.regulationMinutes)) err('period missing');
+    if (!isNum(p.seed)) err('seed must be a number');
+    if (p.events){
+      const ids = new Set(); let last = -1;
+      for (const e of p.events){
+        if (!e.id) err('event without id'); else if (ids.has(e.id)) err('duplicate event id '+e.id); else ids.add(e.id);
+        if (!EVENT[e.type]) err('unknown event type '+e.type);
+        if (!isNum(e.matchSecond) || e.matchSecond<0) err('event '+e.id+' bad matchSecond');
+        if (e.matchSecond < last) err('events out of order at '+e.id);
+        last = e.matchSecond;
+        if (!['official','illustrative'].includes(e.provenance)) err('event '+e.id+' bad provenance');
+        if (OFFICIAL_TYPES.has(e.type) && e.provenance!=='official') err('event '+e.id+' type '+e.type+' must be official');
+        if (!OFFICIAL_TYPES.has(e.type) && e.provenance!=='illustrative') err('event '+e.id+' type '+e.type+' must be illustrative');
+        if (e.teamId!==undefined && e.teamId!==null && !teamIds.has(e.teamId)) err('event '+e.id+' unknown team');
+        if (e.playerId!==undefined && e.playerId!==null && !playerIds.has(e.playerId)) err('event '+e.id+' unknown player');
+        for (const k of ['from','to','at']) if (e[k] && !(inUnit(e[k].x) && inUnit(e[k].y))) err('event '+e.id+' '+k+' not in 0..1');
+        const maxSec = (p.official && p.official.extra)? PERIODS.extraTime.end : PERIODS.regulation.end;
+        if (e.type!==EVENT.SHOOTOUT_RESULT && e.type!==EVENT.PENALTIES && e.matchSecond > maxSec) err('event '+e.id+' beyond the final whistle');
+      }
+      const goals = p.events.filter(e=>e.type===EVENT.GOAL);
+      if (p.official && goals.length !== p.official.homeGoals + p.official.awayGoals) err('GOAL events ('+goals.length+') must equal official goals');
+    }
+    return { ok: errors.length===0, errors };
+  }
+
+  // Deterministic 32-bit hash of a string (FNV-1a), used for presentation seeds.
+  function hashString(s){ let h = 0x811c9dc5; for (let i=0;i<s.length;i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); } return h>>>0; }
+  // Small seeded generator for everything illustrative. Never the game's RNG.
+  function seededRandom(seed){ let a = seed>>>0; return function(){ a = (a + 0x6D2B79F5)|0; let t = Math.imul(a ^ (a>>>15), 1|a); t = (t + Math.imul(t ^ (t>>>7), 61|t)) ^ t; return ((t ^ (t>>>14))>>>0) / 4294967296; }; }
+
+  // ---- team shape, shared by the timeline builder and the scene model ----
+  // Anchors are in the ATTACKING frame: x 0 = own goal line, 1 = the goal being attacked.
+  // shapePos() slides the whole shape with the ball (ballAx is the ball's depth in the same
+  // frame) so both modules agree on where a player stands before any event moves them.
+  // Each TEAM gets its own shape from the roles in its XI (4-3-3: four defenders across the
+  // width, three midfielders, three forwards; 5-3-2, 3-5-2 and so on likewise). Lines sit at
+  // fixed depths; players in a line are spread across the width, wider lines for more players,
+  // with the outer players of a line a touch further forward (full-backs, wingers).
+  const LINE_X = { DEF: 0.21, MID: 0.42, FWD: 0.68 };
+  const WIDTHS = { 1:[0.5], 2:[0.36,0.64], 3:[0.22,0.5,0.78], 4:[0.14,0.38,0.62,0.86], 5:[0.1,0.3,0.5,0.7,0.9] };
+  function lineYs(n){ if (WIDTHS[n]) return WIDTHS[n]; const step = 0.84/(n-1); return Array.from({length:n}, (_,i)=>0.08+i*step); }
+  function formationAnchors(players){
+    const out = {};
+    const teams = Array.from(new Set(players.map(p=>p.teamId)));
+    for (const teamId of teams){
+      const byRole = { GK:[], DEF:[], MID:[], FWD:[] };
+      for (const pl of players) if (pl.teamId===teamId) byRole[pl.role].push(pl);
+      byRole.GK.forEach((pl,i)=>{ out[pl.id] = { x: 0.05, y: i? 0.5+0.1*i : 0.5 }; });
+      for (const role of ['DEF','MID','FWD']){
+        const list = byRole[role]; const n = list.length; if (!n) continue;
+        const ys = lineYs(n);
+        list.forEach((pl,i)=>{ const outer = n>=3 && (i===0 || i===n-1); out[pl.id] = { x: LINE_X[role] + (outer? 0.035 : 0), y: ys[i] }; });
+      }
+    }
+    return out;
+  }
+  function shapePos(anchor, role, ballAx, ballY){
+    const slide = role==='GK'? 0.04 : 0.32, sway = role==='GK'? 0.25 : 0.3;
+    const c = v => Math.max(0.02, Math.min(0.98, v));
+    return { x: c(anchor.x + (ballAx-0.5)*slide), y: c(anchor.y + (ballY-0.5)*sway) };
+  }
+
+  MD.SCHEMA_VERSION = SCHEMA_VERSION; MD.EVENT = EVENT; MD.OFFICIAL_TYPES = OFFICIAL_TYPES; MD.PERIODS = PERIODS;
+  MD.validate = validate; MD.hashString = hashString; MD.seededRandom = seededRandom;
+  MD.formationAnchors = formationAnchors; MD.shapePos = shapePos;
+})(typeof window!=='undefined'? window : globalThis);
+
+// ============================================================================
+//  Matchday: capture adapter
+//  Turns a finished match record (what the game's playMatch returned, after
+//  every post-processing step has run) into an immutable MatchPresentation.
+//  It reads the official record and the state; it never calls playMatch,
+//  never touches the game's random generator and never mutates game objects.
+//
+//  Call it only once the week has been fully resolved: for European second
+//  legs the game adjusts the score and extra after playMatch returns, and the
+//  adapter must see the finalised figures.
+// ============================================================================
+(function(root){
+  const MD = root.Matchday;
+
+  // Kit colours are presentation data, not game data. Approximate 1990-91
+  // colours; anything not listed gets a deterministic colour from its id.
+  const KITS = {
+    'Arsenal':['#EF0107','#FFFFFF'],'Liverpool':['#C8102E','#FFFFFF'],'Crystal Palace':['#1B458F','#C4122E'],'Leeds United':['#FFFFFF','#1D428A'],
+    'Manchester City':['#6CABDD','#FFFFFF'],'Manchester United':['#DA291C','#FFFFFF'],'Wimbledon':['#0A2B8C','#FFD200'],'Nottingham Forest':['#E53233','#FFFFFF'],
+    'Everton':['#003399','#FFFFFF'],'Tottenham Hotspur':['#FFFFFF','#132257'],'Chelsea':['#034694','#FFFFFF'],'Queens Park Rangers':['#1D5BA4','#FFFFFF'],
+    'Sheffield United':['#EC2227','#FFFFFF'],'Southampton':['#D71920','#FFFFFF'],'Norwich City':['#FFF200','#00A650'],'Coventry City':['#78D0F1','#1F3B70'],
+    'Oldham Athletic':['#004A97','#FFFFFF'],'West Ham United':['#7A263A','#1BB1E7'],'Sheffield Wednesday':['#0E63AD','#FFFFFF'],'Notts County':['#000000','#FFFFFF'],
+    'Millwall':['#001D5E','#FFFFFF'],'Brighton & Hove Albion':['#0057B8','#FFFFFF'],'Middlesbrough':['#E21C23','#FFFFFF'],'Barnsley':['#E31B23','#FFFFFF'],
+    'Bristol City':['#E21C38','#FFFFFF'],'Oxford United':['#FFF200','#1A3B8C'],'Newcastle United':['#241F20','#FFFFFF'],'Wolverhampton Wanderers':['#FDB913','#231F20'],
+    'Bristol Rovers':['#0054A6','#FFFFFF'],'Ipswich Town':['#0044A9','#FFFFFF'],'Port Vale':['#FFFFFF','#000000'],'Charlton Athletic':['#D4021D','#FFFFFF'],
+    'Cambridge United':['#F4B223','#000000'],'Southend United':['#1E3C92','#FFFFFF'],'Grimsby Town':['#231F20','#FFFFFF'],'Bolton Wanderers':['#FFFFFF','#263C7E'],
+    'Tranmere Rovers':['#FFFFFF','#0033A0'],'Brentford':['#E30613','#FFFFFF'],'Bury':['#FFFFFF','#0E2B6B'],'Bradford City':['#F7A700','#7B1113'],
+    'Bournemouth':['#DA291C','#000000'],'Wigan Athletic':['#1D5BA4','#FFFFFF'],'Huddersfield Town':['#0E63AD','#FFFFFF'],'Birmingham City':['#0000FF','#FFFFFF'],
+    'Leyton Orient':['#E21B23','#FFFFFF'],'Stoke City':['#E03A3E','#FFFFFF'],'Reading':['#004494','#FFFFFF'],'Exeter City':['#E8282E','#FFFFFF'],
+    'Darlington':['#FFFFFF','#000000'],'Stockport County':['#0A3B8C','#FFFFFF'],'Hartlepool United':['#1F8BD6','#FFFFFF'],'Peterborough United':['#0F4C9A','#FFFFFF'],
+    'Blackpool':['#F68712','#FFFFFF'],'Burnley':['#6C1D45','#99D6EA'],'Torquay United':['#FFEB3B','#1E3C92'],'Scunthorpe United':['#B21E2F','#FFFFFF'],
+    'Scarborough':['#E51A26','#FFFFFF'],'Northampton Town':['#8B1E3F','#FFFFFF'],'Doncaster Rovers':['#D81E27','#FFFFFF'],'Rochdale':['#1F3B70','#FFFFFF'],
+    'Cardiff City':['#0070B5','#FFFFFF'],'Lincoln City':['#D71920','#FFFFFF'],'Gillingham':['#0054A6','#FFFFFF'],'Walsall':['#E0262F','#FFFFFF'],
+    'AC Milan':['#FB090B','#000000'],'Juventus':['#FFFFFF','#000000'],'Internazionale':['#010E80','#000000'],'Real Madrid':['#FFFFFF','#FEBE10'],'Barcelona':['#A50044','#004D98'],
+    'Bayern Munich':['#DC052D','#FFFFFF'],'Marseille':['#FFFFFF','#2FAEE0'],'PSV Eindhoven':['#ED1C24','#FFFFFF'],'Ajax':['#FFFFFF','#D2122E'],'Benfica':['#E83030','#FFFFFF'],
+    'Porto':['#0056A7','#FFFFFF'],'Napoli':['#12A0D7','#FFFFFF'],'Rangers':['#1B458F','#FFFFFF'],'Celtic':['#16A34A','#FFFFFF'],'Red Star Belgrade':['#E31E24','#FFFFFF'],
+  };
+  function hashColour(id){ const h = MD.hashString('kit'+id); const hue = h % 360; return ['hsl('+hue+',70%,42%)', '#FFFFFF']; }
+  function kitFor(club){ const k = KITS[club.name]; return k? { primary:k[0], secondary:k[1] } : { primary: hashColour(club.id)[0], secondary: '#FFFFFF' }; }
+
+  // Shirt numbers by slot within the XI (presentation only).
+  const SHIRTS = { GK:[1], DEF:[2,5,6,3,4], MID:[7,4,8,10,11], FWD:[9,10,11,7] };
+  function numberXI(xi, teamId){
+    const used = new Set(); const out = [];
+    const counters = {GK:0,DEF:0,MID:0,FWD:0};
+    for (const x of xi){
+      const pool = SHIRTS[x.slot]; let n = pool[Math.min(counters[x.slot], pool.length-1)]; counters[x.slot]++;
+      while (used.has(n)) n++; used.add(n);
+      out.push({ id: String(x.p.id), teamId, name: x.p.name, role: x.slot, naturalRole: x.p.pos, shirtNo: n, skill: x.p.skill });
+    }
+    return out;
+  }
+
+  // m: a finished match record from the game's results list. state: the game.
+  // info: { season, week, competition, round, leg } for ids and labels.
+  function capture(state, m, info){
+    info = info||{};
+    const home = m.home, away = m.away;
+    const homeId = 'club-'+home.id, awayId = 'club-'+away.id;
+    const matchId = ['s'+(info.season||state.season), 'w'+(info.week||state.week), home.id, away.id, info.competition||(m.euro? 'euro-'+m.euro.comp : m.cupKey? 'cup-'+m.cupKey : 'league')].join('-');
+    const players = numberXI(m.xiH, homeId).concat(numberXI(m.xiA, awayId));
+    const pid = new Set(players.map(p=>p.id));
+    const scorers = (m.scorers||[]).map((s,i)=>({ eventId:'goal-'+(i+1), teamId: s.side==='H'? homeId : awayId, playerId: pid.has(String(s.p.id))? String(s.p.id) : null, playerName: s.p.name, minute: s.min, period: s.et? 'extraTime' : 'regulation' }));
+    const cards = (m.cards||[]).map((c,i)=>({ eventId:'card-'+(i+1), teamId: c.side==='H'? homeId : awayId, playerId: pid.has(String(c.p.id))? String(c.p.id) : null, playerName: c.p.name, minute: c.min, card: c.type==='R'? 'red' : 'yellow' }));
+    const extra = m.extra==='aet'? 'aet' : (m.extra && m.extra.startsWith('pens'))? 'pens' : null;
+    const competition = m.euro? { kind:'euro', key: m.euro.comp, name: (root.Engine? root.Engine.CFG.EURO.comps[m.euro.comp].name : m.euro.comp), round: m.euro.round, leg: m.euro.leg||null, final: !!m.euro.final }
+      : m.cupKey? { kind:'cup', key: m.cupKey, name: (root.Engine? root.Engine.CFG.CUPS[m.cupKey].name : m.cupKey), round: m.cup, neutral: !!m.neutral }
+      : { kind:'league', key:'league', name:'League', division: home.div };
+    const p = {
+      schemaVersion: MD.SCHEMA_VERSION,
+      matchId, seed: MD.hashString(matchId),
+      competition,
+      period: { regulationMinutes: 90, hasExtraTime: !!extra, hasPenalties: extra==='pens' },
+      teams: { home: { id: homeId, clubId: home.id, name: home.name, short: home.short, kit: kitFor(home) }, away: { id: awayId, clubId: away.id, name: away.name, short: away.short, kit: kitFor(away) } },
+      players,
+      official: { homeGoals: m.gH, awayGoals: m.gA, scorers, extra, penaltiesWinnerTeamId: m.extra==='pens-H'? homeId : m.extra==='pens-A'? awayId : null, cards,
+        injuries: (m.injuries||[]).map(x=>({ playerId: String(x.id), name: x.name, teamId: x.club===home.id? homeId : awayId, weeks: x.injury })),
+        attendance: m.att, aggregate: m.agg? { home: m.agg.b, away: m.agg.a } : null,   // the game stores aggregates as (first-leg home, first-leg away); in the second leg those are away and home
+        winnerTeamId: m.winner!==undefined? 'club-'+m.winner : null },
+      events: null,   // filled by the timeline builder
+    };
+    // away kit clash: if the two primaries are close, the away side wears its second colour
+    if (similar(p.teams.home.kit.primary, p.teams.away.kit.primary)) p.teams.away.kit = { primary: p.teams.away.kit.secondary, secondary: p.teams.away.kit.primary, changed: true };
+    if (similar(p.teams.home.kit.primary, p.teams.away.kit.primary)) p.teams.away.kit = { primary: '#FFD200', secondary: '#202020', changed: true };
+    return Object.freeze(p);
+  }
+  function rgb(c){ if (c[0]==='#'){ return [parseInt(c.slice(1,3),16), parseInt(c.slice(3,5),16), parseInt(c.slice(5,7),16)]; } const m = /hsl\((\d+),(\d+)%,(\d+)%\)/.exec(c); if (!m) return [128,128,128]; const h=+m[1]/360, s=+m[2]/100, l=+m[3]/100; const f=(n)=>{ const k=(n+h*12)%12; const a=s*Math.min(l,1-l); return Math.round(255*(l - a*Math.max(-1, Math.min(k-3, 9-k, 1)))); }; return [f(0),f(8),f(4)]; }
+  function similar(a,b){ const x = rgb(a), y = rgb(b); const d = Math.sqrt((x[0]-y[0])**2 + (x[1]-y[1])**2 + (x[2]-y[2])**2); return d < 110; }
+
+  MD.capture = capture; MD.kitFor = kitFor; MD.KITS = KITS;
+})(typeof window!=='undefined'? window : globalThis);
+
+// ============================================================================
+//  Matchday: timeline builder
+//  Produces the event list for a presentation. The anchors (kick-off, goals,
+//  cards, half-time, full-time, extra time, penalties) come straight from the
+//  official record. Everything between them is illustrative choreography:
+//  possession spells, passes, shots that miss or are saved, corners. All of it
+//  is generated from the presentation's own seed, so the same match always
+//  plays the same way, and the game's random generator is never touched.
+//
+//  Positions are absolute pitch coordinates (0..1). Home attack towards x=1 in
+//  the first half and towards x=0 in the second half and extra time.
+//
+//  Timing convention: an event's matchSecond is the moment it RESOLVES. For an
+//  event with from/to/duration (passes, shots, goals) the ball leaves `from` at
+//  matchSecond - duration and arrives at `to` at matchSecond. So a GOAL's
+//  matchSecond is the instant the ball crosses the line, which is when the
+//  score changes and the commentary line fires.
+//
+//  Passes are aimed at where a teammate actually stands (the shared team-shape
+//  model in schema.js), so the scene never has to make anyone sprint across
+//  the pitch to meet the ball.
+// ============================================================================
+(function(root){
+  const MD = root.Matchday; const EV = MD.EVENT; const P = MD.PERIODS;
+
+  function attackDir(p, teamId, second){
+    const secondHalfOrLater = second >= P.regulation.half;
+    const homeDir = secondHalfOrLater? -1 : 1;
+    return teamId===p.teams.home.id? homeDir : -homeDir;
+  }
+  // attacking-frame depth -> absolute
+  function toAbs(dir, ax, y){ return { x: dir===1? ax : 1-ax, y }; }
+  function teamName(p, teamId){ return teamId===p.teams.home.id? p.teams.home.name : p.teams.away.name; }
+  function fullTimeText(p){
+    const o = p.official, agg = o.aggregate;
+    if (agg){
+      if (o.extra) return 'Full time. Level on aggregate, so extra time.';
+      const line = 'Full time. '+agg.home+'-'+agg.away+' on aggregate';
+      if (agg.home===agg.away && o.winnerTeamId) return line+'. '+teamName(p, o.winnerTeamId)+' go through on away goals.';
+      return line+(o.winnerTeamId? '. '+teamName(p, o.winnerTeamId)+' go through.' : '.');
+    }
+    if (o.extra) return 'Full time. Level, so extra time.';
+    return 'Full time.';
+  }
+
+  function build(p){
+    const rnd = MD.seededRandom(p.seed);
+    const r = (a,b) => a + rnd()*(b-a);
+    const ri = (a,b) => Math.floor(r(a,b+1));
+    const H = p.teams.home.id, A = p.teams.away.id;
+    const other = t => t===H? A : H;
+    const anchors = MD.formationAnchors(p.players);
+    const byTeam = { [H]: p.players.filter(x=>x.teamId===H), [A]: p.players.filter(x=>x.teamId===A) };
+    const sentOff = new Set();
+    const onPitch = teamId => byTeam[teamId].filter(x=>!sentOff.has(x.id));
+    const gkOf = teamId => (byTeam[teamId].find(x=>x.role==='GK') || byTeam[teamId][0]);
+    const clampAx = v => Math.max(0.03, Math.min(0.97, v));
+    const clampY = v => Math.max(0.05, Math.min(0.95, v));
+
+    // where a player of `teamId` stands, in that team's attacking frame, given the ball's depth in the same frame
+    const standing = (pl, bAx, bY) => MD.shapePos(anchors[pl.id], pl.role, bAx, bY);
+    // nearest on-pitch teammate to a point in the team's frame (optionally excluding one player and the keeper)
+    function nearest(teamId, ax, y, bAx, bY, exclude, allowGK){
+      let best = null, bd = Infinity;
+      for (const pl of onPitch(teamId)){
+        if (exclude && pl.id===exclude.id) continue;
+        if (pl.role==='GK' && !allowGK) continue;
+        const s = standing(pl, bAx, bY); const d = Math.hypot(s.x-ax, s.y-y) + (pl.role==='GK'? 0.3 : 0);
+        if (d<bd){ bd = d; best = pl; }
+      }
+      return best || onPitch(teamId)[0] || null;
+    }
+
+    let n = 0; const events = [];
+    const add = e => { e.id = 'ev-'+(++n); events.push(e); return e; };
+    const official = (type, second, extra) => add(Object.assign({ type, matchSecond: second, provenance:'official' }, extra||{}));
+    const illus = (type, second, extra) => add(Object.assign({ type, matchSecond: second, provenance:'illustrative' }, extra||{}));
+
+    // ---- official anchors ----
+    const anchorsList = [];
+    const goalSecond = s => { const base = s.period==='extraTime'? P.regulation.end + (Math.max(91, s.minute)-91)*60 : (s.minute-1)*60; const cap = (s.period==='extraTime'? P.extraTime.end : P.regulation.end) - 5; return Math.min(base + 30, cap); };
+    for (const s of p.official.scorers) anchorsList.push({ kind:'goal', second: goalSecond(s), s });
+    for (const c of p.official.cards) anchorsList.push({ kind:'card', second: Math.min((c.minute-1)*60 + 15, P.regulation.end-5), c });
+    anchorsList.sort((a,b)=>a.second-b.second || (a.kind==='goal'? -1 : 1));
+
+    const end = p.official.extra? P.extraTime.end : P.regulation.end;
+    const breaks = [{ second: P.regulation.half, type:'half' }, { second: P.regulation.end, type:'ft' }];
+    if (p.official.extra){ breaks.push({ second: P.extraTime.half, type:'ethalf' }); breaks.push({ second: P.extraTime.end, type:'etend' }); }
+
+    // ---- choreography state ----
+    let t = 0;                 // current match second
+    let poss = H;              // team in possession
+    let bAx = 0.5, bY = 0.5;   // ball, in the possession team's attacking frame
+    let carrier = null;        // player on the ball
+    const kickOff = (second, teamId, type) => {
+      poss = teamId; bAx = 0.5; bY = 0.5; carrier = nearest(teamId, 0.5, 0.5, 0.5, 0.5, null, false);
+      official(type, second, { teamId, playerId: carrier? carrier.id : null, at:{x:0.5,y:0.5}, text: type===EV.KICK_OFF? (second===0? 'Kick-off.' : 'Back under way.') : type===EV.SECOND_HALF? 'Second half under way.' : 'Extra time. Thirty more minutes.' });
+    };
+    const turnover = (ax, y) => { poss = other(poss); bAx = 1-ax; bY = y; carrier = nearest(poss, bAx, bY, bAx, bY, null, true); };
+
+    // one possession spell from `from`, finishing no later than `until`. If `goal` is given the
+    // spell is scripted to end with that goal exactly at `until`. Returns the second it finished.
+    function spell(from, until, goal){
+      let second = from;
+      const team = poss; const dir = attackDir(p, team, second);
+      if (!carrier) carrier = nearest(team, bAx, bY, bAx, bY, null, true);
+      const passes = goal? ri(3,4) : ri(2,4);
+      const step = goal? Math.max(4, (until-from-3)/(passes+1)) : r(5,9);
+      const dribble = () => { bAx = clampAx(bAx + r(0.01,0.05)); bY = clampY(bY + r(-0.06,0.06)); };
+      const passTo = (target, second, dur) => {
+        const text = (carrier && rnd()<0.3)? (target.ax>0.75? carrier.name+' finds '+target.pl.name+' in the box.' : target.ax-bAx>0.12? carrier.name+' plays it forward to '+target.pl.name+'.' : carrier.name+' to '+target.pl.name+'.') : null;
+        illus(EV.PASS, Math.round(second + dur), { teamId: team, playerId: carrier? carrier.id : null, toPlayerId: target.pl.id, from: toAbs(dir, bAx, bY), to: toAbs(dir, target.ax, target.y), duration: dur, text });
+        bAx = target.ax; bY = target.y; carrier = target.pl;
+      };
+      // choose a receiver near a desired point and aim the pass at where he stands
+      const receiver = (wantAx, wantY, mustBe) => {
+        const pl = mustBe || nearest(team, wantAx, wantY, wantAx, wantY, carrier, wantAx<0.25);
+        const s = standing(pl, wantAx, wantY);
+        return { pl, ax: clampAx(s.x + r(-0.03,0.03)), y: clampY(s.y + r(-0.03,0.03)) };
+      };
+      for (let i=0;i<passes && second+step<until-3;i++){
+        dribble();
+        const wantAx = goal? Math.min(0.9, bAx + (0.9-bAx)/(passes-i)) : clampAx(bAx + r(0.04,0.2));
+        const wantY = clampY(bY + r(-0.3,0.3));
+        const dur = Math.min(2.5, Math.max(0.8, step*0.45));
+        passTo(receiver(wantAx, wantY), second, dur);
+        second += step;
+      }
+      if (goal){
+        const s = goal.s; const scorer = s.playerId? p.players.find(x=>x.id===s.playerId) : null;
+        if (scorer && carrier && scorer.id!==carrier.id && second+4<until){ dribble(); const tgt = receiver(Math.max(bAx, 0.82), clampY(0.5 + r(-0.2,0.2)), scorer); tgt.ax = Math.max(tgt.ax, 0.78); passTo(tgt, second, 2); second += 3; }
+        else { dribble(); bAx = Math.max(bAx, 0.78); }
+        official(EV.GOAL, until, { teamId: team, playerId: s.playerId, playerName: s.playerName, minute: s.minute, period: s.period, from: toAbs(dir, bAx, bY), to: toAbs(dir, 1, 0.5+r(-0.05,0.05)), duration: 1.2, eventRef: s.eventId,
+          text: (s.playerName||'Goal')+' scores for '+teamName(p, team)+(s.period==='extraTime'? ' in extra time' : '')+'!' });
+        poss = other(team); bAx = 0.5; bY = 0.5; carrier = null;
+        return until;
+      }
+      // outcome of a spell that does not end in a goal
+      dribble();
+      const deep = bAx > 0.68; const roll = rnd();
+      const at = toAbs(dir, bAx, bY);
+      const who = carrier? carrier.name : 'A shot';
+      if (deep && roll < 0.42){
+        const gk = gkOf(other(team));
+        illus(EV.SHOT_SAVED, Math.round(second), { teamId: team, playerId: carrier? carrier.id : null, keeperId: gk.id, from: at, to: toAbs(dir, 0.985, 0.5+r(-0.08,0.08)), duration: 1, text: who+' tests '+gk.name+'. Saved.' });
+        second += 6;
+        if (rnd()<0.35 && Math.round(second)<=until-6){   // no corner right before a whistle
+          const cy = rnd()<0.5? 0.03 : 0.97;
+          bAx = 0.985; bY = cy; carrier = nearest(team, 0.985, cy, 0.9, cy, carrier, false);   // not the shooter
+          illus(EV.CORNER, Math.round(second), { teamId: team, playerId: carrier? carrier.id : null, at: toAbs(dir, 0.985, cy), text: 'Corner to '+teamName(p, team)+'.' }); second += 6;
+        } else { turnover(0.92, 0.5); }
+      } else if (deep && roll < 0.7){
+        illus(EV.SHOT_WIDE, Math.round(second), { teamId: team, playerId: carrier? carrier.id : null, from: at, to: toAbs(dir, 0.995, rnd()<0.5? r(0.1,0.3) : r(0.7,0.9)), duration: 1, text: who+' drags it wide.' });
+        second += 5; turnover(0.94, 0.5);
+        if (Math.round(second)<=until-6){ carrier = gkOf(poss); bAx = 0.06; bY = 0.5; illus(EV.GOAL_KICK, Math.round(second), { teamId: poss, playerId: carrier.id, at: toAbs(attackDir(p, poss, second), 0.06, 0.5), text: null }); second += 4; }
+      } else if (deep && roll < 0.85){
+        const bx = Math.min(0.97, bAx+0.06);
+        illus(EV.SHOT_BLOCKED, Math.round(second), { teamId: team, playerId: carrier? carrier.id : null, from: at, to: toAbs(dir, bx, bY), duration: 0.6, text: 'Blocked.' });
+        second += 3; turnover(bx, bY);
+      } else {
+        const opp = nearest(other(team), 1-bAx, bY, 1-bAx, bY, null, false);
+        illus(rnd()<0.5? EV.TACKLE : EV.CLEARANCE, Math.round(second), { teamId: other(team), playerId: opp? opp.id : null, at, text: opp? (opp.name+' wins it back.') : null });
+        second += 3; turnover(bAx, bY); carrier = opp || carrier;
+      }
+      return second;
+    }
+
+    // ---- assemble ----
+    kickOff(0, H, EV.KICK_OFF);
+    let ai = 0;
+    const cardAt = (c, second) => {
+      official(EV.CARD, second, { teamId: c.teamId, playerId: c.playerId, playerName: c.playerName, card: c.card, minute: c.minute, at: toAbs(attackDir(p, other(c.teamId), second), bAx, bY), text: c.playerName+' is '+(c.card==='red'? 'sent off!' : 'booked.') });
+      if (c.card==='red'){ official(EV.SENT_OFF, second+1, { teamId: c.teamId, playerId: c.playerId, text: teamName(p, c.teamId)+' are down to ten men.' }); if (c.playerId){ sentOff.add(c.playerId); if (carrier && carrier.id===c.playerId) carrier = null; } }
+    };
+    const nextStop = () => { const a = anchorsList[ai]; const b = breaks.find(x=>x.second>t); return (a && (!b || a.second<=b.second))? { kind:a.kind, second:a.second, a } : (b? { kind:b.type, second:b.second } : null); };
+    let guard = 0;
+    while (t < end && guard++ < 3000){
+      const stop = nextStop(); if (!stop) break;
+      if (stop.kind==='goal'){
+        const buildUp = Math.min(24, stop.second - t);
+        while (stop.second - t > buildUp + 8) t = spell(t, stop.second - buildUp, null);
+        // the scoring side takes over for the scripted build-up
+        if (poss!==stop.a.s.teamId){ poss = stop.a.s.teamId; bAx = 1-bAx; carrier = null; }
+        bAx = Math.min(bAx, 0.55); carrier = nearest(poss, bAx, bY, bAx, bY, null, false);
+        t = spell(Math.max(t, stop.second - buildUp), stop.second, stop.a);
+        ai++;
+        if (t + 6 < end && !breaks.some(b=>b.second>=t && b.second<t+6)){ t += 5; kickOff(t, poss, EV.KICK_OFF); }
+      } else if (stop.kind==='card'){
+        while (stop.second - t > 10) t = spell(t, stop.second - 4, null);
+        // the offender fouls the player on the ball
+        if (poss===stop.a.c.teamId){ poss = other(poss); bAx = 1-bAx; carrier = nearest(poss, bAx, bY, bAx, bY, null, false); }
+        illus(EV.FOUL, Math.max(t, stop.second-2), { teamId: stop.a.c.teamId, playerId: stop.a.c.playerId, at: toAbs(attackDir(p, poss, stop.second), bAx, bY), text: null });
+        cardAt(stop.a.c, stop.second); t = stop.second + 4; ai++;
+      } else {
+        while (stop.second - t > 8) t = spell(t, stop.second - 2, null);
+        t = stop.second;
+        if (stop.kind==='half'){ official(EV.HALF_TIME, t, { text: 'Half-time.' }); kickOff(t, A, EV.SECOND_HALF); }
+        else if (stop.kind==='ft'){ official(EV.FULL_TIME, t, { text: fullTimeText(p) }); if (p.official.extra) kickOff(t, H, EV.ET_START); }
+        else if (stop.kind==='ethalf'){ official(EV.ET_HALF, t, { text: 'Half-time in extra time.' }); kickOff(t, A, EV.ET_START); }
+        else if (stop.kind==='etend'){ official(EV.ET_END, t, { text: p.official.extra==='pens'? 'Still level. Penalties.' : 'The final whistle in extra time.' }); }
+      }
+    }
+    if (p.official.extra==='pens'){
+      official(EV.PENALTIES, end, { text: 'A penalty shoot-out decides it.' });
+      official(EV.SHOOTOUT_RESULT, end+1, { teamId: p.official.penaltiesWinnerTeamId, text: teamName(p, p.official.penaltiesWinnerTeamId)+' win on penalties.' });
+    }
+    // stable order: by second, then insertion order
+    events.forEach((e,i)=>{ e._i = i; });
+    events.sort((a,b)=>a.matchSecond-b.matchSecond || a._i-b._i);
+    events.forEach(e=>{ delete e._i; });
+    return events;
+  }
+
+  // Returns a new frozen presentation with events attached (the input is not modified).
+  function withTimeline(p){
+    const events = build(p);
+    const out = Object.assign({}, p, { events: Object.freeze(events) });
+    const v = MD.validate(out);
+    if (!v.ok) throw new Error('matchday timeline invalid: '+v.errors.join('; '));
+    return Object.freeze(out);
+  }
+
+  MD.buildTimeline = build; MD.withTimeline = withTimeline; MD.attackDir = attackDir; MD.teamName = teamName;
+})(typeof window!=='undefined'? window : globalThis);
+
+// ============================================================================
+//  Matchday: scene model
+//  createScene(presentation) returns an object whose getSceneAt(second) gives
+//  the state of the pitch at any match second: where every player and the
+//  ball are, who has possession, the phase of the match and the score as it
+//  stood at that moment. It is pure and stateless: the same second always
+//  gives the same scene, which is what makes seeking and scrubbing trivial.
+//
+//  Renderers consume scenes and nothing else. They never read events or the
+//  official record directly, so a new renderer only has to draw a scene.
+//
+//  Coordinates in a scene are absolute (0..1 across the pitch). The home side
+//  attacks towards x = 1 in the first half; the scene mirrors formations at
+//  half-time so the renderer never needs to know which half it is.
+// ============================================================================
+(function(root){
+  const MD = root.Matchday; const EV = MD.EVENT; const P = MD.PERIODS;
+
+  const PHASE_LABEL = { pre:'Kick-off', firstHalf:'First half', halfTime:'Half-time', secondHalf:'Second half', fullTime:'Full time', extraTime1:'Extra time', etBreak:'Extra time break', extraTime2:'Extra time', etEnd:'End of extra time', penalties:'Penalties', final:'Full time' };
+  const lerp = (a,b,t) => a + (b-a)*t;
+  const smooth = t => t<0? 0 : t>1? 1 : t*t*(3-2*t);
+  const RUN_SPEED = 0.08;    // pitch lengths per second a player runs to or from the ball (about 8 m/s)
+  const RUN_MIN = 2.5, RUN_MAX = 8;   // bounds on run-ups and on the jog back into the shape
+  const SHAPE_LAG = [0, 1, 2, 3];               // the team shape follows a smoothed ball position
+
+  function createScene(p){
+    if (!p.events) throw new Error('createScene needs a presentation with events');
+    const H = p.teams.home.id, A = p.teams.away.id;
+    const byId = {}; for (const pl of p.players) byId[pl.id] = pl;
+    const anchors = MD.formationAnchors(p.players);
+    const gkOf = {}; for (const pl of p.players) if (pl.role==='GK' && !gkOf[pl.teamId]) gkOf[pl.teamId] = pl.id;
+    // players already sent off when a restart is built never take it
+    const offSoFar = new Set();
+    const on = x => !offSoFar.has(x.id);
+    const kicker = teamId => { const f = p.players.find(x=>x.teamId===teamId && x.role==='FWD' && on(x)) || p.players.find(x=>x.teamId===teamId && x.role!=='GK' && on(x)); return f? f.id : null; };
+    const anyOf = (teamId, role) => { const f = p.players.find(x=>x.teamId===teamId && x.role===role && on(x)) || p.players.find(x=>x.teamId===teamId && on(x)); return f? f.id : null; };
+
+    // ---- ball keyframes: {t, x, y, carrier, team, kind} ----
+    const keys = [];
+    const key = (t, pos, carrier, team, kind) => keys.push({ t, x: pos.x, y: pos.y, carrier: (carrier && !offSoFar.has(carrier))? carrier : null, team: team||null, kind: kind||'hold' });
+    const centre = { x:0.5, y:0.5 };
+    for (const e of p.events){
+      const d = e.duration||0;
+      switch (e.type){
+        case EV.SENT_OFF: if (e.playerId) offSoFar.add(e.playerId); break;
+        case EV.KICK_OFF: case EV.SECOND_HALF: case EV.ET_START: key(e.matchSecond, centre, e.playerId||kicker(e.teamId), e.teamId, 'restart'); if (e.type!==EV.KICK_OFF) keys[keys.length-1].cut = true; break;   // a new period: the ball is placed, not carried, to the spot
+        case EV.PASS: case EV.RUN: key(e.matchSecond-d, e.from, e.playerId, e.teamId, 'launch'); key(e.matchSecond, e.to, e.type===EV.RUN? e.playerId : e.toPlayerId, e.teamId, 'arrive'); break;
+        case EV.SHOT_SAVED: key(e.matchSecond-d, e.from, e.playerId, e.teamId, 'launch'); key(e.matchSecond, e.to, e.keeperId||null, e.teamId, 'arrive'); break;
+        case EV.SHOT_WIDE: case EV.SHOT_BLOCKED: key(e.matchSecond-d, e.from, e.playerId, e.teamId, 'launch'); key(e.matchSecond, e.to, null, e.teamId, 'arrive'); break;
+        case EV.GOAL: if (e.from && e.to){ key(e.matchSecond-d, e.from, e.playerId, e.teamId, 'launch'); key(e.matchSecond, e.to, null, e.teamId, 'goal'); } break;
+        case EV.CORNER: key(e.matchSecond, e.at, e.playerId||anyOf(e.teamId,'MID'), e.teamId, 'restart'); break;
+        case EV.GOAL_KICK: key(e.matchSecond, e.at, e.playerId||gkOf[e.teamId]||null, e.teamId, 'restart'); break;
+        case EV.TACKLE: case EV.CLEARANCE: key(e.matchSecond, e.at, e.playerId, e.teamId, 'hold'); break;
+        case EV.FOUL: key(e.matchSecond, e.at, null, e.teamId, 'hold'); break;
+        default: break;
+      }
+    }
+    keys.forEach((k,i)=>{ k.i = i; });
+    keys.sort((a,b)=>a.t-b.t || a.i-b.i);
+    // where and when each carrier lets go of the ball: at a launch they kick it from where they
+    // stand; otherwise the hand-over happens at the next key with a different carrier
+    for (let i=0;i<keys.length;i++){
+      const k = keys[i]; if (!k.carrier) continue;
+      let j = i; while (j+1<keys.length && keys[j+1].carrier===k.carrier) j++;
+      const rel = keys[j].kind==='launch'? keys[j] : (keys[j+1] || keys[j]);
+      // how long the carrier needs to run to this key from roughly where the shape puts them,
+      // and how long they take to jog back into the shape after letting the ball go
+      const pl = byId[k.carrier];
+      const shapeAt = (pos, t) => { const dir = t >= P.regulation.half? (pl.teamId===H? -1 : 1) : (pl.teamId===H? 1 : -1); const sp = MD.shapePos(anchors[pl.id], pl.role, dir===1? pos.x : 1-pos.x, pos.y); return { x: dir===1? sp.x : 1-sp.x, y: sp.y }; };
+      const runTime = d => Math.max(RUN_MIN, Math.min(RUN_MAX, (d+0.08)/RUN_SPEED));   // margin: the live shape lags the ball
+      const sa = shapeAt(k, k.t), sr = shapeAt(rel, rel.t);
+      k.approach = runTime(Math.hypot(k.x-sa.x, k.y-sa.y));
+      k.release = { t: rel.t, x: rel.x, y: rel.y, drift: runTime(Math.hypot(rel.x-sr.x, rel.y-sr.y)) };
+    }
+
+    // per-player list of keyframe indexes where they carry the ball
+    const carries = {}; for (const pl of p.players) carries[pl.id] = [];
+    keys.forEach((k,i)=>{ if (k.carrier && carries[k.carrier]) carries[k.carrier].push(i); });
+
+    // phase boundaries
+    const phases = [{ t:-1, phase:'pre' }];
+    let etStarts = 0;
+    for (const e of p.events){
+      if (e.type===EV.KICK_OFF && e.matchSecond===0) phases.push({ t:e.matchSecond, phase:'firstHalf' });
+      else if (e.type===EV.HALF_TIME) phases.push({ t:e.matchSecond, phase:'halfTime' });
+      else if (e.type===EV.SECOND_HALF) phases.push({ t:e.matchSecond, phase:'secondHalf' });
+      else if (e.type===EV.FULL_TIME) phases.push({ t:e.matchSecond, phase:'fullTime' });
+      else if (e.type===EV.ET_START){ etStarts++; phases.push({ t:e.matchSecond, phase: etStarts===1? 'extraTime1' : 'extraTime2' }); }
+      else if (e.type===EV.ET_HALF) phases.push({ t:e.matchSecond, phase:'etBreak' });
+      else if (e.type===EV.ET_END) phases.push({ t:e.matchSecond, phase:'etEnd' });
+      else if (e.type===EV.PENALTIES) phases.push({ t:e.matchSecond, phase:'penalties' });
+      else if (e.type===EV.SHOOTOUT_RESULT) phases.push({ t:e.matchSecond, phase:'final' });
+    }
+    const goals = p.events.filter(e=>e.type===EV.GOAL);
+    const offs = p.events.filter(e=>e.type===EV.SENT_OFF);
+    const duration = p.events.length? p.events[p.events.length-1].matchSecond : P.regulation.end;
+
+    function lastIndex(arr, t, get){ // last i with get(arr[i]) <= t, binary search
+      let lo = 0, hi = arr.length-1, ans = -1;
+      while (lo<=hi){ const mid = (lo+hi)>>1; if (get(arr[mid])<=t){ ans = mid; lo = mid+1; } else hi = mid-1; }
+      return ans;
+    }
+
+    function ballAt(t){
+      const i = lastIndex(keys, t, k=>k.t);
+      if (i<0) return { x:0.5, y:0.5, z:0, carrier: null, team: H, inFlight:false, from:null, to:null, progress:0 };
+      const k0 = keys[i], k1 = keys[i+1];
+      if (!k1 || k1.t<=k0.t || k1.cut) return { x:k0.x, y:k0.y, z:0, carrier:k0.carrier, team:k0.team, inFlight:false, from:k0, to:null, progress:1 };
+      const u = (t-k0.t)/(k1.t-k0.t);
+      const flight = k0.kind==='launch';          // the ball is travelling between players
+      const x = lerp(k0.x, k1.x, flight? u : smooth(u)), y = lerp(k0.y, k1.y, flight? u : smooth(u));
+      const dist = Math.hypot(k1.x-k0.x, k1.y-k0.y);
+      const z = flight? Math.sin(Math.PI*u) * Math.min(1, dist*1.6) * (k1.kind==='goal'? 0.35 : 1) : 0;
+      return { x, y, z, carrier: flight? null : k0.carrier, team: k0.team, inFlight: flight, from:k0, to:k1, progress:u };
+    }
+
+    function phaseAt(t){ let ph = phases[0]; for (const x of phases){ if (x.t<=t) ph = x; else break; } return ph.phase; }
+    function scoreAt(t){ let h=0, a=0; for (const g of goals){ if (g.matchSecond<=t){ if (g.teamId===H) h++; else a++; } } return { home:h, away:a }; }
+    function clockAt(t){
+      const et = t>=P.regulation.end && p.official.extra;
+      const base = et? Math.min(t, P.extraTime.end) : Math.min(t, P.regulation.end);
+      const m = Math.floor(base/60), s = Math.floor(base%60);
+      return { minute: m, second: s, label: (m<10?'0':'')+m+':'+(s<10?'0':'')+s, extraTime: !!et };
+    }
+
+    function getSceneAt(t){
+      t = Math.max(0, t);
+      const ball = ballAt(t);
+      // the shape follows a smoothed ball so a long pass does not yank the whole team at once
+      let sbx = 0, sby = 0; for (const lag of SHAPE_LAG){ const b = ballAt(Math.max(0, t-lag)); sbx += b.x; sby += b.y; } sbx /= SHAPE_LAG.length; sby /= SHAPE_LAG.length;
+      const secondHalfOrLater = t >= P.regulation.half;
+      const dirOf = teamId => (teamId===H? (secondHalfOrLater? -1 : 1) : (secondHalfOrLater? 1 : -1));
+      const sentOff = new Set(); for (const o of offs) if (o.matchSecond<=t && o.playerId) sentOff.add(o.playerId);
+      const players = p.players.map(pl=>{
+        const dir = dirOf(pl.teamId);
+        // the whole team shape slides with the ball (shared model, see schema.js)
+        const sp = MD.shapePos(anchors[pl.id], pl.role, dir===1? sbx : 1-sbx, sby);
+        let x = dir===1? sp.x : 1-sp.x, y = sp.y;
+        // involvement: drift back to the shape after letting the ball go, run to meet it before
+        // receiving, and sit exactly on it while carrying. Each blend starts from the previous
+        // one's output, so there is never a jump.
+        const list = carries[pl.id];
+        if (list.length){
+          const li = lastIndex(list, t, i=>keys[i].t);
+          const prev = li>=0? keys[list[li]] : null, next = li+1<list.length? keys[list[li+1]] : null;
+          if (prev){
+            const rel = prev.release;
+            if (t <= rel.t){ x = rel.x; y = rel.y; }
+            else if (t - rel.t < rel.drift){ const u = smooth((t - rel.t)/rel.drift); x = lerp(rel.x, x, u); y = lerp(rel.y, y, u); }
+          }
+          if (next && next.t - t < next.approach){ const u = smooth(1 - (next.t - t)/next.approach); x = lerp(x, next.x, u); y = lerp(y, next.y, u); }
+          if (ball.carrier===pl.id){ x = ball.x; y = ball.y; }
+        }
+        const off = sentOff.has(pl.id);
+        if (off){ x = pl.teamId===H? 0.3 : 0.7; y = 1.04; }
+        return { id: pl.id, teamId: pl.teamId, name: pl.name, shirtNo: pl.shirtNo, role: pl.role, x, y, hasBall: ball.carrier===pl.id, sentOff: off };
+      });
+      const phase = phaseAt(t);
+      const lastGoal = goals.filter(g=>g.matchSecond<=t).pop();
+      const flash = (lastGoal && t - lastGoal.matchSecond < 2.5)? { type:'goal', teamId: lastGoal.teamId, age: t - lastGoal.matchSecond } : null;
+      return {
+        t, phase, phaseLabel: PHASE_LABEL[phase]||phase, clock: clockAt(t), score: scoreAt(t),
+        possession: ball.team, attackDir: { [H]: dirOf(H), [A]: dirOf(A) },
+        ball: { x: ball.x, y: ball.y, z: ball.z, inFlight: ball.inFlight, carrierId: ball.carrier },
+        players, flash, live: phase==='firstHalf'||phase==='secondHalf'||phase==='extraTime1'||phase==='extraTime2',
+      };
+    }
+    return { getSceneAt, duration, keyframes: keys, anchors, phases };
+  }
+
+  MD.createScene = createScene; MD.PHASE_LABEL = PHASE_LABEL;
+})(typeof window!=='undefined'? window : globalThis);
+
+// ============================================================================
+//  Matchday: playback controller
+//  Drives football time for a presentation: play, pause, speed, seek, skip
+//  and the event stream for commentary. It owns no game state and never
+//  touches the save: it only turns real seconds into match seconds.
+//
+//  A full match is 90 minutes of match time but should take about 75 real
+//  seconds to watch, so time runs at two rates. Highlight windows (the
+//  build-up to every goal, cards, a handful of chances, kick-offs and the
+//  final whistle) run close to real time; everything else fast-forwards.
+//  The time map is built once from the presentation and is deterministic.
+//
+//  Public surface (see ARCHITECTURE_MATCHDAY.md):
+//    const pb = Matchday.createPlayback(presentation, { onFrame, onEvent, onEnd, onState });
+//    pb.play(); pb.pause(); pb.toggle(); pb.setSpeed(2); pb.seek(sec); pb.skip(); pb.dispose();
+//    pb.state() -> { playing, speed, matchSecond, ended, fastForward, realDuration }
+// ============================================================================
+(function(root){
+  const MD = root.Matchday; const EV = MD.EVENT; const P = MD.PERIODS;
+
+  const DEFAULTS = {
+    targetSeconds: 78,       // real seconds for a regulation match at 1x
+    extraTimeSeconds: 24,    // added when there is extra time
+    highlightRate: 1.7,      // match seconds per real second inside a highlight (raised for goal-heavy games)
+    maxHighlightRate: 3.2,
+    highlightShare: 0.8,     // at most this share of the real time goes to highlights
+    maxChances: 7,           // non-goal chances shown as highlights
+    endHold: 2.5,            // real seconds to sit on the final whistle before onEnd
+  };
+
+  function mergeWindows(w, end){
+    w.sort((x,y)=>x.a-y.a);
+    const out = [];
+    for (const x of w){ const last = out[out.length-1]; if (last && x.a<=last.b){ last.b = Math.max(last.b, x.b); } else out.push({ a: Math.max(0, x.a), b: x.b }); }
+    for (const x of out) x.b = Math.min(x.b, end);
+    return out.filter(x=>x.b>x.a);
+  }
+  const span = ws => ws.reduce((s,x)=>s+(x.b-x.a), 0);
+
+  // ---- time map ----
+  // Segments [a,b,rate]: rate is match seconds per real second at 1x. Highlights (goals, cards,
+  // kick-offs, whistles, a few chances) play at highlightRate; the rest fast-forwards so the
+  // whole match fits the target. Goal-heavy matches speed the highlights up rather than overrun.
+  function buildTimeMap(p, opts){
+    const end = p.official.extra? P.extraTime.end : P.regulation.end;
+    const target = opts.targetSeconds + (p.official.extra? opts.extraTimeSeconds : 0);
+    const must = [];
+    must.push({ a:0, b:10 });
+    must.push({ a:P.regulation.half-4, b:P.regulation.half+8 });
+    must.push({ a:P.regulation.end-5, b:P.regulation.end + (p.official.extra? 8 : 0) });
+    if (p.official.extra){ must.push({ a:P.extraTime.half-4, b:P.extraTime.half+6 }); must.push({ a:P.extraTime.end-5, b:P.extraTime.end }); }
+    for (const e of p.events){
+      if (e.type===EV.GOAL) must.push({ a:e.matchSecond-22, b:Math.min(end, e.matchSecond+5) });
+      else if (e.type===EV.CARD) must.push({ a:e.matchSecond-7, b:e.matchSecond+4 });
+    }
+    let windows = mergeWindows(must, end);
+    const budget = target*opts.highlightShare;
+    let rate = Math.max(opts.highlightRate, Math.min(opts.maxHighlightRate, span(windows)/budget));
+    // chances fill whatever budget is left, spread through the match, chosen deterministically
+    const chances = p.events.filter(e=>e.type===EV.SHOT_SAVED || e.type===EV.SHOT_WIDE || e.type===EV.SHOT_BLOCKED)
+      .filter(e=>!windows.some(x=>e.matchSecond>=x.a-10 && e.matchSecond<=x.b+4));
+    if (chances.length){
+      const n = Math.min(opts.maxChances, chances.length);
+      const rnd = MD.seededRandom(p.seed ^ 0x5a5a);
+      const picked = [];
+      for (let i=0;i<n;i++){ const lo = Math.floor(i*chances.length/n), hi = Math.max(lo, Math.floor((i+1)*chances.length/n)-1); picked.push(chances[lo + Math.floor(rnd()*(hi-lo+1))]); }
+      for (const e of picked){
+        const trial = mergeWindows(windows.concat([{ a:e.matchSecond-7, b:e.matchSecond+3 }]), end);
+        if (span(trial)/rate <= budget) windows = trial;
+      }
+    }
+    const hlReal = span(windows)/rate;
+    const gapMatch = end - span(windows);
+    const gapReal = Math.max(6, target - hlReal);
+    const ffRate = Math.min(600, Math.max(rate, gapMatch/gapReal));
+    const segs = []; let t = 0;
+    for (const x of windows){
+      if (x.a>t) segs.push({ a:t, b:x.a, rate: ffRate, ff:true });
+      segs.push({ a:x.a, b:x.b, rate, ff:false });
+      t = x.b;
+    }
+    if (t<end) segs.push({ a:t, b:end, rate: ffRate, ff:true });
+    const realDuration = segs.reduce((s,x)=>s+(x.b-x.a)/x.rate, 0);
+    return { segs, end, realDuration, ffRate, highlightRate: rate, highlightSeconds: hlReal };
+  }
+
+  function createPlayback(p, options){
+    const opts = Object.assign({}, DEFAULTS, options||{});
+    if (!p.events) throw new Error('createPlayback needs a presentation with events');
+    const map = buildTimeMap(p, opts);
+    const finalSecond = p.events[p.events.length-1].matchSecond;   // SHOOTOUT_RESULT can sit 1s past the end
+    const st = { playing:false, speed:1, matchSecond:0, ended:false, fastForward:false, realDuration: map.realDuration, endHold: 0 };
+    let raf = 0, lastTs = 0, nextEvent = 0, disposed = false;
+    const emit = (name, ...args) => { const f = opts[name]; if (typeof f==='function') f(...args); };
+    const segAt = s => { for (const x of map.segs) if (s>=x.a && s<x.b) return x; return map.segs[map.segs.length-1]; };
+
+    function fireEventsUpTo(s, officialOnly){
+      while (nextEvent < p.events.length && p.events[nextEvent].matchSecond <= s){
+        const e = p.events[nextEvent++];
+        // commentary: every official event; illustrative lines only inside highlights
+        if (e.provenance==='official') emit('onEvent', e);
+        else if (!officialOnly && e.text && !segAt(e.matchSecond).ff) emit('onEvent', e);
+      }
+    }
+    function syncEventIndex(s){ nextEvent = 0; while (nextEvent < p.events.length && p.events[nextEvent].matchSecond <= s) nextEvent++; }
+
+    function frame(ts){
+      raf = 0;
+      if (disposed || !st.playing) return;
+      const dt = lastTs? Math.min(0.1, (ts-lastTs)/1000) : 0; lastTs = ts;
+      if (st.matchSecond >= map.end){
+        st.fastForward = false;
+        // hold on the whistle (and the shoot-out line) before handing back
+        st.endHold += dt;
+        if (st.matchSecond < finalSecond){ st.matchSecond = finalSecond; fireEventsUpTo(finalSecond); }
+        emit('onFrame', st.matchSecond, st);
+        if (st.endHold >= opts.endHold){ finish(); return; }
+      } else {
+        const seg = segAt(st.matchSecond);
+        st.fastForward = seg.ff;
+        let adv = seg.rate * st.speed * dt;
+        // do not let one real frame leap over a segment boundary at the wrong rate
+        if (st.matchSecond + adv > seg.b) adv = Math.max(seg.b - st.matchSecond, 0.001);
+        st.matchSecond = Math.min(map.end, st.matchSecond + adv);
+        fireEventsUpTo(st.matchSecond);
+        emit('onFrame', st.matchSecond, st);
+      }
+      raf = root.requestAnimationFrame(frame);
+    }
+    function finish(){ if (st.ended) return; st.ended = true; st.playing = false; st.matchSecond = finalSecond; fireEventsUpTo(finalSecond, true); emit('onFrame', st.matchSecond, st); emit('onState', st); emit('onEnd', st); }
+
+    const pb = {
+      play(){ if (disposed || st.ended) return; if (!st.playing){ st.playing = true; lastTs = 0; emit('onState', st); raf = root.requestAnimationFrame(frame); } },
+      pause(){ if (!st.playing) return; st.playing = false; if (raf){ root.cancelAnimationFrame(raf); raf = 0; } emit('onState', st); },
+      toggle(){ if (st.playing) pb.pause(); else pb.play(); },
+      setSpeed(x){ st.speed = [1,2,4].includes(x)? x : 1; emit('onState', st); },
+      seek(s){ s = Math.max(0, Math.min(finalSecond, s)); st.matchSecond = s; st.endHold = 0; syncEventIndex(s); if (s>=finalSecond && !st.ended){ st.ended = true; st.playing = false; emit('onEnd', st); } else if (st.ended && s<finalSecond){ st.ended = false; } emit('onFrame', st.matchSecond, st); emit('onState', st); },
+      skip(){ pb.pause(); st.matchSecond = finalSecond; finish(); },   // the official events still to come are emitted so the log is complete
+      replay(){ st.ended = false; st.endHold = 0; st.matchSecond = 0; syncEventIndex(0); emit('onState', st); emit('onFrame', 0, st); pb.play(); },
+      state(){ return Object.assign({}, st); },
+      timeMap(){ return map; },
+      dispose(){ disposed = true; st.playing = false; if (raf){ root.cancelAnimationFrame(raf); raf = 0; } },
+    };
+    return pb;
+  }
+
+  MD.createPlayback = createPlayback; MD.buildTimeMap = buildTimeMap; MD.PLAYBACK_DEFAULTS = DEFAULTS;
+})(typeof window!=='undefined'? window : globalThis);
+
+// ============================================================================
+//  Matchday: Canvas2DRenderer (Phase 1)
+//  Draws a scene (see scene.js) on a 2D canvas: striped pitch, markings,
+//  goals, numbered team markers and a ball with a shadow. It knows nothing
+//  about the match beyond the scene handed to it and the two kits.
+//
+//  Renderer contract (every renderer implements exactly this):
+//    const r = Matchday.renderers.canvas2d.create(options);
+//    r.mount(containerElement, presentation);  // build DOM, read kits
+//    r.render(scene, hud);                     // draw one frame
+//    r.resize();                               // container size changed
+//    r.dispose();                              // remove DOM, listeners, caches
+//  hud: { fastForward, speed, reducedMotion, homeIsUser } (presentation hints only)
+//
+//  drawFrame(ctx, w, h, scene, frameInfo) is a pure function so it can be
+//  exercised headlessly (see test-renderers.js).
+// ============================================================================
+(function(root){
+  const MD = root.Matchday;
+  MD.renderers = MD.renderers || {};
+
+  // ---- shared layout helpers (used by every canvas renderer) ----
+  // Fits a 105 x 68 pitch inside w x h with a margin, portrait when the box is taller than wide.
+  function layout(w, h, margin){
+    margin = margin===undefined? Math.round(Math.min(w,h)*0.055) : margin;
+    const availW = w - 2*margin, availH = h - 2*margin;
+    const ratio = 105/68;
+    // whichever orientation gives the bigger pitch
+    const fit = (a, b) => { let L = a, W = L/ratio; if (W>b){ W = b; L = W*ratio; } return { L, W }; };
+    const land = fit(availW, availH), port = fit(availH, availW);
+    const portrait = port.L > land.L*1.02;
+    const { L, W } = portrait? port : land;   // L along the pitch length (x axis), W across it (y axis)
+    const ox = portrait? (w-W)/2 : (w-L)/2, oy = portrait? (h-L)/2 : (h-W)/2;
+    const proj = portrait? ((x,y)=>({ X: ox + y*W, Y: oy + x*L })) : ((x,y)=>({ X: ox + x*L, Y: oy + y*W }));
+    return { w, h, portrait, L, W, ox, oy, margin, m: L/105, proj };
+  }
+  function luminance(c){ const v = rgb(c); return (0.299*v[0] + 0.587*v[1] + 0.114*v[2])/255; }
+  function rgb(c){ if (c[0]==='#'){ return [parseInt(c.slice(1,3),16), parseInt(c.slice(3,5),16), parseInt(c.slice(5,7),16)]; } const m = /hsl\((\d+),(\d+)%,(\d+)%\)/.exec(c); if (!m) return [128,128,128]; const h=+m[1]/360, s=+m[2]/100, l=+m[3]/100; const f=(n)=>{ const k=(n+h*12)%12; const a=s*Math.min(l,1-l); return Math.round(255*(l - a*Math.max(-1, Math.min(k-3, 9-k, 1)))); }; return [f(0),f(8),f(4)]; }
+  const inkOn = c => luminance(c) > 0.55? '#111111' : '#FFFFFF';
+
+  const PALETTE = { grassA:'#2F8F3C', grassB:'#298534', line:'#F2F7F2', surround:'#1E5F2A', net:'#DDE6DD', ball:'#FFFFFF', ballInk:'#222222', shadow:'rgba(0,0,0,0.35)' };
+
+  // ---- pitch (cached per size) ----
+  function drawPitch(ctx, lay){
+    const { w, h, L, W, m, proj, portrait } = lay;
+    ctx.fillStyle = PALETTE.surround; ctx.fillRect(0,0,w,h);
+    // stripes across the pitch length
+    const bands = 12;
+    for (let i=0;i<bands;i++){
+      const a = proj(i/bands, 0), b = proj((i+1)/bands, 1);
+      ctx.fillStyle = i%2? PALETTE.grassA : PALETTE.grassB;
+      ctx.fillRect(Math.min(a.X,b.X), Math.min(a.Y,b.Y), Math.abs(b.X-a.X), Math.abs(b.Y-a.Y));
+    }
+    ctx.strokeStyle = PALETTE.line; ctx.lineWidth = Math.max(1.5, m*0.45); ctx.lineCap = 'butt';
+    const rect = (x0,y0,x1,y1) => { const a = proj(x0,y0), b = proj(x1,y1); ctx.strokeRect(Math.min(a.X,b.X), Math.min(a.Y,b.Y), Math.abs(b.X-a.X), Math.abs(b.Y-a.Y)); };
+    const line = (x0,y0,x1,y1) => { const a = proj(x0,y0), b = proj(x1,y1); ctx.beginPath(); ctx.moveTo(a.X,a.Y); ctx.lineTo(b.X,b.Y); ctx.stroke(); };
+    const circle = (x,y,rm,fill) => { const c = proj(x,y); ctx.beginPath(); ctx.arc(c.X, c.Y, rm*m, 0, Math.PI*2); if (fill){ ctx.fillStyle = PALETTE.line; ctx.fill(); } else ctx.stroke(); };
+    rect(0,0,1,1);
+    line(0.5,0,0.5,1);
+    circle(0.5,0.5,9.15,false); circle(0.5,0.5,0.5,true);
+    const pa = 16.5/105, paw = 40.32/68, six = 5.5/105, sixw = 18.32/68, spot = 11/105;
+    for (const side of [0,1]){
+      const x0 = side? 1 : 0, dir = side? -1 : 1;
+      rect(x0, 0.5-paw/2, x0+dir*pa, 0.5+paw/2);
+      rect(x0, 0.5-sixw/2, x0+dir*six, 0.5+sixw/2);
+      circle(x0+dir*spot, 0.5, 0.5, true);
+      // penalty arc: the part of the 9.15m circle outside the area
+      const sp = proj(x0+dir*spot, 0.5); const r = 9.15*m;
+      const edge = proj(x0+dir*pa, 0.5);
+      const d = Math.hypot(edge.X-sp.X, edge.Y-sp.Y); const half = Math.acos(Math.min(1, d/r));
+      const base = Math.atan2(edge.Y-sp.Y, edge.X-sp.X);
+      ctx.beginPath(); ctx.arc(sp.X, sp.Y, r, base-half, base+half); ctx.stroke();
+      // goal: 7.32m wide, drawn 2.2m deep behind the line, with a hatched net
+      const gw = 7.32/68, gd = 2.2/105;
+      const g0 = proj(x0, 0.5-gw/2), g1 = proj(x0-dir*gd, 0.5+gw/2);
+      const gx = Math.min(g0.X,g1.X), gy = Math.min(g0.Y,g1.Y), gW = Math.abs(g1.X-g0.X), gH = Math.abs(g1.Y-g0.Y);
+      ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.fillRect(gx, gy, gW, gH);
+      ctx.save(); ctx.strokeStyle = PALETTE.net; ctx.lineWidth = 1; ctx.beginPath();
+      const stepPx = Math.max(3, m*0.9);
+      if (portrait){ for (let x=gx; x<=gx+gW; x+=stepPx){ ctx.moveTo(x, gy); ctx.lineTo(x, gy+gH); } }
+      else { for (let y=gy; y<=gy+gH; y+=stepPx){ ctx.moveTo(gx, y); ctx.lineTo(gx+gW, y); } }
+      ctx.stroke(); ctx.restore();
+      ctx.strokeStyle = PALETTE.line; ctx.lineWidth = Math.max(2, m*0.6); ctx.strokeRect(gx, gy, gW, gH); ctx.lineWidth = Math.max(1.5, m*0.45);
+    }
+    // corner arcs
+    for (const [cx,cy] of [[0,0],[0,1],[1,0],[1,1]]){ const c = proj(cx,cy); ctx.beginPath(); ctx.arc(c.X, c.Y, 1*m, 0, Math.PI*2); ctx.stroke(); }
+  }
+
+  // ---- one frame ----
+  // frameInfo: { teams: {home:{id,kit,short}, away:{...}}, fastForward, flash, lay, pitch (cached canvas) }
+  function drawFrame(ctx, w, h, scene, info){
+    const lay = info.lay || layout(w, h);
+    const { m, proj } = lay;
+    if (info.pitch) ctx.drawImage(info.pitch, 0, 0, w, h); else drawPitch(ctx, lay);
+    const home = info.teams.home, away = info.teams.away;
+    const r = Math.max(6, m*2.6);                       // player marker radius
+    const font = (px) => `700 ${Math.round(px)}px "Courier New",Courier,monospace`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+    // players: home are discs, away are rounded squares (shape backs up colour)
+    const players = scene.players.slice().sort((a,b)=>a.y-b.y);
+    for (const pl of players){
+      const team = pl.teamId===home.id? home : away;
+      const isHome = team===home;
+      let pos;
+      if (pl.sentOff){ pos = proj(pl.x, 1.0); pos = lay.portrait? { X: pos.X + (isHome? -1.3 : 1.3)*r, Y: pos.Y } : { X: pos.X, Y: pos.Y + 1.4*r }; }
+      else pos = proj(pl.x, pl.y);
+      const fill = pl.role==='GK'? team.kit.secondary : team.kit.primary;
+      const stroke = pl.role==='GK'? team.kit.primary : team.kit.secondary;
+      ctx.save();
+      if (pl.sentOff) ctx.globalAlpha = 0.45;
+      // ground shadow
+      ctx.fillStyle = PALETTE.shadow; ctx.beginPath(); ctx.ellipse(pos.X+r*0.15, pos.Y+r*0.35, r*0.95, r*0.55, 0, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = fill; ctx.strokeStyle = stroke; ctx.lineWidth = Math.max(1.5, r*0.22);
+      ctx.beginPath();
+      if (isHome) ctx.arc(pos.X, pos.Y, r, 0, Math.PI*2);
+      else roundRect(ctx, pos.X-r*0.92, pos.Y-r*0.92, r*1.84, r*1.84, r*0.35);
+      ctx.fill(); ctx.stroke();
+      if (pl.hasBall){ ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = Math.max(1, r*0.14); ctx.beginPath(); ctx.arc(pos.X, pos.Y, r*1.45, 0, Math.PI*2); ctx.stroke(); }
+      ctx.fillStyle = inkOn(fill); ctx.font = font(r*1.15);
+      ctx.fillText(String(pl.shirtNo), pos.X, pos.Y+r*0.05);
+      ctx.restore();
+    }
+    // ball with elevation
+    const b = scene.ball; const bp = proj(b.x, b.y); const br = Math.max(3, r*0.48);
+    const lift = (b.z||0) * m * 6;
+    ctx.fillStyle = PALETTE.shadow; ctx.beginPath(); ctx.ellipse(bp.X+lift*0.25, bp.Y+br*0.6, br*0.9, br*0.5, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = PALETTE.ball; ctx.strokeStyle = PALETTE.ballInk; ctx.lineWidth = Math.max(1, br*0.25);
+    ctx.beginPath(); ctx.arc(bp.X, bp.Y-lift, br*(1+(b.z||0)*0.35), 0, Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = PALETTE.ballInk; ctx.beginPath(); ctx.arc(bp.X, bp.Y-lift, br*0.28, 0, Math.PI*2); ctx.fill();
+    // goal flash
+    if (scene.flash && scene.flash.type==='goal'){
+      const team = scene.flash.teamId===home.id? home : away;
+      const a = Math.max(0, 1 - scene.flash.age/2.5);
+      ctx.save(); ctx.globalAlpha = 0.28*a*(0.6+0.4*Math.abs(Math.sin(scene.flash.age*9))); ctx.fillStyle = team.kit.primary; ctx.fillRect(0,0,w,h); ctx.restore();
+      ctx.save(); ctx.globalAlpha = Math.min(1, a*1.6);
+      const size = Math.min(w,h)*0.17;
+      ctx.font = font(size); ctx.lineWidth = Math.max(3, size*0.12); ctx.strokeStyle = '#111'; ctx.fillStyle = team.kit.primary;
+      const cx = w/2, cy = h/2 - size*0.1;
+      ctx.strokeText('GOAL!', cx, cy); ctx.fillText('GOAL!', cx, cy);
+      ctx.fillStyle = '#FFFFFF'; ctx.font = font(size*0.42); ctx.strokeText(team.short.toUpperCase(), cx, cy+size*0.75); ctx.fillText(team.short.toUpperCase(), cx, cy+size*0.75);
+      ctx.restore();
+    }
+    // fast-forward marker
+    if (info.fastForward){
+      ctx.save(); ctx.globalAlpha = 0.85; ctx.fillStyle = '#111'; const bw = Math.max(34, m*8), bh = Math.max(16, m*3.4);
+      ctx.fillRect(w-bw-6, 6, bw, bh); ctx.fillStyle = '#FFD200'; ctx.font = font(bh*0.7); ctx.fillText('▶▶', w-bw/2-6, 6+bh/2+1); ctx.restore();
+    }
+  }
+  function roundRect(ctx, x, y, w, h, r){ ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r); ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h); ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r); ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath(); }
+
+  // ---- the renderer object ----
+  function create(options){
+    const opts = Object.assign({ pixelDensity: 'retro' }, options||{});   // 'retro' = 1 canvas px per CSS px, 'sharp' = device pixels
+    let container = null, canvas = null, ctx = null, teams = null, lay = null, pitch = null, ro = null, lastW = 0, lastH = 0;
+    function makePitch(){
+      if (!canvas) return;
+      const cv = typeof root.document!=='undefined'? root.document.createElement('canvas') : null;
+      if (!cv) { pitch = null; return; }
+      cv.width = canvas.width; cv.height = canvas.height;
+      drawPitch(cv.getContext('2d'), lay); pitch = cv;
+    }
+    const r = {
+      id: 'canvas2d',
+      mount(el, presentation){
+        container = el; teams = presentation.teams;
+        canvas = root.document.createElement('canvas');
+        canvas.className = 'md-canvas'; canvas.setAttribute('role','img'); canvas.setAttribute('aria-label', presentation.teams.home.name+' v '+presentation.teams.away.name+', animated pitch view');
+        canvas.style.display = 'block'; canvas.style.width = '100%'; canvas.style.height = '100%';
+        if (opts.pixelDensity==='retro') canvas.style.imageRendering = 'pixelated';
+        container.appendChild(canvas);
+        ctx = canvas.getContext('2d');
+        r.resize();
+        if (root.ResizeObserver){ ro = new root.ResizeObserver(()=>r.resize()); ro.observe(container); }
+      },
+      resize(){
+        if (!container || !canvas) return;
+        const cw = Math.max(1, container.clientWidth), ch = Math.max(1, container.clientHeight);
+        const dpr = opts.pixelDensity==='sharp'? (root.devicePixelRatio||1) : 1;
+        const bw = Math.round(cw*dpr), bh = Math.round(ch*dpr);
+        if (bw===lastW && bh===lastH && pitch) return;
+        lastW = bw; lastH = bh; canvas.width = bw; canvas.height = bh;
+        lay = layout(bw, bh); makePitch();
+      },
+      render(scene, hud){
+        if (!ctx || !lay) return;
+        drawFrame(ctx, canvas.width, canvas.height, scene, { teams, lay, pitch, fastForward: !!(hud && hud.fastForward) });
+      },
+      dispose(){
+        if (ro){ ro.disconnect(); ro = null; }
+        if (canvas && canvas.parentNode) canvas.parentNode.removeChild(canvas);
+        canvas = null; ctx = null; pitch = null; container = null; lay = null;
+      },
+    };
+    return r;
+  }
+
+  MD.renderers.common = { layout, drawPitch, luminance, inkOn, roundRect, PALETTE };
+  MD.renderers.canvas2d = { id:'canvas2d', name:'Top-down pitch', create, drawFrame };
+})(typeof window!=='undefined'? window : globalThis);
+
+// ============================================================================
+//  Matchday: WireframeRenderer (proof of renderer swap)
+//  A second, deliberately different implementation of the renderer contract:
+//  a green-phosphor "tactics board" look. Home players are O, away players
+//  are X, the ball is a dot. It shares only the layout helper with the 2D
+//  renderer and reads only the scene, which is the whole point: a renderer
+//  can be swapped without touching playMatch, the timeline or the scene.
+//  It is also fully colour-independent, so it doubles as an accessibility
+//  mode.
+// ============================================================================
+(function(root){
+  const MD = root.Matchday;
+  const C = MD.renderers.common;
+  const INK = '#39FF7A', DIM = 'rgba(57,255,122,0.45)', BG = '#04140A';
+
+  function drawFrame(ctx, w, h, scene, info){
+    const lay = info.lay || C.layout(w, h);
+    const { m, proj } = lay;
+    ctx.fillStyle = BG; ctx.fillRect(0,0,w,h);
+    // scanlines
+    ctx.fillStyle = 'rgba(0,0,0,0.25)'; for (let y=0; y<h; y+=3) ctx.fillRect(0, y, w, 1);
+    ctx.strokeStyle = DIM; ctx.lineWidth = 1;
+    const rect = (x0,y0,x1,y1) => { const a = proj(x0,y0), b = proj(x1,y1); ctx.strokeRect(Math.min(a.X,b.X)+0.5, Math.min(a.Y,b.Y)+0.5, Math.abs(b.X-a.X), Math.abs(b.Y-a.Y)); };
+    const line = (x0,y0,x1,y1) => { const a = proj(x0,y0), b = proj(x1,y1); ctx.beginPath(); ctx.moveTo(a.X,a.Y); ctx.lineTo(b.X,b.Y); ctx.stroke(); };
+    rect(0,0,1,1); line(0.5,0,0.5,1);
+    const c = proj(0.5,0.5); ctx.beginPath(); ctx.arc(c.X, c.Y, 9.15*m, 0, Math.PI*2); ctx.stroke();
+    const pa = 16.5/105, paw = 40.32/68, gw = 7.32/68, gd = 2.2/105;
+    rect(0, 0.5-paw/2, pa, 0.5+paw/2); rect(1, 0.5-paw/2, 1-pa, 0.5+paw/2);
+    ctx.strokeStyle = INK; rect(0, 0.5-gw/2, -gd, 0.5+gw/2); rect(1, 0.5-gw/2, 1+gd, 0.5+gw/2);
+    const home = info.teams.home;
+    const r = Math.max(5, m*2.1);
+    ctx.font = `700 ${Math.round(r*1.9)}px "Courier New",Courier,monospace`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    for (const pl of scene.players){
+      if (pl.sentOff) continue;
+      const p = proj(pl.x, pl.y);
+      ctx.fillStyle = pl.hasBall? '#FFFFFF' : INK;
+      ctx.fillText(pl.teamId===home.id? 'O' : 'X', p.X, p.Y);
+      ctx.font = `700 ${Math.round(r*0.9)}px "Courier New",Courier,monospace`; ctx.fillStyle = DIM; ctx.fillText(String(pl.shirtNo), p.X, p.Y+r*1.5);
+      ctx.font = `700 ${Math.round(r*1.9)}px "Courier New",Courier,monospace`;
+    }
+    const b = proj(scene.ball.x, scene.ball.y); const lift = (scene.ball.z||0)*m*6;
+    ctx.fillStyle = '#FFFFFF'; ctx.beginPath(); ctx.arc(b.X, b.Y-lift, Math.max(2, r*0.35), 0, Math.PI*2); ctx.fill();
+    if (scene.flash && scene.flash.type==='goal'){
+      const a = Math.max(0, 1-scene.flash.age/2.5);
+      ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = INK; ctx.font = `700 ${Math.round(Math.min(w,h)*0.16)}px "Courier New",Courier,monospace`;
+      if (Math.floor(scene.flash.age*6)%2===0) ctx.fillText('GOAL', w/2, h/2); ctx.restore();
+    }
+    if (info.fastForward){ ctx.fillStyle = INK; ctx.font = `700 ${Math.round(Math.max(12, m*3))}px "Courier New",Courier,monospace`; ctx.textAlign = 'right'; ctx.fillText('>>', w-8, 14); ctx.textAlign = 'center'; }
+  }
+
+  function create(){
+    let container = null, canvas = null, ctx = null, teams = null, lay = null, ro = null;
+    const r = {
+      id: 'wireframe',
+      mount(el, presentation){
+        container = el; teams = presentation.teams;
+        canvas = root.document.createElement('canvas'); canvas.className = 'md-canvas';
+        canvas.setAttribute('role','img'); canvas.setAttribute('aria-label', presentation.teams.home.name+' v '+presentation.teams.away.name+', tactics board view');
+        canvas.style.display = 'block'; canvas.style.width = '100%'; canvas.style.height = '100%'; canvas.style.imageRendering = 'pixelated';
+        container.appendChild(canvas); ctx = canvas.getContext('2d'); r.resize();
+        if (root.ResizeObserver){ ro = new root.ResizeObserver(()=>r.resize()); ro.observe(container); }
+      },
+      resize(){ if (!container || !canvas) return; canvas.width = Math.max(1, container.clientWidth); canvas.height = Math.max(1, container.clientHeight); lay = C.layout(canvas.width, canvas.height); },
+      render(scene, hud){ if (ctx && lay) drawFrame(ctx, canvas.width, canvas.height, scene, { teams, lay, fastForward: !!(hud && hud.fastForward) }); },
+      dispose(){ if (ro){ ro.disconnect(); ro = null; } if (canvas && canvas.parentNode) canvas.parentNode.removeChild(canvas); canvas = ctx = container = lay = null; },
+    };
+    return r;
+  }
+  MD.renderers.wireframe = { id:'wireframe', name:'Tactics board', create, drawFrame };
+})(typeof window!=='undefined'? window : globalThis);
+
+// ============================================================================
+//  Matchday: audio
+//  Synthesised whistle and crowd using WebAudio only (no files to cache, no
+//  licences). Off by default; the choice persists in localStorage. Every
+//  node is created lazily on the first user gesture so autoplay rules are
+//  respected, and stop() tears everything down when the viewer closes.
+// ============================================================================
+(function(root){
+  const MD = root.Matchday;
+  const KEY = 'sm91-matchday-sound';
+  let ctx = null, crowd = null, crowdGain = null, enabled = false, loaded = false;
+
+  function load(){ if (loaded) return; loaded = true; try { enabled = root.localStorage.getItem(KEY)==='on'; } catch(e){ enabled = false; } }
+  function save(){ try { root.localStorage.setItem(KEY, enabled? 'on' : 'off'); } catch(e){} }
+  function ac(){
+    if (ctx) return ctx;
+    const AC = root.AudioContext || root.webkitAudioContext; if (!AC) return null;
+    try { ctx = new AC(); } catch(e){ ctx = null; }
+    return ctx;
+  }
+  function noiseBuffer(c, seconds){
+    const n = Math.floor(c.sampleRate*seconds), buf = c.createBuffer(1, n, c.sampleRate), d = buf.getChannelData(0);
+    let last = 0; for (let i=0;i<n;i++){ const w = Math.random()*2-1; last = (last + 0.02*w)/1.02; d[i] = last*3.5; }   // brown-ish noise
+    return buf;
+  }
+  function startCrowd(){
+    const c = ac(); if (!c || crowd) return;
+    crowd = c.createBufferSource(); crowd.buffer = noiseBuffer(c, 4); crowd.loop = true;
+    const filt = c.createBiquadFilter(); filt.type = 'bandpass'; filt.frequency.value = 420; filt.Q.value = 0.5;
+    crowdGain = c.createGain(); crowdGain.gain.value = 0.0001;
+    crowd.connect(filt); filt.connect(crowdGain); crowdGain.connect(c.destination);
+    crowd.start();
+    crowdGain.gain.setTargetAtTime(0.09, c.currentTime, 0.8);
+  }
+  function stopCrowd(){ if (!crowd) return; try { crowdGain.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.2); const s = crowd; setTimeout(()=>{ try { s.stop(); } catch(e){} }, 600); } catch(e){} crowd = null; crowdGain = null; }
+  function beep(freq, when, dur, gain){
+    const c = ac(); if (!c) return;
+    const o = c.createOscillator(), g = c.createGain();
+    o.type = 'square'; o.frequency.setValueAtTime(freq, when); o.frequency.linearRampToValueAtTime(freq*1.02, when+dur);
+    g.gain.setValueAtTime(0.0001, when); g.gain.exponentialRampToValueAtTime(gain, when+0.02); g.gain.exponentialRampToValueAtTime(0.0001, when+dur);
+    o.connect(g); g.connect(c.destination); o.start(when); o.stop(when+dur+0.05);
+  }
+  const A = {
+    get enabled(){ load(); return enabled; },
+    setEnabled(on){ load(); enabled = !!on; save(); if (!enabled) stopCrowd(); else if (A.live) startCrowd(); },
+    live: false,
+    // a match is being watched: crowd murmur on (if enabled)
+    start(){ load(); A.live = true; if (enabled){ const c = ac(); if (c && c.state==='suspended') c.resume(); startCrowd(); } },
+    stop(){ A.live = false; stopCrowd(); },
+    whistle(kind){ load(); if (!enabled) return; const c = ac(); if (!c) return; const t = c.currentTime;
+      if (kind==='end'){ beep(2200, t, 0.35, 0.12); beep(2200, t+0.4, 0.35, 0.12); beep(2300, t+0.8, 0.7, 0.12); }
+      else beep(2200, t, 0.45, 0.12); },
+    goal(){ load(); if (!enabled) return; const c = ac(); if (!c) return; if (crowdGain){ const t = c.currentTime; crowdGain.gain.cancelScheduledValues(t); crowdGain.gain.setTargetAtTime(0.5, t, 0.08); crowdGain.gain.setTargetAtTime(0.09, t+1.8, 0.9); } },
+    chance(){ load(); if (!enabled || !crowdGain) return; const t = ctx.currentTime; crowdGain.gain.cancelScheduledValues(t); crowdGain.gain.setTargetAtTime(0.22, t, 0.1); crowdGain.gain.setTargetAtTime(0.09, t+0.6, 0.5); },
+  };
+  MD.audio = A;
+})(typeof window!=='undefined'? window : globalThis);
+
+// ============================================================================
+//  Matchday: UI integration
+//  Wires the viewer into the existing screens. The game shell calls
+//  Matchday.ui.install(ctx) once with the handful of helpers it already has
+//  (state, screens table, go/render, formatting), then hands every finished
+//  week to Matchday.ui.startWeek(). Everything here is presentation flow:
+//  it reads results the engine has already applied and saved, and never
+//  calls playMatch, advanceWeek or touches the save.
+//
+//  Flow per week (after advanceWeek + save):
+//    single manager:  matchpick -> (matchview ->) matchresult, per match, then weekdone
+//    hot-seat:        for each manager with a game: pass -> matchpick -> ... ; then weekmulti
+// ============================================================================
+(function(root){
+  const MD = root.Matchday; const EV = MD.EVENT;
+  const VIEW_KEY = 'sm91-matchday-view';
+  let C = null;   // context from the shell
+
+  const getView = () => { try { const v = root.localStorage.getItem(VIEW_KEY); return (v && MD.renderers[v])? v : 'canvas2d'; } catch(e){ return 'canvas2d'; } };
+  const setView = v => { try { root.localStorage.setItem(VIEW_KEY, v); } catch(e){} };
+  const reducedMotion = () => !!(root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+  function compLabel(m, week){
+    const E = C.E;
+    if (m.euro) return `${C.euroComp(m.euro.comp).name} ${E.euroRoundName(m.euro.comp, m.euro.round)}${m.euro.leg? ', '+(m.euro.leg===1?'first':'second')+' leg' : m.euro.final? ' final' : ''}`;
+    if (m.cup!==undefined) return `${E.CFG.CUPS[m.cupKey].name} ${E.CUP_ROUND_NAMES[m.cup]}`;
+    return `League, week ${week}`;
+  }
+  function matchesFor(results, clubId){
+    const a = results.find(m=>!m.euro && (m.home.id===clubId||m.away.id===clubId)) || null;
+    const b = results.find(m=>m.euro && (m.home.id===clubId||m.away.id===clubId)) || null;
+    return [a,b].filter(Boolean);
+  }
+
+  // ---------- week flow ----------
+  function startWeek(){
+    const S = C.S, st = S.state, E = C.E;
+    const results = S.results.results;
+    let round;
+    if (C.multi()) round = E.activeManagers(st).map(m=>st.managers.indexOf(m)).filter(i=>matchesFor(results, st.managers[i].userClub).length);
+    else round = [st.cur];
+    S.md = { round, ri: -1, queue: [], passing: false, viewer: null, current: null };
+    nextManager();
+  }
+  function nextManager(){
+    const S = C.S, st = S.state, E = C.E;
+    const md = S.md; md.ri++;
+    if (md.ri >= md.round.length){
+      if (C.multi()){ C.go('weekmulti'); return; }
+      const u = C.user(); const ms = matchesFor(S.results.results, u.id);
+      S.results.userMatch = ms.find(m=>!m.euro) || null; S.results.euroMatch = ms.find(m=>m.euro) || null;
+      C.go('weekdone'); return;
+    }
+    const idx = md.round[md.ri];
+    if (C.multi()){ E.saveCurrent(st); E.setCurrent(st, idx); md.passing = true; C.go('pass'); }
+    else startManager();
+  }
+  function afterPass(){ C.S.md.passing = false; startManager(); }
+  function startManager(){
+    const S = C.S; const u = C.user();
+    S.md.queue = matchesFor(S.results.results, u.id).map(m=>({ m }));
+    nextMatch();
+  }
+  function nextMatch(){ const S = C.S; if (!S.md.queue.length) nextManager(); else C.go('matchpick'); }
+
+  // ---------- viewer ----------
+  function openViewer(m){
+    const S = C.S, st = S.state;
+    let pres;
+    try { pres = MD.withTimeline(MD.capture(st, m, st.lastWeekInfo)); }
+    catch(err){ console.error('matchday capture failed', err); return null; }
+    const scene = MD.createScene(pres);
+    const v = { pres, scene, renderer: null, playback: null, lastDraw: 0, reduced: reducedMotion(), done: false, stat: {} };
+    S.md.viewer = v;
+    C.go('matchview');
+    mountRenderer(getView());
+    const us = C.user(); const usHome = pres.teams.home.clubId===us.id;
+    const log = C.$('#md-log'), comm = C.$('#md-comm');
+    const lineFor = (e, score) => {
+      const team = e.teamId===pres.teams.home.id? pres.teams.home : e.teamId===pres.teams.away.id? pres.teams.away : null;
+      const ours = team && team.clubId===us.id;
+      const min = e.minute || Math.min(120, Math.floor(e.matchSecond/60)+1);
+      switch (e.type){
+        case EV.GOAL: return { cls: ours? 'us':'', html: `${min}' GOAL ${C.esc(e.playerName||'')} (${C.esc(team.short)}) ${score.home}-${score.away}` };
+        case EV.CARD: return { cls: ours? 'us':'', html: `<span class="dim">${min}'</span> ${e.card==='red'? '<span class="mark">RED CARD</span>' : 'Booked'} ${C.esc(e.playerName||'')} (${C.esc(team.short)})` };
+        case EV.HALF_TIME: return { cls:'dim', html: `Half-time ${score.home}-${score.away}` };
+        case EV.FULL_TIME: return { cls:'dim', html: C.esc(e.text) };
+        case EV.ET_START: return e.matchSecond===5400? { cls:'dim', html:'Extra time' } : null;
+        case EV.ET_END: return { cls:'dim', html: `End of extra time ${score.home}-${score.away}` };
+        case EV.SHOOTOUT_RESULT: return { cls: ours? 'us':'', html: C.esc(e.text) };
+        default: return null;
+      }
+    };
+    let lastBoard = '';
+    const board = (s) => {
+      const key = s.clock.label+'|'+s.score.home+'|'+s.score.away+'|'+s.phaseLabel;
+      if (key===lastBoard) return; lastBoard = key;
+      const sc = C.$('#md-score'); if (sc) sc.textContent = s.score.home+' - '+s.score.away;
+      const ck = C.$('#md-clock'); if (ck) ck.textContent = s.clock.label+(s.clock.extraTime? ' ET' : '')+'  '+s.phaseLabel;
+    };
+    v.playback = MD.createPlayback(pres, {
+      onFrame: (sec, state) => {
+        const now = (root.performance && root.performance.now)? root.performance.now() : Date.now();
+        if (v.reduced && now - v.lastDraw < 200 && !state.ended) return;
+        v.lastDraw = now;
+        const s = scene.getSceneAt(sec);
+        if (v.renderer) v.renderer.render(s, { fastForward: state.fastForward, speed: state.speed, reducedMotion: v.reduced });
+        board(s);
+      },
+      onEvent: (e) => {
+        if (e.text && comm){ comm.textContent = e.text; }
+        const s = scene.getSceneAt(e.matchSecond);
+        const line = lineFor(e, s.score);
+        if (line && log){ log.insertAdjacentHTML('beforeend', `<div class="${line.cls}">${line.html}</div>`); log.scrollTop = log.scrollHeight; }
+        if (e.type===EV.GOAL) MD.audio.goal();
+        else if (e.type===EV.KICK_OFF || e.type===EV.SECOND_HALF || e.type===EV.ET_START) MD.audio.whistle('start');
+        else if (e.type===EV.HALF_TIME || e.type===EV.ET_HALF || e.type===EV.ET_END) MD.audio.whistle('half');
+        else if (e.type===EV.FULL_TIME) MD.audio.whistle('end');
+        else if (e.type===EV.SHOT_SAVED || e.type===EV.SHOT_WIDE) MD.audio.chance();
+      },
+      onState: (state) => { const b = C.$('#md-play'); if (b) b.textContent = state.playing? 'Pause' : (state.ended? 'Ended' : 'Play'); for (const x of [1,2,4]){ const sb = C.$('#md-speed-'+x); if (sb) sb.classList.toggle('on', state.speed===x); } },
+      onEnd: () => { v.done = true; MD.audio.stop(); const act = C.$('#act'); if (act) act.innerHTML = `<button class="b" data-a="md-fulltime">Full time</button>`; },
+    });
+    MD.audio.start();
+    v.playback.play();
+    if (C.Track) C.Track.send('match_watched', { competition: pres.competition.kind, extra: pres.official.extra||'none', view: getView(), reduced_motion: v.reduced });
+    return v;
+  }
+  function mountRenderer(id){
+    const v = C.S.md && C.S.md.viewer; if (!v) return;
+    const stage = C.$('#md-stage'); if (!stage) return;
+    if (v.renderer){ try { v.renderer.dispose(); } catch(e){} v.renderer = null; }
+    const def = MD.renderers[id] || MD.renderers.canvas2d;
+    v.renderer = def.create({});
+    v.renderer.mount(stage, v.pres);
+    const state = v.playback? v.playback.state() : { matchSecond:0, fastForward:false, speed:1 };
+    v.renderer.render(v.scene.getSceneAt(state.matchSecond), { fastForward: state.fastForward, speed: state.speed, reducedMotion: v.reduced });
+    const vb = C.$('#md-view'); if (vb) vb.textContent = 'View: '+def.name;
+  }
+  function closeViewer(){
+    const S = C.S; const v = S.md && S.md.viewer; if (!v) return;
+    try { if (v.playback) v.playback.dispose(); } catch(e){}
+    try { if (v.renderer) v.renderer.dispose(); } catch(e){}
+    MD.audio.stop();
+    S.md.viewer = null;
+  }
+
+  // ---------- screens ----------
+  function screens(){
+    const S = C.S, E = C.E, esc = C.esc;
+    return {
+      matchpick(){
+        const st = S.state, u = C.user(); const q = S.md.queue[0]; const m = q.m;
+        const us = m.home.id===u.id;
+        const where = m.euro && m.euro.final? 'Neutral ground' : m.neutral? 'Neutral ground' : us? 'At home' : 'Away';
+        const reduced = reducedMotion();
+        return { main: `<h1>Matchday</h1><p class="dim">${compLabel(m, S.results.week)}. ${where}.</p>
+          <div class="md-tie"><span class="${us?'hot':''}">${esc(m.home.name)}</span><br><span class="dim" style="font-size:14px">v</span><br><span class="${!us?'hot':''}">${esc(m.away.name)}</span></div>
+          <button class="b" data-a="md-watch">Watch the match<br><span class="dim">About a minute and a half${reduced? ', with reduced motion' : ''}. Skip to the result at any time.</span></button>
+          <button class="b" data-a="md-instant">Instant result</button>
+          ${C.multi()? `<p class="dim">${esc(C.mgr().managerName)}'s game. Nobody else's result is shown until everyone has had their turn.</p>` : ''}` };
+      },
+      matchview(){
+        const v = S.md.viewer; const p = v.pres; const u = C.user();
+        const usH = p.teams.home.clubId===u.id;
+        const sound = MD.audio.enabled;
+        return { main: `<div class="md-board"><span class="t ${usH?'hot':''}">${esc(p.teams.home.short)}</span><span class="s" id="md-score" aria-live="polite">0 - 0</span><span class="t a ${!usH?'hot':''}">${esc(p.teams.away.short)}</span></div>
+          <div class="md-clock" id="md-clock">00:00  Kick-off</div>
+          <div class="md-stage" id="md-stage"></div>
+          <div class="md-comm" id="md-comm" aria-live="polite" role="status">${esc(compLabel(S.md.queue[0].m, S.results.week))}${p.official.attendance? ' Attendance '+E.fmt(p.official.attendance)+'.' : ''}</div>
+          <div class="md-log" id="md-log" aria-label="Match events"></div>
+          <div class="md-controls2"><button class="b quiet" data-a="md-sound" id="md-sound" aria-pressed="${sound}">Sound: ${sound? 'on' : 'off'}</button><button class="b quiet" data-a="md-view" id="md-view">View</button></div>`,
+          action: `<div class="md-controls"><button class="b" data-a="md-play" id="md-play" aria-label="Play or pause">Pause</button><button class="b quiet on" data-a="md-speed" data-s="1" id="md-speed-1" aria-label="Normal speed">1x</button><button class="b quiet" data-a="md-speed" data-s="2" id="md-speed-2" aria-label="Double speed">2x</button><button class="b quiet" data-a="md-speed" data-s="4" id="md-speed-4" aria-label="Four times speed">4x</button><button class="b quiet" data-a="md-skip">Skip</button></div>` };
+      },
+      matchresult(){
+        const m = S.md.current; const u = C.user(); const us = m.home.id===u.id;
+        const res = m.gH===m.gA && !m.extra? 'Draw' : (m.gH>m.gA || m.extra==='pens-H')===us? 'Win' : 'Defeat';
+        const title = m.euro? (m.winner!==undefined? (m.winner===u.id? 'Through' : 'Out') : res) : res;
+        const scorers = m.scorers.map(s=>`<div class="${(s.side==='H')===us?'us':''}">${s.min}' GOAL ${esc(s.p.name)} (${esc(s.side==='H'?m.home.short:m.away.short)})${s.et? ' <span class="dim">aet</span>' : ''}</div>`).join('');
+        let extra = '';
+        if (m.extra==='aet') extra = `<div class="dim">After extra time.</div>`;
+        else if (m.extra && m.extra.startsWith('pens')) extra = `<div>Level after extra time. ${esc(m.extra==='pens-H'?m.home.short:m.away.short)} win on penalties.</div>`;
+        const agg = m.agg? `<div class="dim">Aggregate ${us? (m.home.id===u.id? `${m.agg.b}-${m.agg.a}` : `${m.agg.a}-${m.agg.b}`) : `${m.agg.b}-${m.agg.a}`}.</div>` : '';
+        const reds = (m.cards||[]).filter(c=>c.type==='R').map(c=>`<div class="${(c.side==='H')===us?'us':''}"><span class="mark">Sent off:</span> ${esc(c.p.name)} ${c.min}'</div>`).join('');
+        const yellows = (m.cards||[]).filter(c=>c.type==='Y'); const booked = yellows.length? `<div class="dim">Booked: ${yellows.map(c=>esc(c.p.name)).join(', ')}</div>` : '';
+        const inj = m.injuries.filter(p=>p.club===u.id);
+        return { main: `<p class="dim" style="text-align:center">${compLabel(m, S.results.week)}</p>
+          <div class="clock">${title}</div>
+          <div class="score"><span class="${us?'hot':''}">${esc(m.home.short)}</span> ${m.gH} - ${m.gA} <span class="${!us?'hot':''}">${esc(m.away.short)}</span><small>Attendance ${E.fmt(m.att)}</small></div>
+          <div class="events">${scorers||'<div class="dim">No goals.</div>'}${extra}${agg}${reds}${booked}${inj.length? `<div class="hot">Injured: ${inj.map(p=>esc(p.name)+' ('+p.injury+' wk)').join(', ')}</div>`:''}</div>`,
+          action: `<button class="b" data-a="md-continue">Continue</button>` };
+      },
+    };
+  }
+
+  // ---------- actions ----------
+  async function act(a, d){
+    const S = C.S;
+    const v = S.md && S.md.viewer;
+    switch (a){
+      case 'md-watch': { const q = S.md.queue[0]; const ok = openViewer(q.m); if (!ok){ C.toast('Could not build the match view. Showing the result.'); S.md.current = S.md.queue.shift().m; C.go('matchresult'); } break; }
+      case 'md-instant': { S.md.current = S.md.queue.shift().m; if (C.Track) C.Track.send('match_instant', {}); C.go('matchresult'); break; }
+      case 'md-fulltime': { closeViewer(); S.md.current = S.md.queue.shift().m; C.go('matchresult'); break; }
+      case 'md-continue': nextMatch(); break;
+      case 'md-play': if (v && v.playback && !v.done) v.playback.toggle(); break;
+      case 'md-speed': if (v && v.playback) v.playback.setSpeed(+d.s); break;
+      case 'md-skip': if (v && v.playback && !v.done) v.playback.skip(); break;
+      case 'md-sound': { MD.audio.setEnabled(!MD.audio.enabled); const b = C.$('#md-sound'); if (b){ b.textContent = 'Sound: '+(MD.audio.enabled? 'on' : 'off'); b.setAttribute('aria-pressed', String(MD.audio.enabled)); } if (MD.audio.enabled && v && !v.done) MD.audio.start(); break; }
+      case 'md-view': { const ids = Object.keys(MD.renderers).filter(k=>k!=='common'); const cur = getView(); const next = ids[(ids.indexOf(cur)+1)%ids.length]; setView(next); mountRenderer(next); break; }
+    }
+  }
+  function onKey(e){
+    const S = C.S; if (S.screen!=='matchview' || !S.md || !S.md.viewer) return;
+    if (e.target && /input|textarea/i.test(e.target.tagName)) return;
+    if (e.key===' '){ e.preventDefault(); act('md-play', {}); }
+    else if (e.key==='s' || e.key==='S') act('md-skip', {});
+    else if (e.key==='1' || e.key==='2' || e.key==='4') act('md-speed', { s: e.key });
+  }
+
+  function install(ctx){
+    C = ctx;
+    Object.assign(C.SCREENS, screens());
+    root.document.addEventListener('keydown', onKey);
+  }
+
+  MD.ui = { install, startWeek, afterPass, act, closeViewer, mountRenderer, getView, compLabel, matchesFor };
+})(typeof window!=='undefined'? window : globalThis);
+
+</script>
+<script>
 (function(){
 'use strict';
 const E = Engine;
@@ -1834,8 +3190,15 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const money = n => (n<0?'-':'')+'£'+E.fmt(Math.abs(n));
 const SAVE_KEY = 'sm91-save';
-const APP_VERSION = '1.1.2';
+const APP_VERSION = '1.2.0';
 const CHANGELOG = [
+  { v:'1.2.0', when:'November 2026', notes:[
+    'Matchday. After each week you can watch your game on an animated top-down pitch: numbered players, the ball, a running clock, commentary and an event log. Or take the instant result, as before.',
+    'Play, pause, 1x, 2x and 4x speed, and Skip straight to the final whistle. The score only appears as it is earned; the result underneath is the same official result whatever you do with the controls.',
+    'Hot-seat games: every manager gets their own matchday turn before the shared results board, so nobody sees another manager\'s result early.',
+    'A second "tactics board" view (O and X markers) that works without colour, and an optional synthesised whistle and crowd, off by default.',
+    'Extra-time goals now have scorers, in the match report and the records.',
+  ]},
   { v:'1.1.2', when:'November 2026', notes:[
     'This screen. From now on every update tells you what changed, here and with a line on the home screen.',
   ]},
@@ -1988,13 +3351,13 @@ function inEurope(u){ return !!(u.euro && !u.euro.out); }
 function euroComp(k){ return E.CFG.EURO.comps[k]; }
 function fmtEuroTie(t){ if (!t) return ''; if (t.final) return `${euroComp(t.comp).name} final v ${esc(t.opp.name)} (neutral)`; return `${euroComp(t.comp).name} ${E.euroRoundName(t.comp, t.round)}, ${t.g1? '2nd' : '1st'} leg v ${esc(t.opp.name)} (${t.g1? (t.homeFirst? 'A' : 'H') : (t.homeFirst? 'H' : 'A')})${t.g1? `, first leg ${t.homeFirst? t.g1[0]+'-'+t.g1[1] : t.g1[1]+'-'+t.g1[0]}` : ''}`; }
 function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(()=>t.classList.remove('show'), 2200); }
-function go(screen){ S.screen = screen; render(); $('#main').scrollTop = 0; }
+function go(screen){ if (S.md && S.md.viewer && screen!=='matchview') Matchday.ui.closeViewer(); S.screen = screen; render(); $('#main').scrollTop = 0; }
 
 // ---------- rendering ----------
 function render(){
   const st = S.state;
   const hdr = $('#hdr'), main = $('#main'), nav = $('#nav'), act = $('#act');
-  if (!st || S.screen==='title' || S.screen==='setup' || S.screen==='pass' || ((S.screen==='saves'||S.screen==='help'||S.screen==='hof'||S.screen==='whatsnew') && !st)){
+  if (!st || S.screen==='title' || S.screen==='setup' || S.screen==='pass' || S.screen==='matchview' || S.screen==='matchpick' || ((S.screen==='saves'||S.screen==='help'||S.screen==='hof'||S.screen==='whatsnew') && !st)){
     hdr.innerHTML = ''; hdr.style.display='none'; nav.style.display='none';
   } else {
     hdr.style.display=''; nav.style.display='';
@@ -2118,7 +3481,7 @@ const SCREENS = {
   pass(){
     const st = S.state; const m = mgr(); const c = st.clubs[m.userClub];
     return { main: `<div class="title"><div class="logo">${esc(m.managerName)}</div><div class="sub">${esc(c.name)}, Division ${c.div}. Week ${st.week}.</div>
-      <p class="dim">Pass the phone over. Nobody else should be looking.</p>
+      <p class="dim">${S.md && S.md.passing? 'Matchday. ' : ''}Pass the phone over. Nobody else should be looking.</p>
       <button class="b" data-a="taketurn">I'm ${esc(m.managerName)}</button></div>` };
   },
   weekmulti(){
@@ -2339,16 +3702,6 @@ const SCREENS = {
       <p class="dim" style="margin-top:10px">Money in the bank earns 0.1% a week (about 5% a year). Anything below zero costs 0.25% a week. Eight weeks past the overdraft limit and the bank pulls the plug. The limit is half your turnover (gates, television and sponsorship), so it grows as the club does.</p>
       <h2>Recent</h2>${ledger.length? ledger.map(l=>`<div class="kv"><span class="dim">Wk ${l.w}</span><span>${esc(l.label)} <span class="${l.amount<0?'':'hot'}">${money(l.amount)}</span></span></div>`).join('') : '<p class="dim">Nothing yet.</p>'}
       ${hist? `<h2>Past seasons</h2>${hist}`:''}` };
-  },
-  match(){
-    const m = S.results.userMatch; const st = S.state, u = user();
-    const us = m.home.id===u.id;
-    const comp = m.euro? `${euroComp(m.euro.comp).name} ${E.euroRoundName(m.euro.comp, m.euro.round)}${m.euro.leg? ', '+(m.euro.leg===1?'first':'second')+' leg' : ''}` : m.cup!==undefined? `${E.CFG.CUPS[m.cupKey].name} ${E.CUP_ROUND_NAMES[m.cup]}` : `League, week ${S.results.week}`;
-    return { main: `<p class="dim" style="text-align:center">${comp}</p>
-      <div class="clock" id="clock">0'</div>
-      <div class="score" id="score"><span class="${us?'hot':''}">${esc(m.home.short)}</span> 0 - 0 <span class="${!us?'hot':''}">${esc(m.away.short)}</span><small id="scoresub">Attendance ${E.fmt(m.att)}</small></div>
-      <div class="events" id="events"></div>`,
-      action: `<button class="b quiet" data-a="skipanim" id="skipbtn">Skip</button>` };
   },
   fixtures(){
     const st = S.state, u = user();
@@ -2686,43 +4039,7 @@ function cupSummary(k){ const st=S.state, u=user(); const cup = st.cups[k]; cons
 function selectionSummary(){ const st=S.state,u=user(); const cnt = ids => (ids||[]).filter(id=>st.players[id]&&st.players[id].club===u.id&&st.players[id].injury===0).length; const lg = cnt(st.userSel); let s = lg>=11? `${u.formation}, XI set` : lg>0? `${lg} picked, rest auto` : `auto pick (${u.formation})`; if (inEurope(u)){ const eu = cnt(st.euroSel); s += `; Europe: ${eu>=11? 'XI set' : eu>0? eu+' picked' : 'same as league'}`; } return s; }
 
 // ---------- match animation ----------
-let animToken = 0;
-function startAnimation(){
-  if (S.anim){ clearTimeout(S.anim); S.anim = null; }
-  const token = ++animToken;
-  const m = S.results.userMatch; const u = user(); const us = m.home.id===u.id;
-  const ev = m.scorers.map(s=>Object.assign({kind:'goal'}, s)).concat((m.cards||[]).map(c=>Object.assign({kind:'card'}, c))).sort((a,b)=>a.min-b.min); let gH=0, gA=0, t=0, i=0;
-  const clock = $('#clock'), score = $('#score'), events = $('#events');
-  const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const step = () => {
-    if (token!==animToken) return;
-    t++;
-    while (i<ev.length && ev[i].min<=t){ const s = ev[i++]; const ours = (s.side==='H')===us;
-      if (s.kind==='card'){ events.insertAdjacentHTML('beforeend', `<div class="${ours?'us':''}"><span class="dim">${s.min}'</span> ${s.type==='R'? '<span class="mark">RED CARD</span>' : 'Booked'} ${esc(s.p.name)} (${esc(s.side==='H'?m.home.short:m.away.short)})</div>`); continue; }
-      if (s.side==='H') gH++; else gA++;
-      events.insertAdjacentHTML('beforeend', `<div class="${ours?'us':''}">${s.min}' GOAL ${esc(s.p.name)} (${esc(s.side==='H'?m.home.short:m.away.short)}) ${gH}-${gA}</div>`); }
-    clock.textContent = t+"'";
-    score.innerHTML = `<span class="${us?'hot':''}">${esc(m.home.short)}</span> ${gH} - ${gA} <span class="${!us?'hot':''}">${esc(m.away.short)}</span><small>Attendance ${E.fmt(m.att)}</small>`;
-    if (t>=90){ finish(); return; }
-    S.anim = setTimeout(step, 60);
-  };
-  const finish = () => {
-    if (token!==animToken) return;
-    clearTimeout(S.anim); S.anim = null;
-    clock.textContent = 'FT';
-    let extra = '';
-    if (m.extra==='aet') extra = `<div>After extra time: ${m.gH}-${m.gA}</div>`;
-    else if (m.extra && m.extra.startsWith('pens')) extra = `<div>Level after extra time. ${esc(m.extra==='pens-H'?m.home.short:m.away.short)} win on penalties.</div>`;
-    events.innerHTML = m.scorers.map(s=>`<div class="${(s.side==='H')===us?'us':''}">${s.min}' GOAL ${esc(s.p.name)} (${esc(s.side==='H'?m.home.short:m.away.short)})</div>`).join('') + extra
-      + ((m.cards||[]).filter(c=>c.type==='R').map(c=>`<div class="${(c.side==='H')===us?'us':''}"><span class="mark">Sent off:</span> ${esc(c.p.name)} ${c.min}'</div>`).join(''))
-      + ((m.cards||[]).some(c=>c.type==='Y')? `<div class="dim">Booked: ${(m.cards||[]).filter(c=>c.type==='Y').map(c=>esc(c.p.name)).join(', ')}</div>` : '');
-    score.innerHTML = `<span class="${us?'hot':''}">${esc(m.home.short)}</span> ${m.gH} - ${m.gA} <span class="${!us?'hot':''}">${esc(m.away.short)}</span><small>Attendance ${E.fmt(m.att)}</small>`;
-    $('#act').innerHTML = `<button class="b" data-a="afteranim">Full time</button>`;
-  };
-  if (reduced){ finish(); return; }
-  S.anim = setTimeout(step, 400);
-  S.finishAnim = finish;
-}
+// The matchday viewer lives in src/matchday (built into this file); see ARCHITECTURE_MATCHDAY.md.
 
 // ---------- actions ----------
 async function act(a, d){
@@ -2738,7 +4055,7 @@ async function act(a, d){
       Track.send('game_started', { number_of_managers: names.length, mode });
       S.hasSave = true; await save(); startTurn(0); break; }
     case 'continue': startTurn(st.cur); break;
-    case 'taketurn': arriveAtTurn(); break;
+    case 'taketurn': if (S.md && S.md.passing) Matchday.ui.afterPass(); else arriveAtTurn(); break;
     case 'ready': await endTurn(); break;
     case 'nextround': { if (S.pendingReview){ S.pendingReview=false; S.from='afterseason'; go('standings'); } else startTurn(firstActive()); } break;
     case 'standings': S.from = S.screen; go('standings'); break;
@@ -2821,17 +4138,17 @@ async function act(a, d){
     case 'safety': { const err = E.improveSafety(st, +d.p); if (err) toast(err); else { toast('Work done.'); await save(); render(); } break; }
     case 'build': { const err = E.startBuild(st, +d.n); if (err) toast(err); else { toast('Builders booked.'); await save(); render(); } break; }
     case 'play': await playWeek(); break;
-    case 'skipanim': if (S.finishAnim) S.finishAnim(); break;
-    case 'afteranim': if (S.matchQueue && S.matchQueue.length){ S.results.userMatch = S.matchQueue.shift(); go('match'); startAnimation(); } else { S.results.userMatch = S.results.results.find(m=>!m.euro && (m.home.id===user().id||m.away.id===user().id)) || null; go('weekdone'); } break;
     case 'continue-week':
       if (st.gameOver){ S.pendingReview=false; go('sacked'); } else if (mgr().pendingReview){ S.pendingReview=false; go('review'); } else go('home');
       break;
     case 'acceptjob': E.acceptJob(st); st.userSel = []; await save(); render(); toast('New club, new problems.'); break;
     case 'declinejob': E.declineJob(st); await save(); render(); break;
     case 'newseason': st.userSel = (st.userSel||[]).filter(id=>st.players[id]&&st.players[id].club===st.userClub); mgr().pendingReview = false; await save(); go('home'); break;
+    default: if (a.startsWith('md-')) await Matchday.ui.act(a, d);
   }
 }
 
+function inMatchday(){ return !!(S.md && (S.screen==='matchpick' || S.screen==='matchview' || S.screen==='matchresult')); }
 function firstActive(){ const st = S.state; const i = st.managers.findIndex(m=>!m.retired); return i<0? 0 : i; }
 function startTurn(idx){
   const st = S.state; E.saveCurrent(st); E.setCurrent(st, idx);
@@ -2864,20 +4181,18 @@ async function playWeek(){
   if (st.season===2 && before===1) Track.once(st, 's2start', 'season_2_started', { number_of_managers: st.managers.length, division: user().div });
   S.results = { results, userMatch: null, week, type: wk.type, cup: wk.cup };
   await save();
-  if (multi()){ go('weekmulti'); return; }
-  const userMatch = results.find(m=>!m.euro && (m.home.id===u.id||m.away.id===u.id)) || null;
-  const euroMatch = results.find(m=>m.euro && (m.home.id===u.id||m.away.id===u.id)) || null;
-  S.results.userMatch = userMatch; S.results.euroMatch = euroMatch;
-  S.matchQueue = [userMatch, euroMatch].filter(Boolean);
-  if (S.matchQueue.length){ S.results.userMatch = S.matchQueue.shift(); go('match'); startAnimation(); }
-  else go('weekdone');
+  // the week is resolved and saved; what follows is presentation only (Watch / Instant per match)
+  Matchday.ui.startWeek();
 }
+
+// ---------- matchday viewer ----------
+Matchday.ui.install({ S, SCREENS, E, go, render, esc, $, toast, user, mgr, multi, euroComp, Track });
 
 // ---------- wiring ----------
 let busy = false;
 document.addEventListener('click', async e => {
   const f = e.target.closest('[data-track]'); if (f){ Track.send(f.dataset.track, { screen: S.screen }); return; }
-  const n = e.target.closest('[data-nav]'); if (n){ if (S.anim || busy) return; go(n.dataset.nav); return; }
+  const n = e.target.closest('[data-nav]'); if (n){ if (S.anim || busy || inMatchday()) return; go(n.dataset.nav); return; }
   const t = e.target.closest('[data-a]'); if (!t) return;
   if (S.anim && t.dataset.a!=='skipanim') return;
   if (busy) return;
