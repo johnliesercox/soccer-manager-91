@@ -1834,7 +1834,30 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const money = n => (n<0?'-':'')+'£'+E.fmt(Math.abs(n));
 const SAVE_KEY = 'sm91-save';
-const APP_VERSION = '1.1.1';
+const APP_VERSION = '1.1.2';
+const CHANGELOG = [
+  { v:'1.1.2', when:'November 2026', notes:[
+    'This screen. From now on every update tells you what changed, here and with a line on the home screen.',
+  ]},
+  { v:'1.1.1', when:'November 2026', notes:[
+    'The ladder is live. Pick a nickname at your next season review and your career points go on a shared board with everyone else playing. Three boards: career points, fastest to the Division 1 title, fastest to a European trophy.',
+  ]},
+  { v:'1.1.0', when:'November 2026', notes:[
+    'Contracts. Every player is on a one-to-four-year deal at a fixed wage. Renew early to lock a cheap wage, leave it late and he asks for what he is worth now. Expiring players worry from week 20; do nothing and your assistant re-signs the ones happy to stay at about 10% over the odds. Out-of-contract players from every club appear under Free in the market each summer.',
+    'Mood. Playing, winning and a fair wage keep players happy. Benching, losing, listing for sale and bigger clubs sniffing around do not. Unhappy players play a little worse and eventually ask for a transfer.',
+    'Bookings and bans. Five yellows is a one-match ban, ten is two, a red is one to three. The squad screen shows who is one booking away.',
+    'Youth academy. Build it in four grades, hire a youth coach, and promote the prospects who arrive each summer (Club, Youth).',
+    'Records and hall of fame. Club records, all-time scorers, the roll of honour and your career points (Table, Records). The hall of fame on the title screen keeps every career from every game on this phone.',
+    'Challenge starts. Skint, Relegation scrap, Fallen giant and Big job, chosen when you start a single-manager game.',
+    'Saves are compressed so eight named saves fit on a phone. Your existing game carries on: players were given contracts and the academy is at grade 1.',
+  ]},
+  { v:'1.0.4', when:'September 2026', notes:['The game checks for updates on every launch and shows a bar to restart when one is ready.'] },
+  { v:'1.0.3', when:'September 2026', notes:['A new game now starts straight on Play the match; the sponsor and season ticket decisions use safe defaults in season one unless you open them.', 'Send feedback button on the home screen and the season review.'] },
+  { v:'1.0.0', when:'September 2026', notes:['First release: four divisions, two cups, Europe, staff, training, ground, sponsors, season tickets, loans, sackings, job offers, named saves and up to eight managers on one phone.'] },
+];
+const SEEN_KEY = 'sm91-seen-version';
+function seenVersion(){ try{ return localStorage.getItem(SEEN_KEY)||''; }catch(e){ return APP_VERSION; } }
+function markSeen(){ try{ localStorage.setItem(SEEN_KEY, APP_VERSION); }catch(e){} }
 const FEEDBACK_URL = 'https://forms.gle/w9fsKD6hUvzu9GQh8';
 const ANALYTICS_TOKEN = 'f070e2a73ed4ad02f5341aa8b1f5b605';   // Mixpanel project token; empty means nothing is sent
 const ANALYTICS_HOST = 'https://api.mixpanel.com';
@@ -1971,7 +1994,7 @@ function go(screen){ S.screen = screen; render(); $('#main').scrollTop = 0; }
 function render(){
   const st = S.state;
   const hdr = $('#hdr'), main = $('#main'), nav = $('#nav'), act = $('#act');
-  if (!st || S.screen==='title' || S.screen==='setup' || S.screen==='pass' || ((S.screen==='saves'||S.screen==='help'||S.screen==='hof') && !st)){
+  if (!st || S.screen==='title' || S.screen==='setup' || S.screen==='pass' || ((S.screen==='saves'||S.screen==='help'||S.screen==='hof'||S.screen==='whatsnew') && !st)){
     hdr.innerHTML = ''; hdr.style.display='none'; nav.style.display='none';
   } else {
     hdr.style.display=''; nav.style.display='';
@@ -1993,6 +2016,7 @@ const SCREENS = {
       ${S.slotCount? `<button class="b" data-a="saves">Load a saved game</button>`:''}
       <button class="b" data-a="setup">${S.hasSave?'Start a new game':'Start'}</button>
       <button class="b" data-a="hof">Hall of fame${LADDER_URL? ' and ladder':''}</button>
+      <button class="b" data-a="whatsnew">What's new${seenVersion()!==APP_VERSION? ' <span class="hot">(updated)</span>':''}</button>
       <button class="b" data-a="help">How to play</button>
       ${FEEDBACK_URL? `<a class="b" data-track="feedback_opened" href="${esc(FEEDBACK_URL)}" target="_blank" rel="noopener" style="text-decoration:none;text-align:left">Send feedback</a>`:''}
       <p class="dim" style="margin-top:24px;font-size:12px">Version ${APP_VERSION}. A tribute to the 1991 Amiga original. Real club names belong to their clubs.${ANALYTICS_TOKEN? ' Sends anonymous usage counts; see How to play.' : ''}</p></div>` };
@@ -2006,6 +2030,11 @@ const SCREENS = {
       ${Array.from({length:n}).map((_,i)=>`<input class="mgrname" maxlength="18" placeholder="Manager ${i+1}" autocomplete="off" value="${esc((S.setupNames||[])[i]||'')}">`).join('')}
       ${n===1? modePick : ''}
       <button class="b" data-a="start">${n===1? 'Take the job' : 'Start the season'}</button>` };
+  },
+  whatsnew(){
+    const st = S.state;
+    const body = CHANGELOG.map((c,i)=>`<h2>Version ${c.v}${i===0? ' (this one)':''} <span class="dim" style="font-size:12px">${c.when}</span></h2>${c.notes.map(n=>`<p>${n}</p>`).join('')}`).join('');
+    return { main: `<h1>What's new</h1>${body}<p class="dim">Have a view on any of it? The feedback button is on the home screen.</p>`, action: `<button class="b quiet" data-a="${st? 'back' : 'title'}">Back</button>` };
   },
   hof(){
     const st = S.state; const tab = S.tab.hof || (LADDER_URL? 'ladder' : 'mine');
@@ -2130,7 +2159,8 @@ const SCREENS = {
     const pre = st.preseason && st.preseason.pending;
     const firstSeason = st.season===1;
     const preLine = !pre? '' : firstSeason? `<p class="dim">Sponsor and season tickets will use safe defaults at kick-off. <button class="b small" data-a="preseason" style="display:inline;width:auto">Set them yourself</button></p>` : `<p class="hot">Pre-season: the sponsor and season ticket prices need sorting before the first game.</p>`;
-    return { main: `<h1>This week</h1>${preLine}${fix}${euroLine}
+    const updNote = seenVersion()!==APP_VERSION? `<p class="hot">Updated to ${APP_VERSION}. <button class="b small" data-a="whatsnew" style="display:inline;width:auto">See what's new</button></p>` : '';
+    return { main: `<h1>This week</h1>${updNote}${preLine}${fix}${euroLine}
       <div class="kv"><span>League</span><span>${pos}</span></div>
       <div class="kv"><span>Board</span><span>${E.boardMood(u.confidence)}, expect ${ordinal(exp)}</span></div>
       <div class="kv"><span>League Cup</span><span>${cupStatus(u,'lc')}</span></div>
@@ -2759,6 +2789,7 @@ async function act(a, d){
     case 'saves': S.from = S.screen==='title'? 'title' : S.screen; S.slots = await listSlots(); S.slotName = null; go('saves'); break;
     case 'help': S.from = S.screen==='title'? 'title' : S.screen; go('help'); break;
     case 'hof': S.from = S.screen==='title'? 'title' : S.screen; S.ladderRows = undefined; go('hof'); loadLadder(); break;
+    case 'whatsnew': S.from = S.screen==='title'? 'title' : S.screen; markSeen(); go('whatsnew'); break;
     case 'hoftab': S.tab.hof = d.t; render(); if (d.t==='ladder') loadLadder(); break;
     case 'board': S.tab.board = d.b; S.ladderRows = undefined; render(); loadLadder(); break;
     case 'setnick': { const v = Ladder.setNick($('#nick').value); if (!v){ toast('Give yourself a name.'); break; } toast(`You are ${v}.`); if (st) await Ladder.submit(st); S.ladderRows = undefined; Ladder.cache = {}; render(); loadLadder(); break; }
