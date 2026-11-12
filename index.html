@@ -2157,10 +2157,26 @@ if (typeof module!=='undefined') module.exports = Engine;
 
     // ---- official anchors ----
     const anchorsList = [];
-    const goalSecond = s => { const base = s.period==='extraTime'? P.regulation.end + (Math.max(91, s.minute)-91)*60 : (s.minute-1)*60; const cap = (s.period==='extraTime'? P.extraTime.end : P.regulation.end) - 5; return Math.min(base + 30, cap); };
-    for (const s of p.official.scorers) anchorsList.push({ kind:'goal', second: goalSecond(s), s });
-    for (const c of p.official.cards) anchorsList.push({ kind:'card', second: Math.min((c.minute-1)*60 + 15, P.regulation.end-5), c });
+    const minuteStart = (minute, period) => period==='extraTime'? P.regulation.end + (Math.max(91, minute)-91)*60 : (minute-1)*60;
+    const periodCap = period => (period==='extraTime'? P.extraTime.end : P.regulation.end) - 5;
+    // the earliest a goal may be placed: inside its minute, and never within a build-up of a restart
+    const periodStart = sec => sec>=P.extraTime.half? P.extraTime.half : sec>=P.regulation.end? P.regulation.end : sec>=P.regulation.half? P.regulation.half : 0;
+    const goalLo = (minute, period) => { const ms = minuteStart(minute, period); return Math.max(ms + 2, periodStart(ms) + 26); };
+    for (const s of p.official.scorers) anchorsList.push({ kind:'goal', second: Math.min(minuteStart(s.minute, s.period) + 30, periodCap(s.period)), lo: goalLo(s.minute, s.period), cap: periodCap(s.period), s });
+    for (const c of p.official.cards) anchorsList.push({ kind:'card', second: Math.min((c.minute-1)*60 + 15, P.regulation.end-5), lo: (c.minute-1)*60 + 2, cap: P.regulation.end-5, c });
     anchorsList.sort((a,b)=>a.second-b.second || (a.kind==='goal'? -1 : 1));
+    // two anchors in the same minute would collide (a goal needs its build-up): pull the earlier one
+    // towards the start of its minute, and only if that is not enough push the later one on
+    for (let i=anchorsList.length-2; i>=0; i--){
+      const a = anchorsList[i], b = anchorsList[i+1];
+      const gap = (a.kind==='goal' || b.kind==='goal')? 28 : 12;
+      if (b.second - a.second < gap) a.second = Math.max(a.lo, b.second - gap);
+    }
+    for (let i=1; i<anchorsList.length; i++){
+      const a = anchorsList[i-1], b = anchorsList[i];
+      const gap = (a.kind==='goal' || b.kind==='goal')? 28 : 12;
+      if (b.second - a.second < gap) b.second = Math.min(b.cap, a.second + gap);
+    }
 
     const end = p.official.extra? P.extraTime.end : P.regulation.end;
     const breaks = [{ second: P.regulation.half, type:'half' }, { second: P.regulation.end, type:'ft' }];
@@ -2188,7 +2204,7 @@ if (typeof module!=='undefined') module.exports = Engine;
       const dribble = () => { bAx = clampAx(bAx + r(0.01,0.05)); bY = clampY(bY + r(-0.06,0.06)); };
       const passTo = (target, second, dur) => {
         const text = (carrier && rnd()<0.3)? (target.ax>0.75? carrier.name+' finds '+target.pl.name+' in the box.' : target.ax-bAx>0.12? carrier.name+' plays it forward to '+target.pl.name+'.' : carrier.name+' to '+target.pl.name+'.') : null;
-        illus(EV.PASS, Math.round(second + dur), { teamId: team, playerId: carrier? carrier.id : null, toPlayerId: target.pl.id, from: toAbs(dir, bAx, bY), to: toAbs(dir, target.ax, target.y), duration: dur, text });
+        illus(EV.PASS, Math.ceil(second + dur), { teamId: team, playerId: carrier? carrier.id : null, toPlayerId: target.pl.id, from: toAbs(dir, bAx, bY), to: toAbs(dir, target.ax, target.y), duration: dur, text });   // ceil: the ball never leaves before the spell (or a restart) begins
         bAx = target.ax; bY = target.y; carrier = target.pl;
       };
       // choose a receiver near a desired point and aim the pass at where he stands
@@ -2260,7 +2276,7 @@ if (typeof module!=='undefined') module.exports = Engine;
         while (stop.second - t > buildUp + 8) t = spell(t, stop.second - buildUp, null);
         // the scoring side takes over for the scripted build-up
         if (poss!==stop.a.s.teamId){ poss = stop.a.s.teamId; bAx = 1-bAx; carrier = null; }
-        bAx = Math.min(bAx, 0.55); carrier = nearest(poss, bAx, bY, bAx, bY, null, false);
+        bAx = Math.min(bAx, 0.55); if (!carrier || carrier.teamId!==poss) carrier = nearest(poss, bAx, bY, bAx, bY, null, false);
         t = spell(Math.max(t, stop.second - buildUp), stop.second, stop.a);
         ai++;
         if (t + 6 < end && !breaks.some(b=>b.second>=t && b.second<t+6)){ t += 5; kickOff(t, poss, EV.KICK_OFF); }
@@ -2377,6 +2393,8 @@ if (typeof module!=='undefined') module.exports = Engine;
       k.release = { t: rel.t, x: rel.x, y: rel.y, drift: runTime(Math.hypot(rel.x-sr.x, rel.y-sr.y)) };
     }
 
+    const cutTimes = keys.filter(k=>k.cut).map(k=>k.t);
+
     // per-player list of keyframe indexes where they carry the ball
     const carries = {}; for (const pl of p.players) carries[pl.id] = [];
     keys.forEach((k,i)=>{ if (k.carrier && carries[k.carrier]) carries[k.carrier].push(i); });
@@ -2431,7 +2449,9 @@ if (typeof module!=='undefined') module.exports = Engine;
       t = Math.max(0, t);
       const ball = ballAt(t);
       // the shape follows a smoothed ball so a long pass does not yank the whole team at once
-      let sbx = 0, sby = 0; for (const lag of SHAPE_LAG){ const b = ballAt(Math.max(0, t-lag)); sbx += b.x; sby += b.y; } sbx /= SHAPE_LAG.length; sby /= SHAPE_LAG.length;
+      // (never averaging across a period change, where the ball is simply placed on the spot)
+      let floor = 0; for (const ct of cutTimes){ if (ct<=t) floor = ct; else break; }
+      let sbx = 0, sby = 0; for (const lag of SHAPE_LAG){ const b = ballAt(Math.max(floor, t-lag)); sbx += b.x; sby += b.y; } sbx /= SHAPE_LAG.length; sby /= SHAPE_LAG.length;
       const secondHalfOrLater = t >= P.regulation.half;
       const dirOf = teamId => (teamId===H? (secondHalfOrLater? -1 : 1) : (secondHalfOrLater? 1 : -1));
       const sentOff = new Set(); for (const o of offs) if (o.matchSecond<=t && o.playerId) sentOff.add(o.playerId);
@@ -2452,7 +2472,11 @@ if (typeof module!=='undefined') module.exports = Engine;
             if (t <= rel.t){ x = rel.x; y = rel.y; }
             else if (t - rel.t < rel.drift){ const u = smooth((t - rel.t)/rel.drift); x = lerp(rel.x, x, u); y = lerp(rel.y, y, u); }
           }
-          if (next && next.t - t < next.approach){ const u = smooth(1 - (next.t - t)/next.approach); x = lerp(x, next.x, u); y = lerp(y, next.y, u); }
+          if (next && next.t - t < next.approach){
+            // the run to meet the ball starts when the player let go of it, never earlier
+            const start = Math.max(next.t - next.approach, prev? prev.release.t : -1e9);
+            const u = smooth((t - start)/Math.max(0.01, next.t - start)); x = lerp(x, next.x, u); y = lerp(y, next.y, u);
+          }
           if (ball.carrier===pl.id){ x = ball.x; y = ball.y; }
         }
         const off = sentOff.has(pl.id);
@@ -2566,7 +2590,11 @@ if (typeof module!=='undefined') module.exports = Engine;
     if (!p.events) throw new Error('createPlayback needs a presentation with events');
     const map = buildTimeMap(p, opts);
     const finalSecond = p.events[p.events.length-1].matchSecond;   // SHOOTOUT_RESULT can sit 1s past the end
-    const st = { playing:false, speed:1, matchSecond:0, ended:false, fastForward:false, realDuration: map.realDuration, endHold: 0 };
+    // matchSecond is the official clock. sceneSecond is what the renderer should draw: the same
+    // during highlights, but during fast-forward the picture keeps playing at normal pace from
+    // where the gap started while the clock races ahead, then cuts to the next highlight.
+    const st = { playing:false, speed:1, matchSecond:0, sceneSecond:0, ended:false, fastForward:false, realDuration: map.realDuration, endHold: 0, sinceCut: 99 };
+    let curSeg = null, segVisual = 0;   // the segment being played and the visual seconds elapsed in it
     let raf = 0, lastTs = 0, nextEvent = 0, disposed = false;
     const emit = (name, ...args) => { const f = opts[name]; if (typeof f==='function') f(...args); };
     const segAt = s => { for (const x of map.segs) if (s>=x.a && s<x.b) return x; return map.segs[map.segs.length-1]; };
@@ -2585,35 +2613,40 @@ if (typeof module!=='undefined') module.exports = Engine;
       raf = 0;
       if (disposed || !st.playing) return;
       const dt = lastTs? Math.min(0.1, (ts-lastTs)/1000) : 0; lastTs = ts;
+      st.sinceCut += dt;
       if (st.matchSecond >= map.end){
         st.fastForward = false;
         // hold on the whistle (and the shoot-out line) before handing back
         st.endHold += dt;
         if (st.matchSecond < finalSecond){ st.matchSecond = finalSecond; fireEventsUpTo(finalSecond); }
+        st.sceneSecond = st.matchSecond;
         emit('onFrame', st.matchSecond, st);
         if (st.endHold >= opts.endHold){ finish(); return; }
       } else {
         const seg = segAt(st.matchSecond);
+        if (seg!==curSeg){ if (curSeg && curSeg.ff) st.sinceCut = 0; curSeg = seg; segVisual = 0; }   // a cut when a fast-forward ends
         st.fastForward = seg.ff;
         let adv = seg.rate * st.speed * dt;
         // do not let one real frame leap over a segment boundary at the wrong rate
         if (st.matchSecond + adv > seg.b) adv = Math.max(seg.b - st.matchSecond, 0.001);
         st.matchSecond = Math.min(map.end, st.matchSecond + adv);
+        if (seg.ff){ segVisual += map.highlightRate * st.speed * dt; st.sceneSecond = Math.min(seg.b - 0.001, seg.a + segVisual); }
+        else st.sceneSecond = st.matchSecond;
         fireEventsUpTo(st.matchSecond);
         emit('onFrame', st.matchSecond, st);
       }
       raf = root.requestAnimationFrame(frame);
     }
-    function finish(){ if (st.ended) return; st.ended = true; st.playing = false; st.matchSecond = finalSecond; fireEventsUpTo(finalSecond, true); emit('onFrame', st.matchSecond, st); emit('onState', st); emit('onEnd', st); }
+    function finish(){ if (st.ended) return; st.ended = true; st.playing = false; st.matchSecond = finalSecond; st.sceneSecond = finalSecond; fireEventsUpTo(finalSecond, true); emit('onFrame', st.matchSecond, st); emit('onState', st); emit('onEnd', st); }
 
     const pb = {
       play(){ if (disposed || st.ended) return; if (!st.playing){ st.playing = true; lastTs = 0; emit('onState', st); raf = root.requestAnimationFrame(frame); } },
       pause(){ if (!st.playing) return; st.playing = false; if (raf){ root.cancelAnimationFrame(raf); raf = 0; } emit('onState', st); },
       toggle(){ if (st.playing) pb.pause(); else pb.play(); },
       setSpeed(x){ st.speed = [1,2,4].includes(x)? x : 1; emit('onState', st); },
-      seek(s){ s = Math.max(0, Math.min(finalSecond, s)); st.matchSecond = s; st.endHold = 0; syncEventIndex(s); if (s>=finalSecond && !st.ended){ st.ended = true; st.playing = false; emit('onEnd', st); } else if (st.ended && s<finalSecond){ st.ended = false; } emit('onFrame', st.matchSecond, st); emit('onState', st); },
+      seek(s){ s = Math.max(0, Math.min(finalSecond, s)); st.matchSecond = s; st.sceneSecond = s; curSeg = null; st.endHold = 0; syncEventIndex(s); if (s>=finalSecond && !st.ended){ st.ended = true; st.playing = false; emit('onEnd', st); } else if (st.ended && s<finalSecond){ st.ended = false; } emit('onFrame', st.matchSecond, st); emit('onState', st); },
       skip(){ pb.pause(); st.matchSecond = finalSecond; finish(); },   // the official events still to come are emitted so the log is complete
-      replay(){ st.ended = false; st.endHold = 0; st.matchSecond = 0; syncEventIndex(0); emit('onState', st); emit('onFrame', 0, st); pb.play(); },
+      replay(){ st.ended = false; st.endHold = 0; st.matchSecond = 0; st.sceneSecond = 0; curSeg = null; syncEventIndex(0); emit('onState', st); emit('onFrame', 0, st); pb.play(); },
       state(){ return Object.assign({}, st); },
       timeMap(){ return map; },
       dispose(){ disposed = true; st.playing = false; if (raf){ root.cancelAnimationFrame(raf); raf = 0; } },
@@ -2766,6 +2799,8 @@ if (typeof module!=='undefined') module.exports = Engine;
       ctx.fillStyle = '#FFFFFF'; ctx.font = font(size*0.42); ctx.strokeText(team.short.toUpperCase(), cx, cy+size*0.75); ctx.fillText(team.short.toUpperCase(), cx, cy+size*0.75);
       ctx.restore();
     }
+    // a quick fade in from black after a cut (end of a fast-forward)
+    if (info.sinceCut!==undefined && info.sinceCut < 0.3){ ctx.save(); ctx.globalAlpha = 1 - info.sinceCut/0.3; ctx.fillStyle = '#000'; ctx.fillRect(0,0,w,h); ctx.restore(); }
     // fast-forward marker
     if (info.fastForward){
       ctx.save(); ctx.globalAlpha = 0.85; ctx.fillStyle = '#111'; const bw = Math.max(34, m*8), bh = Math.max(16, m*3.4);
@@ -2809,7 +2844,7 @@ if (typeof module!=='undefined') module.exports = Engine;
       },
       render(scene, hud){
         if (!ctx || !lay) return;
-        drawFrame(ctx, canvas.width, canvas.height, scene, { teams, lay, pitch, fastForward: !!(hud && hud.fastForward) });
+        drawFrame(ctx, canvas.width, canvas.height, scene, { teams, lay, pitch, fastForward: !!(hud && hud.fastForward), sinceCut: hud? hud.sinceCut : undefined });
       },
       dispose(){
         if (ro){ ro.disconnect(); ro = null; }
@@ -2871,6 +2906,7 @@ if (typeof module!=='undefined') module.exports = Engine;
       ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = INK; ctx.font = `700 ${Math.round(Math.min(w,h)*0.16)}px "Courier New",Courier,monospace`;
       if (Math.floor(scene.flash.age*6)%2===0) ctx.fillText('GOAL', w/2, h/2); ctx.restore();
     }
+    if (info.sinceCut!==undefined && info.sinceCut < 0.3){ ctx.save(); ctx.globalAlpha = 1 - info.sinceCut/0.3; ctx.fillStyle = '#000'; ctx.fillRect(0,0,w,h); ctx.restore(); }
     if (info.fastForward){ ctx.fillStyle = INK; ctx.font = `700 ${Math.round(Math.max(12, m*3))}px "Courier New",Courier,monospace`; ctx.textAlign = 'right'; ctx.fillText('>>', w-8, 14); ctx.textAlign = 'center'; }
   }
 
@@ -2887,7 +2923,7 @@ if (typeof module!=='undefined') module.exports = Engine;
         if (root.ResizeObserver){ ro = new root.ResizeObserver(()=>r.resize()); ro.observe(container); }
       },
       resize(){ if (!container || !canvas) return; canvas.width = Math.max(1, container.clientWidth); canvas.height = Math.max(1, container.clientHeight); lay = C.layout(canvas.width, canvas.height); },
-      render(scene, hud){ if (ctx && lay) drawFrame(ctx, canvas.width, canvas.height, scene, { teams, lay, fastForward: !!(hud && hud.fastForward) }); },
+      render(scene, hud){ if (ctx && lay) drawFrame(ctx, canvas.width, canvas.height, scene, { teams, lay, fastForward: !!(hud && hud.fastForward), sinceCut: hud? hud.sinceCut : undefined }); },
       dispose(){ if (ro){ ro.disconnect(); ro = null; } if (canvas && canvas.parentNode) canvas.parentNode.removeChild(canvas); canvas = ctx = container = lay = null; },
     };
     return r;
@@ -3058,9 +3094,9 @@ if (typeof module!=='undefined') module.exports = Engine;
         const now = (root.performance && root.performance.now)? root.performance.now() : Date.now();
         if (v.reduced && now - v.lastDraw < 200 && !state.ended) return;
         v.lastDraw = now;
-        const s = scene.getSceneAt(sec);
-        if (v.renderer) v.renderer.render(s, { fastForward: state.fastForward, speed: state.speed, reducedMotion: v.reduced });
-        board(s);
+        const s = scene.getSceneAt(state.sceneSecond===undefined? sec : state.sceneSecond);   // the picture
+        if (v.renderer) v.renderer.render(s, { fastForward: state.fastForward, speed: state.speed, reducedMotion: v.reduced, sinceCut: state.sinceCut });
+        board(scene.getSceneAt(sec));                                                           // the clock and score
       },
       onEvent: (e) => {
         if (e.text && comm){ comm.textContent = e.text; }
