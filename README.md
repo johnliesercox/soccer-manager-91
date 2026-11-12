@@ -21,6 +21,12 @@ If you want offline visitors to pick up an update immediately, also change the `
 
 In `index.html`, near the top of the script, set `const FEEDBACK_URL = '';` to a Google Form link and a "Send feedback" button appears on the title screen.
 
+## Version 1.1
+
+Contracts and morale, bookings and suspensions, the youth academy, club records and the hall of fame, challenge starts, and a shared ladder. The ladder needs a small Cloudflare Worker: see `worker/README.md`. Without it the game still keeps a local hall of fame on each phone.
+
+Saves are now compressed in the browser's storage so that the eight named saves fit comfortably.
+
 ## Notes
 
 * Saves are stored in the browser on that phone (localStorage). Clearing site data clears them. The in-game Saves screen keeps up to eight named copies.

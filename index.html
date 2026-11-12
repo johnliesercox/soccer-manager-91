@@ -159,6 +159,22 @@ const CFG = {
   VALUE_MULT: 200,
   SUMMER_WEEKS: 10,
   INJURY_BASE: 0.025,
+  CARD: { yellow:{GK:0.02, DEF:0.14, MID:0.12, FWD:0.08}, second:0.25, straightRed:0.004, yellowBans:[5,10,15], redBan:[1,3] },
+  FREE_AGENT_CAP: 60,
+  CONTRACT_YEARS: [1,4],
+  CONTRACT_WINDOW_WEEK: 20,          // from this week a player in his final year starts to worry
+  FREE_AGENT_WEEKS: 12,              // unsigned free agents leave the league after this many weeks of a season
+  RELEASE_PAYOFF: 0.5,               // share of remaining contract paid when you release a player
+  ACADEMY_COST: [0, 60000, 180000, 450000],
+  ACADEMY_WEEKS: [0, 6, 10, 14],
+  ACADEMY_INTAKE: [1, 2, 3, 4],
+  YOUTH_DEV: [0.5, 1, 1.5, 2],
+  YOUTH_WAGE: 40,
+  RESERVES_CAP: 10,
+  RESERVES_MAX_AGE: 21,
+  MORALE_START: 65,
+  MORALE_REVERT: 0.05,
+  UNSETTLE_CHANCE: 0.03,
   RESALE_WEEKS: 26,          // a club will not entertain bids for a player this soon after signing him
   STAFF_WAGE: [80, 250, 600, 1200],
   STAFF_DIV_MULT: {0:3, 1:3, 2:2, 3:1.4, 4:1},
@@ -266,12 +282,17 @@ function makePlayer(state, pos, skill, age, clubId){
   const grp = (state.clubs[clubId]||{}).group; const pool = grp && EURO_NAMES[grp];
   const name = pool? pick(pool[0])+' '+pick(pool[1]) : pick(FIRST)+' '+pick(LAST);
   const p = { id: nextPlayerId++, name, pos, skill: clamp(Math.round(skill),10,99),
-    age, fitness: 100, injury: 0, club: clubId, goals: 0, apps: 0, listed: null };
+    age, fitness: 100, injury: 0, club: clubId, goals: 0, apps: 0, listed: null,
+    years: rInt(CFG.CONTRACT_YEARS[0], CFG.CONTRACT_YEARS[1]), morale: clamp(Math.round(rNorm(CFG.MORALE_START, 8)), 20, 95), yellows: 0, reds: 0, ban: 0 };
   p.pot = clamp(p.skill + (age<=21? rInt(6,26) : age<=24? rInt(3,15) : age<=27? rInt(0,7) : 0), p.skill, 99);
   state.players[p.id] = p;
   return p;
 }
-function refreshValues(p){ p.wage = wageFor(p.skill); p.value = valueFor(p); }
+function refreshValues(p){ p.wage = wageFor(p.skill); p.value = valueFor(p); }   // market wage: used when a player is created or signs a new deal
+function revalue(p){ p.value = valueFor(p); }                                      // value only: wages are fixed by contract
+function moraleFactor(p){ return p.morale===undefined? 1 : 0.92 + 0.13*p.morale/100; }
+function available(p){ return p.injury===0 && !(p.ban>0); }
+function moraleWord(m){ return m>=80?'buzzing':m>=65?'happy':m>=50?'settled':m>=35?'unhappy':m>=20?'fed up':'wants out'; }
 function posPenalty(natural, slot){
   if (natural===slot) return 1;
   if (natural==='GK') return 0.5;
@@ -280,7 +301,7 @@ function posPenalty(natural, slot){
   if ((natural==='MID'&&slot==='FWD')||(natural==='FWD'&&slot==='MID')) return 0.85;
   return 0.7;
 }
-function effSkill(p, slot){ return p.skill*(0.8+0.2*p.fitness/100)*posPenalty(p.pos, slot); }
+function effSkill(p, slot){ return p.skill*(0.8+0.2*p.fitness/100)*posPenalty(p.pos, slot)*moraleFactor(p); }
 
 // ---------- Club helpers ----------
 function prestigeFor(div, idx){ return (4-div)*16 + (15-idx); }
@@ -295,7 +316,7 @@ function expectedPos(state, club){
 // ---------- Squad selection ----------
 function autoSelect(state, club, formationName){
   const fm = FORMATIONS[formationName||club.formation||'4-4-2'];
-  const avail = squadOf(state, club).filter(p=>p.injury===0);
+  const avail = squadOf(state, club).filter(available);
   const used = new Set(); const xi = [];
   const need = [['GK',1],['DEF',fm.d],['MID',fm.m],['FWD',fm.f]];
   // pass 1: natural positions
@@ -380,9 +401,27 @@ function playMatch(state, home, away, opts={}){
     if (rand()<chance){ x.p.injury = Math.max(1, Math.round((1+Math.floor(Math.pow(rand(),2)*9))*CFG.PHYSIO_INJ_LEN[physio])); injuries.push(x.p); }
   }
   for (const s of scorers) s.p.goals++;
+  // cards and suspensions
+  const cards = [], bans = [];
+  const C = CFG.CARD;
+  const book = (x, side) => {
+    const p = x.p; const chance = C.yellow[x.slot]||0.05;
+    if (rand()<C.straightRed){ cards.push({side, p, min: rInt(1,90), type:'R'}); p.reds = (p.reds||0)+1; const n = rInt(C.redBan[0], C.redBan[1]); p.ban = Math.max(p.ban||0, n); bans.push({p, n, why:'sent off'}); return; }
+    if (rand()<chance){
+      cards.push({side, p, min: rInt(1,90), type:'Y'}); p.yellows = (p.yellows||0)+1;
+      if (rand()<C.second*chance){ cards.push({side, p, min: rInt(45,90), type:'R'}); p.reds = (p.reds||0)+1; p.ban = Math.max(p.ban||0, 1); bans.push({p, n:1, why:'two bookings'}); return; }
+      const k = C.yellowBans.indexOf(p.yellows);
+      if (k>=0){ const n = k+1; p.ban = Math.max(p.ban||0, n); bans.push({p, n, why:`${p.yellows} bookings`}); }
+    }
+  };
+  for (const x of xiH) book(x,'H'); for (const x of xiA) book(x,'A');
+  cards.sort((a,b)=>a.min-b.min);
+  // a suspended player serves his ban while the club plays without him
+  const onPitch = new Set([...xiH,...xiA].map(x=>x.p.id));
+  for (const c of [home, away]){ c.matches = (c.matches||0)+1; for (const p of squadOf(state,c)) if (p.ban>0 && !onPitch.has(p.id)) p.ban--; }
   const leaguePos = home.leaguePos||8;
   const att = opts.neutral? opts.finalAtt : attendanceFor(state, home, away, leaguePos, opts.demandMult||1);
-  return { home, away, gH, gA, scorers, extra, att, injuries, xiH, xiA, xgH, xgA };
+  return { home, away, gH, gA, scorers, extra, att, injuries, cards, bans, xiH, xiA, xgH, xgA };
 }
 
 function recordGate(club, att){
@@ -573,8 +612,8 @@ function activeManagers(state){ return state.managers.filter(m=>!m.retired); }
 function setCurrent(state, idx){ const m = state.managers[idx]; if (!m) return; state.cur = idx; for (const f of MGR_FIELDS) state[f] = m[f]; }
 function saveCurrent(state){ const m = state.managers[state.cur]; if (!m) return; for (const f of MGR_FIELDS) m[f] = state[f]; }
 function withManager(state, idx, fn){ const keep = state.cur; saveCurrent(state); setCurrent(state, idx); const r = fn(state); saveCurrent(state); setCurrent(state, keep); return r; }
-function newsTo(state, clubId, text, kind='info'){ const m = managerOf(state, clubId); if (!m) return; const arr = (state.managers[state.cur]===m)? state.news : m.news; arr.unshift({s:state.season, w:state.week, text, kind}); if (arr.length>40) arr.pop(); }
-function newsAll(state, text, kind='info'){ for (const m of activeManagers(state)){ const arr = (state.managers[state.cur]===m)? state.news : m.news; arr.unshift({s:state.season, w:state.week, text, kind}); if (arr.length>40) arr.pop(); } }
+function newsTo(state, clubId, text, kind='info'){ const m = managerOf(state, clubId); if (!m) return; const arr = (state.managers[state.cur]===m && state.news)? state.news : (m.news = m.news||[]); arr.unshift({s:state.season, w:state.week, text, kind}); if (arr.length>40) arr.pop(); }
+function newsAll(state, text, kind='info'){ for (const m of activeManagers(state)){ const arr = (state.managers[state.cur]===m && state.news)? state.news : (m.news = m.news||[]); arr.unshift({s:state.season, w:state.week, text, kind}); if (arr.length>40) arr.pop(); } }
 function retireManager(state, idx){
   const m = state.managers[idx]; if (!m) return; saveCurrent(state); m.retired = true;
   const c = state.clubs[m.userClub]; if (c.players.length<16) youthFill(state, c, 16);
@@ -610,11 +649,12 @@ function credit(state, club, amount, label){
   club.balance += amount;
   if (isHuman(state, club.id)){ club.ledger.push({s:state.season, w:state.week, label, amount}); if (club.ledger.length>200) club.ledger.shift(); }
 }
-function staffWages(club){ const m = CFG.STAFF_DIV_MULT[club.div]; return Math.round(m*(CFG.STAFF_WAGE[club.staff.coach]+CFG.STAFF_WAGE[club.staff.physio]+CFG.STAFF_WAGE[club.staff.scout])); }
+function staffWages(club){ const m = CFG.STAFF_DIV_MULT[club.div]; return Math.round(m*(CFG.STAFF_WAGE[club.staff.coach]+CFG.STAFF_WAGE[club.staff.physio]+CFG.STAFF_WAGE[club.staff.scout]+CFG.STAFF_WAGE[club.staff.youth||0])); }
 function weeklyFinance(state, club){
   const wages = squadOf(state, club).reduce((s,p)=>s+p.wage,0);
   credit(state, club, -wages, 'Wages');
   credit(state, club, -staffWages(club), 'Staff wages');
+  if (club.reserves && club.reserves.length) credit(state, club, -club.reserves.length*CFG.YOUTH_WAGE, 'Youth wages');
   credit(state, club, -Math.round(club.capacity*CFG.GROUND_COST_PER_SEAT), 'Ground upkeep');
   if (club.balance<0) credit(state, club, -Math.round(-club.balance*CFG.INTEREST_WEEKLY), 'Overdraft interest');
   else if (club.balance>0) credit(state, club, Math.round(club.balance*CFG.DEPOSIT_WEEKLY), 'Bank interest');
@@ -719,6 +759,12 @@ function advanceWeek(state){
         const m = results.find(x=>x.home.id===u.id||x.away.id===u.id);
         if (m){ const won = (m.home.id===u.id && m.gH>m.gA) || (m.away.id===u.id && m.gA>m.gH); if (won) credit(st, u, st.sponsor.perWin, `${st.sponsor.name} win bonus`); }
       }
+      moraleWeek(st, u, results);
+      contractWeek(st, u);
+      for (const m of results.filter(x=>x.home.id===u.id||x.away.id===u.id)){
+        for (const b of m.bans) if (b.p.club===u.id) news(st, `${b.p.name} suspended for ${b.n} match${b.n>1?'es':''} (${b.why}).`, 'injury');
+        for (const c of m.cards) if (c.p.club===u.id && c.type==='Y' && CFG.CARD.yellowBans.includes(c.p.yellows+1)) news(st, `${c.p.name} is one booking away from a ban.`, 'warn');
+      }
       const userMatch = results.find(m=>!m.euro && (m.home.id===u.id||m.away.id===u.id));
       if (userMatch){
         for (const p of userMatch.injuries) if (p.club===u.id) news(st, `${p.name} injured, out for ${p.injury} week${p.injury>1?'s':''}.`, 'injury');
@@ -745,6 +791,8 @@ function advanceWeek(state){
       if (st.gameOver && !st.sackOffer) st.sackOffer = bottomClub(st);
     });
   }
+  for (const m of results) recordMatch(state, m);
+  freeAgentWeek(state);
   state.lastResults = results;
   state.lastWeek = wk;
   state.lastSlim = results.map(m=>({h:m.home.id, a:m.away.id, gH:m.gH, gA:m.gA, extra:m.extra, div:m.home.div, cup:m.cup, cupKey:m.cupKey, att:m.att, euro:m.euro||null, agg:m.agg||null}));
@@ -755,9 +803,290 @@ function advanceWeek(state){
   return results;
 }
 
+// ---------- Records, honours, careers ----------
+const SCORE = { ec:100, cwc:60, uefa:60, fa:40, lc:25, title:{1:60, 2:25, 3:15, 4:10}, promo:{1:30, 2:20, 3:10}, season:2 };
+function clubRecords(state, club){
+  state.records = state.records||{};
+  return state.records[club.id] || (state.records[club.id] = { scorers:{}, bigWin:null, bigLoss:null, gate:null, feeIn:null, feeOut:null, unbeaten:{best:0, bestSeason:null, cur:0} });
+}
+function recordMatch(state, m){
+  const comp = m.euro? CFG.EURO.comps[m.euro.comp].short : m.cupKey? CFG.CUPS[m.cupKey].short : 'League';
+  for (const side of ['H','A']){
+    const c = side==='H'? m.home : m.away; if (c.div===0) continue;
+    const r = clubRecords(state, c);
+    const gf = side==='H'? m.gH : m.gA, ga = side==='H'? m.gA : m.gH; const opp = side==='H'? m.away : m.home;
+    if (gf>ga && (!r.bigWin || gf-ga>r.bigWin.gf-r.bigWin.ga || (gf-ga===r.bigWin.gf-r.bigWin.ga && gf>r.bigWin.gf))) r.bigWin = { gf, ga, opp: opp.name, season: state.season, comp };
+    if (ga>gf && (!r.bigLoss || ga-gf>r.bigLoss.ga-r.bigLoss.gf)) r.bigLoss = { gf, ga, opp: opp.name, season: state.season, comp };
+    if (side==='H' && !m.neutral && (!r.gate || m.att>r.gate.att)) r.gate = { att: m.att, opp: opp.name, season: state.season, comp };
+    if (comp==='League'){ if (gf>=ga){ r.unbeaten.cur++; if (r.unbeaten.cur>r.unbeaten.best){ r.unbeaten.best = r.unbeaten.cur; r.unbeaten.bestSeason = state.season; } } else r.unbeaten.cur = 0; }
+    for (const sc of m.scorers){ if (sc.p.club!==c.id) continue; const e = r.scorers[sc.p.id] || (r.scorers[sc.p.id] = { name: sc.p.name, goals: 0 }); e.goals++; e.name = sc.p.name; }
+  }
+}
+function recordFee(state, p, from, to, price){
+  if (!price) return;
+  if (from && from.div>=1){ const r = clubRecords(state, from); if (!r.feeOut || price>r.feeOut.amount) r.feeOut = { amount: price, name: p.name, other: to? to.name : 'abroad', season: state.season }; }
+  if (to && to.div>=1){ const r = clubRecords(state, to); if (!r.feeIn || price>r.feeIn.amount) r.feeIn = { amount: price, name: p.name, other: from? from.name : 'free agent', season: state.season }; }
+}
+function topClubScorers(state, club, n=10){ const r = clubRecords(state, club); return Object.values(r.scorers).sort((a,b)=>b.goals-a.goals).slice(0,n); }
+function careerOf(m){ return m.career || (m.career = { seasons:0, clubs:[], firstTitle:null, firstEuro:null, titles:{1:0,2:0,3:0,4:0}, mode:'classic', best:null }); }
+function careerScore(m){
+  const t = m.trophies||{}, c = careerOf(m); let s = 0;
+  s += (t.ec||0)*SCORE.ec + (t.cwc||0)*SCORE.cwc + (t.uefa||0)*SCORE.uefa + (t.fa||0)*SCORE.fa + (t.lc||0)*SCORE.lc;
+  for (const d of [1,2,3,4]) s += (c.titles[d]||0)*SCORE.title[d];
+  s += (c.promoInto||[]).reduce((x,d)=>x+(SCORE.promo[d]||0), 0);
+  s += Math.min(40, c.seasons*SCORE.season);
+  return s;
+}
+function careerSummary(state, m){
+  const c = careerOf(m); const t = m.trophies||{};
+  return { manager: m.managerName, score: careerScore(m), seasons: c.seasons, clubs: c.clubs.map(x=>x.name), trophies: { ec:t.ec||0, cwc:t.cwc||0, uefa:t.uefa||0, fa:t.fa||0, lc:t.lc||0, titles: c.titles, promo: (c.promoInto||[]).length }, firstTitle: c.firstTitle, firstEuro: c.firstEuro, mode: c.mode, currentClub: state.clubs[m.userClub].name, division: state.clubs[m.userClub].div, retired: !!m.retired };
+}
+function noteClub(state, m){ const c = careerOf(m); const club = state.clubs[m.userClub]; const last = c.clubs[c.clubs.length-1]; if (!last || last.id!==club.id) c.clubs.push({ id: club.id, name: club.name, from: state.season }); }
+
+// ---------- Youth academy ----------
+function reservesOf(state, club){ club.reserves = (club.reserves||[]).filter(id=>state.players[id] && state.players[id].reserve && state.players[id].club===club.id); return club.reserves.map(id=>state.players[id]); }
+function academyWeek(state, club){
+  if (!club.academyBuild) return;
+  club.academyBuild.weeksLeft--;
+  if (club.academyBuild.weeksLeft<=0){ club.academy = club.academyBuild.level; club.academyBuild = null; news(state, `The youth academy is now grade ${club.academy}.`, 'info'); }
+}
+function upgradeAcademy(state){
+  const u = state.clubs[state.userClub]; const lvl = (u.academy||1);
+  if (lvl>=4) return 'The academy is as good as it gets.';
+  if (u.academyBuild) return 'The builders are already in.';
+  const cost = CFG.ACADEMY_COST[lvl];
+  if (u.balance - cost < -overdraftLimit(state, u)) return 'The bank will not fund that.';
+  credit(state, u, -cost, `Academy grade ${lvl+1}`); u.academyBuild = { level: lvl+1, weeksLeft: CFG.ACADEMY_WEEKS[lvl] };
+  news(state, `Work starts on the grade ${lvl+1} academy. Ready in ${CFG.ACADEMY_WEEKS[lvl]} weeks.`, 'info');
+  return null;
+}
+function youthIntake(state, club){
+  const lvl = club.academy||1, coach = club.staff.youth||0;
+  const n = CFG.ACADEMY_INTAKE[lvl-1] + (coach>=2? 1 : 0);
+  const counts = {GK:0,DEF:0,MID:0,FWD:0}; squadOf(state,club).forEach(p=>counts[p.pos]++); reservesOf(state,club).forEach(p=>counts[p.pos]++);
+  const out = [];
+  for (let i=0;i<n;i++){
+    const want = counts.GK<2? 'GK' : pick(['DEF','DEF','MID','MID','FWD','FWD']); counts[want]++;
+    const base = (CFG.DIV_MEAN[club.div]||36) - 14 + 2*lvl;
+    const p = makePlayer(state, want, Math.max(15, rNorm(base, 4)), rInt(16,18), club.id);
+    p.pot = clamp(p.skill + rInt(8,18) + coach*4 + lvl*2, p.skill+5, 99);
+    p.reserve = true; p.wage = CFG.YOUTH_WAGE; p.years = 0; p.value = valueFor(p); p.morale = 70;
+    club.reserves = club.reserves||[]; club.reserves.push(p.id); out.push(p);
+  }
+  // keep the best ten
+  const rs = reservesOf(state, club).sort((a,b)=>b.pot-a.pot);
+  for (const p of rs.slice(CFG.RESERVES_CAP)){ p.club = -1; newsTo(state, club.id, `${p.name} released from the youth team to make room.`, 'info'); }
+  club.reserves = rs.slice(0, CFG.RESERVES_CAP).map(p=>p.id);
+  if (out.length) newsTo(state, club.id, `Youth intake: ${out.map(p=>`${p.name} (${p.pos}, ${p.age})`).join(', ')}. See the Youth tab.`, 'info');
+}
+function promoteReserve(state, pid){
+  const u = state.clubs[state.userClub]; const p = state.players[pid];
+  if (!p || !p.reserve || p.club!==u.id) return 'He is not in your youth team.';
+  if (u.players.length>=20) return 'Squad is full (20 max).';
+  p.reserve = false; u.reserves = (u.reserves||[]).filter(id=>id!==pid); u.players.push(pid);
+  p.wage = Math.max(60, Math.round(wageFor(p.skill)*0.7/5)*5); p.years = 3; p.signedS = state.season; p.signedW = state.week; p.paid = 0; p.contractS = state.season;
+  news(state, `${p.name} promoted from the youth team on £${fmt(p.wage)} a week for three years.`, 'transfer');
+  return null;
+}
+function releaseReserve(state, pid){
+  const u = state.clubs[state.userClub]; const p = state.players[pid];
+  if (!p || !p.reserve || p.club!==u.id) return 'He is not in your youth team.';
+  u.reserves = (u.reserves||[]).filter(id=>id!==pid); p.club = -1;
+  return null;
+}
+function reservesSeasonEnd(state){
+  for (const c of state.clubs){
+    if (!isHuman(state, c.id)) continue;
+    for (const p of reservesOf(state, c)){
+      p.age++;
+      const room = p.pot - p.skill; const d = room>0? Math.min(room, rInt(0,2) + Math.round(room/8)) : 0;
+      p.skill = clamp(p.skill+d, 10, 99); p.fitness = 100; p.injury = 0; p.goals = 0; p.apps = 0; p.yellows = 0; p.reds = 0; p.value = valueFor(p);
+      if (p.age>CFG.RESERVES_MAX_AGE){ p.club = -1; newsTo(state, c.id, `${p.name} is too old for the youth team and has left.`, 'info'); }
+    }
+    reservesOf(state, c);
+    youthIntake(state, c);
+  }
+}
+
+// ---------- Contracts, morale, free agents ----------
+function clubGames(club){ return Math.max(1, club.matches||0); }
+function playerStatus(state, p){
+  const c = state.clubs[p.club]; if (!c) return 'free';
+  const rank = squadOf(state,c).filter(q=>q.skill>p.skill).length;
+  if (rank<3) return 'star';
+  const share = p.apps/clubGames(c);
+  return share>=0.6? 'regular' : share>=0.3? 'squad' : 'fringe';
+}
+function contractAsk(state, p){
+  const status = playerStatus(state, p);
+  const mult = {star:1.3, regular:1.12, squad:1.0, fringe:0.92, free:1.1}[status];
+  let ask = wageFor(p.skill)*mult;
+  if (p.morale!==undefined){ if (p.morale<40) ask *= 1.15; else if (p.morale>=75) ask *= 0.95; }
+  ask *= 1 + 0.05*(p.rebuffs||0);
+  if (p.age>=31) ask *= 0.9;
+  return Math.max(60, Math.round(ask/5)*5);
+}
+function wantsYears(p){ return p.age>=31? 1 : p.age>=28? 2 : p.age<=22? 3 : 3; }
+function offerContract(state, pid, wage, years){
+  const u = state.clubs[state.userClub]; const p = state.players[pid];
+  if (!p || p.club!==u.id) return { ok:false, msg:'Not your player.' };
+  years = clamp(Math.round(years), 1, 4); wage = Math.round(wage);
+  if (!isFinite(wage) || wage<60) return { ok:false, msg:'Offer a real wage.' };
+  if (p.requested) return { ok:false, msg:`${p.name} has asked for a transfer. He will not talk about a new deal until he is happier.` };
+  if (p.talkedS===state.season && p.talkedW===state.week) return { ok:false, msg:'You have already spoken to him this week.' };
+  p.talkedS = state.season; p.talkedW = state.week;
+  const ask = contractAsk(state, p);
+  const ratio = wage/ask;
+  const want = wantsYears(p);
+  let acc = ratio>=1? 1 : ratio>=0.92? 0.6 : ratio>=0.85? 0.25 : 0;
+  if (p.age>=31 && years>want) acc = Math.min(1, acc+0.15);     // older players like security
+  if (p.age<=24 && years>=4 && ratio<1) acc *= 0.6;               // young players will not sign long and cheap
+  if (rand()<acc){
+    const old = p.wage; p.wage = wage; p.years = years; p.rebuffs = 0; p.contractS = state.season;
+    p.morale = clamp((p.morale||60) + (wage>=old? 10 : 4), 0, 100); p.unsettled = null; p.worried = false;
+    news(state, `${p.name} signs a new ${years}-year deal at £${fmt(wage)} a week.`, 'transfer');
+    return { ok:true, msg:`${p.name} signs for ${years} year${years>1?'s':''} at £${fmt(wage)} a week.` };
+  }
+  p.rebuffs = (p.rebuffs||0)+1; p.morale = clamp((p.morale||60)-4, 0, 100);
+  return { ok:false, msg: ratio<0.85? `${p.name} laughs. He wants about £${fmt(contractAsk(state,p))} a week.` : `${p.name} turns it down. He wants nearer £${fmt(contractAsk(state,p))}.` };
+}
+function letGo(state, pid, flag){ const p = state.players[pid]; if (p && p.club===state.userClub) p.letGo = !!flag; }
+function releasePlayer(state, pid){
+  const u = state.clubs[state.userClub]; const p = state.players[pid];
+  if (!p || p.club!==u.id) return 'Not your player.';
+  if (u.players.length<=14) return 'You cannot go below 14 players.';
+  const weeksLeft = Math.max(0, (p.years-1)*CFG.WEEKS + (CFG.WEEKS - state.week));
+  const payoff = round500(p.wage*weeksLeft*CFG.RELEASE_PAYOFF);
+  if (u.balance - payoff < -overdraftLimit(state, u)) return `Paying off his contract would cost £${fmt(payoff)}. The bank will not wear it.`;
+  credit(state, u, -payoff, `Released ${p.name}`);
+  removePlayer(state, p, u); toFreeAgents(state, p, u);
+  news(state, `${p.name} released. Contract paid off at £${fmt(payoff)}.`, 'transfer');
+  return null;
+}
+function toFreeAgents(state, p, from){
+  p.club = -2; p.lastClub = from? from.id : null; p.lastClubName = from? from.name : null; p.listed = null; p.unsettled = null; p.requested = false;
+  p.freeS = state.season; p.freeW = state.week; p.years = 0;
+  state.freeAgents = state.freeAgents||[]; if (!state.freeAgents.includes(p.id)) state.freeAgents.push(p.id);
+}
+function freeAgentsList(state){ return (state.freeAgents||[]).map(id=>state.players[id]).filter(p=>p && p.club===-2).sort((a,b)=>b.skill-a.skill); }
+function signFreeAgent(state, pid, wage, years){
+  const u = state.clubs[state.userClub]; const p = state.players[pid];
+  if (!p || p.club!==-2) return { ok:false, msg:'He has gone.' };
+  if (u.players.length>=20) return { ok:false, msg:'Squad is full (20 max).' };
+  years = clamp(Math.round(years), 1, 4); wage = Math.round(wage);
+  const level = CFG.DIV_MEAN[u.div]||60;
+  if (p.skill > level+16) return { ok:false, msg:`${p.name} wants to play at a higher level than Division ${u.div}.` };
+  const ask = contractAsk(state, p); const fee = Math.max(2000, round500(p.value*0.1));
+  if (u.balance - fee < -overdraftLimit(state, u)) return { ok:false, msg:`He wants a £${fmt(fee)} signing-on fee and the bank says no.` };
+  const ratio = wage/ask; const acc = ratio>=1? 1 : ratio>=0.9? 0.5 : 0;
+  if (rand()>=acc) return { ok:false, msg:`${p.name} wants about £${fmt(ask)} a week.` };
+  state.freeAgents = state.freeAgents.filter(id=>id!==pid);
+  u.players.push(p.id); p.club = u.id; p.wage = wage; p.years = years; p.paid = fee; p.signedS = state.season; p.signedW = state.week; p.contractS = state.season; p.morale = 65; p.rebuffs = 0;
+  credit(state, u, -fee, `Signed ${p.name} (free agent)`);
+  news(state, `${p.name} joins on a free: £${fmt(wage)} a week for ${years} year${years>1?'s':''}, £${fmt(fee)} signing-on fee.`, 'transfer');
+  return { ok:true, msg:`${p.name} signs.` };
+}
+function freeAgentWeek(state){
+  state.freeAgents = (state.freeAgents||[]).filter(id=>state.players[id] && state.players[id].club===-2);
+  // AI clubs pick through the free agents in the first weeks of the season
+  if (state.week<=CFG.FREE_AGENT_WEEKS){
+    for (const c of state.clubs){
+      if (isHuman(state, c.id) || c.players.length>=17) continue;
+      if (rand()>0.25) continue;
+      const mean = squadOf(state,c).reduce((s,p)=>s+p.skill,0)/Math.max(1,c.players.length);
+      const pick1 = freeAgentsList(state).find(p=>p.skill>=mean-6 && p.skill<=mean+10 && p.age<=32);
+      if (pick1){ state.freeAgents = state.freeAgents.filter(id=>id!==pick1.id); c.players.push(pick1.id); pick1.club = c.id; pick1.wage = wageFor(pick1.skill); pick1.years = rInt(1,3); pick1.signedS = state.season; pick1.signedW = state.week; pick1.paid = 0; pick1.morale = 65; }
+    }
+  }
+  // the rest drift out of the game
+  if (state.week===CFG.FREE_AGENT_WEEKS+1){
+    for (const p of freeAgentsList(state)){ if ((p.freeS||state.season)<state.season || (p.freeW||1)<=1) { p.club = -1; } }
+    state.freeAgents = state.freeAgents.filter(id=>state.players[id].club===-2);
+  }
+}
+function moraleWeek(state, club, results){
+  const sq = squadOf(state, club);
+  const played = new Set(); let result = null;
+  for (const m of results){
+    if (m.home.id!==club.id && m.away.id!==club.id) continue;
+    const xi = m.home.id===club.id? m.xiH : m.xiA; for (const x of xi) played.add(x.p.id);
+    if (!m.euro){ const won = m.home.id===club.id? m.gH>m.gA : m.gA>m.gH; const lost = m.home.id===club.id? m.gH<m.gA : m.gA<m.gH; result = won?'W':lost?'L':'D'; }
+  }
+  const skills = sq.map(p=>p.skill).sort((a,b)=>a-b); const median = skills[Math.floor(skills.length/2)]||40;
+  for (const p of sq){
+    if (p.morale===undefined) p.morale = CFG.MORALE_START;
+    let d = 0;
+    if (played.has(p.id)) d += 2; else if (available(p) && results.length) d -= (p.skill>=median? 1 : 0.5);
+    if (result==='W') d += 1; else if (result==='L') d -= 1;
+    if (p.listed!==null) d -= 3;
+    if (p.wage < 0.7*wageFor(p.skill) && p.skill>=median) d -= 1;
+    if (p.worried) d -= 1;
+    if (p.unsettled){ d -= 2; p.unsettled.weeks--; if (p.unsettled.weeks<=0){ p.unsettled = null; d += 5; news(state, `${p.name} has put the ${'interest from elsewhere'} behind him.`, 'info'); } }
+    d += CFG.MORALE_REVERT*(55-p.morale);
+    p.morale = clamp(p.morale + d, 0, 100);
+    if (p.morale<30 && !p.requested){ p.requested = true; news(state, `${p.name} has asked for a transfer.`, 'warn'); }
+    if (p.requested && p.morale>=50){ p.requested = false; news(state, `${p.name} has withdrawn his transfer request.`, 'info'); }
+  }
+  // a bigger club takes an interest in your best player
+  if (rand()<CFG.UNSETTLE_CHANCE && sq.length){
+    const stars = sq.slice().sort((a,b)=>b.skill-a.skill).slice(0,3).filter(p=>!p.unsettled && p.age<=30);
+    const suitors = state.clubs.filter(c=>c.div>=1 && !isHuman(state,c.id) && c.prestige>club.prestige+10 && c.players.length<20);
+    if (stars.length && suitors.length){
+      const p = pick(stars), c = pick(suitors);
+      p.unsettled = { club: c.name, clubId: c.id, weeks: 6 };
+      const amount = round500(p.value*(1.4+0.8*rand()));
+      state.offers.push({pid:p.id, club:c.id, name:c.name, amount, expires: state.week+2, season: state.season});
+      news(state, `${c.name} want ${p.name} and have offered £${fmt(amount)}. He knows, and he is unsettled.`, 'offer');
+    }
+  }
+}
+function contractWeek(state, club){
+  if (state.week!==CFG.CONTRACT_WINDOW_WEEK) return;
+  for (const p of squadOf(state, club)){
+    if (p.years<=1 && !p.worried){ p.worried = true; news(state, `${p.name}'s contract is up in the summer. He wants to know where he stands.`, 'warn'); }
+  }
+}
+function expireContracts(state){
+  for (const c of state.clubs){
+    if (c.div===0 && !isHuman(state, c.id)){ for (const p of squadOf(state,c)){ p.years = Math.max(1, p.years-1); if (p.years===1 && rand()<0.5){ p.years = rInt(2,4); p.wage = wageFor(p.skill); } } continue; }
+    const human = isHuman(state, c.id);
+    const sq = squadOf(state,c).slice().sort((a,b)=>b.skill-a.skill);
+    sq.forEach((p,i)=>{
+      if (p.years<=1){
+        if (!human){
+          const keep = i<13? 0.97 : p.age>=32? 0.5 : 0.75;
+          if (rand()<keep){ p.years = rInt(1,4); p.wage = Math.round(wageFor(p.skill)*(0.9+0.2*rand())/5)*5; }
+          else { removePlayer(state, p, c); toFreeAgents(state, p, c); }
+        } else if (p.letGo){
+          removePlayer(state, p, c); toFreeAgents(state, p, c);
+          newsTo(state, c.id, `${p.name}'s contract has run out. He leaves on a free.`, 'info');
+        } else {
+          // no decision made: the assistant manager offers the going rate plus a lazy tax; the player decides
+          const ask = Math.round(contractAsk(state, p)*1.1/5)*5;
+          const level = CFG.DIV_MEAN[c.div]||60;
+          const stays = !p.requested && (p.morale||60)>=40 && p.skill<=level+16 && p.age<34;
+          if (stays){ p.wage = ask; p.years = wantsYears(p); p.worried = false; p.contractS = state.season; newsTo(state, c.id, `${p.name} re-signs for ${p.years} year${p.years>1?'s':''} at £${fmt(ask)} a week. You could have done better by talking to him earlier.`, 'warn'); }
+          else { removePlayer(state, p, c); toFreeAgents(state, p, c); newsTo(state, c.id, `${p.name}'s contract has run out and he has turned down a new one. He leaves on a free.`, 'warn'); }
+        }
+      } else { p.years--; p.worried = false; }
+    });
+  }
+  // free agents who have waited a whole season go, and the pool is trimmed to the best
+  for (const p of freeAgentsList(state)) if ((p.freeS||0) < state.season) p.club = -1;
+  state.freeAgents = (state.freeAgents||[]).filter(id=>state.players[id] && state.players[id].club===-2);
+  const keepIds = freeAgentsList(state).slice(0, CFG.FREE_AGENT_CAP).map(p=>p.id);
+  for (const id of state.freeAgents) if (!keepIds.includes(id)) state.players[id].club = -1;
+  state.freeAgents = keepIds;
+}
+
 // ---------- Training and ground ----------
 function trainingWeek(state, club){
+  academyWeek(state, club);
   const t = CFG.TRAIN[club.training]; const coach = CFG.COACH_MULT[club.staff.coach];
+  for (const p of reservesOf(state, club)){
+    if (p.skill>=p.pot) continue;
+    if (rand() < CFG.TRAIN_BASE*CFG.YOUTH_DEV[club.staff.youth||0]*0.8){ p.skill++; p.value = valueFor(p); }
+  }
   for (const p of squadOf(state, club)){
     if (p.injury>0) continue;
     if (t.inj>0 && rand()<t.inj){ p.injury = Math.max(1, Math.round(rInt(1,4)*CFG.PHYSIO_INJ_LEN[club.staff.physio])); news(state, `${p.name} picked up a knock in training, out ${p.injury} week${p.injury>1?'s':''}.`, 'injury'); continue; }
@@ -784,7 +1113,7 @@ function groundWeek(state, club, results){
   }
   if (club.safety < CFG.SAFETY_RESTRICT_BELOW && state.week%6===0) news(state, 'Your ground is a safety risk. Capacity is restricted until you spend on it.', 'warn');
 }
-function setStaff(state, role, tier){ const u = state.clubs[state.userClub]; if (['coach','physio','scout'].includes(role) && tier>=0 && tier<=3) u.staff[role] = tier; }
+function setStaff(state, role, tier){ const u = state.clubs[state.userClub]; if (['coach','physio','scout','youth'].includes(role) && tier>=0 && tier<=3) u.staff[role] = tier; }
 function setTraining(state, level){ if (CFG.TRAIN[level]) state.clubs[state.userClub].training = level; }
 function buildCost(seats){ return seats*CFG.SEAT_COST; }
 function startBuild(state, seats){
@@ -992,6 +1321,7 @@ function bottomClub(state){
 }
 function moveManager(state, clubId){
   const old = state.clubs[state.userClub];
+  { const cr = careerOf(state.managers[state.cur]); const last = cr.clubs[cr.clubs.length-1]; if (last && last.id===old.id) last.to = state.season; }
   old.xi = null; for (const p of squadOf(state,old)) p.listed = null;
   if (old.players.length<16 && !state.managers.some(m=>!m.retired && m!==state.managers[state.cur] && m.userClub===old.id)) youthFill(state, old, 16);
   const c = state.clubs[clubId];
@@ -1048,14 +1378,14 @@ function transferWeek(state){
   // offers for listed players
   state.offers = state.offers.filter(o=>o.expires>state.week && o.season===state.season);
   for (const p of squadOf(state,user)){
-    if (p.listed===null) continue;
-    const askRatio = p.listed/Math.max(p.value,1);
+    if (p.listed===null && !p.requested) continue;
+    const askRatio = p.listed===null? 1 : p.listed/Math.max(p.value,1);
     const chance = askRatio<=1? 0.35 : askRatio<=1.3? 0.2 : 0.08;
     if (rand()<chance){
       const buyers = state.clubs.filter(c=>!isHuman(state, c.id) && c.div<=Math.min(4,user.div+1) && c.players.length<20);
       if (!buyers.length) continue;
       const buyer = pick(buyers);
-      const amount = round500(Math.min(p.listed, p.value*(0.85+0.3*rand())));
+      const amount = round500(Math.min(p.listed===null? p.value*1.1 : p.listed, p.value*(0.85+0.3*rand())));
       state.offers.push({pid:p.id, club:buyer.id, name:buyer.name, amount, expires: state.week+2, season: state.season});
       news(state, `${buyer.name} offer £${fmt(amount)} for ${p.name}.`, 'offer');
     }
@@ -1136,8 +1466,10 @@ function acceptOffer(state, offerIdx){
 }
 function weeksSinceSigning(state, p){ if (p.signedS===undefined) return 999; return (state.season-p.signedS)*CFG.WEEKS + (state.week-p.signedW); }
 function movePlayer(state, p, from, to, price){
+  recordFee(state, p, from, to, price);
   from.players = from.players.filter(id=>id!==p.id); to.players.push(p.id); p.club = to.id; p.listed = null;
   p.paid = price!==undefined? price : p.value; p.signedS = state.season; p.signedW = state.week;
+  p.wage = Math.max(p.wage||0, wageFor(p.skill)); p.years = Math.max(p.years||0, 3); p.morale = 65; p.unsettled = null; p.requested = false; p.worried = false; p.rebuffs = 0;
   if (from.players.length<14 && !isHuman(state, from.id)) youthFill(state, from, 14);
 }
 function humanListings(state){
@@ -1159,6 +1491,12 @@ function youthFill(state, club, target){
     if (isHuman(state, club.id)) newsTo(state, club.id, `${p.name}, ${p.age}, promoted from the youth team.`, 'info');
   }
 }
+function emergencyFill(state, club){
+  // a human squad under 14: promote the best reserves, then the youth team patch the rest
+  const rs = reservesOf(state, club).sort((a,b)=>b.skill-a.skill);
+  while (club.players.length<16 && rs.length){ const p = rs.shift(); p.reserve = false; club.reserves = club.reserves.filter(id=>id!==p.id); club.players.push(p.id); p.wage = Math.max(60, Math.round(wageFor(p.skill)*0.7/5)*5); p.years = 3; newsTo(state, club.id, `${p.name} promoted from the youth team to make up the numbers.`, 'warn'); }
+  if (club.players.length<16) youthFill(state, club, 16);
+}
 function developPlayers(state){
   for (const c of state.clubs){
     for (const p of squadOf(state,c)){
@@ -1168,9 +1506,9 @@ function developPlayers(state){
       else if (p.age<=30) d = rInt(-2,1); else d = rInt(-6,-2);
       p.skill = clamp(p.skill+d, 10, 99);
       if (p.age>=28) p.pot = p.skill;
-      p.fitness = 100; p.injury = 0; p.goals = 0; p.apps = 0;
+      p.fitness = 100; p.injury = 0; p.goals = 0; p.apps = 0; p.yellows = 0; p.reds = 0; p.rebuffs = 0;
       if ((p.age>=34 && rand()<0.5) || p.age>=36){ p.retired = true; }
-      refreshValues(p);
+      revalue(p);
     }
     const retired = squadOf(state,c).filter(p=>p.retired);
     for (const p of retired){ removePlayer(state,p,c); if (isHuman(state, c.id)) newsTo(state, c.id, `${p.name} has retired.`, 'info'); }
@@ -1216,15 +1554,23 @@ function endSeason(state){
       if (pos<=2 && d>1){ moves.push({c, to:d-1}); summary.promoted.push(c.id); c.confidence = clamp(c.confidence+15,0,100); credit(state,c,CFG.PROMO_BONUS[d-1],'Promotion bonus'); }
       if (pos>=15 && d<4){ moves.push({c, to:d+1}); summary.relegated.push(c.id); c.confidence = clamp(c.confidence-15,0,100); }
       if (pos===16 && d===4 && isHuman(state, c.id)) newsTo(state, c.id, 'You have won the League Joker trophy. It is not a compliment.', 'warn');
-      { const mg = managerOf(state, c.id); if (mg){ if (pos===1) mg.trophies.league++; if (pos<=2 && d>1) mg.trophies.promo++; } }
+      { const mg = managerOf(state, c.id); if (mg){ const cr = careerOf(mg); if (pos===1){ mg.trophies.league++; cr.titles[d] = (cr.titles[d]||0)+1; if (d===1 && cr.firstTitle===null) cr.firstTitle = state.season; } if (pos<=2 && d>1){ mg.trophies.promo++; cr.promoInto = cr.promoInto||[]; cr.promoInto.push(d-1); } } }
       c.history.push({season: state.season, div: d, pos, pts: c.st.pts, lc: c.cup.lc.round, fa: c.cup.fa.round, euro: (c.euro && state.euro)? {comp:c.euro.comp, round:c.euro.round, won: state.euro[c.euro.comp].winner===c.id} : null});
       // prestige drifts toward performance
       c.prestige = 0.8*c.prestige + 0.2*prestigeFor(d, pos-1);
     });
   }
+  state.honours = state.honours||[];
+  { const h = { season: state.season, champions:{}, lc: state.cupWinners.lc, fa: state.cupWinners.fa };
+    for (const d of [1,2,3,4]) h.champions[d] = summary.tables[d][0].id;
+    if (state.euro) for (const k in state.euro) h[k] = state.euro[k].winner;
+    state.honours.push(h); }
   for (const mg of activeManagers(state)){
     withManager(state, state.managers.indexOf(mg), st=>{
       const user = st.clubs[st.userClub];
+      const cr = careerOf(mg); cr.seasons++; noteClub(st, mg);
+      if (cr.firstEuro===null && st.euro){ for (const k in st.euro) if (st.euro[k].winner===user.id) cr.firstEuro = st.season; }
+      if (!cr.best || user.div<cr.best.div || (user.div===cr.best.div && user.leaguePos<cr.best.pos)) cr.best = { div: user.div, pos: user.leaguePos, season: st.season };
       const sm = Object.assign({}, summary);
       sm.userPos = user.leaguePos; sm.userDiv = user.div; sm.userExpected = expectedPos(st,user); sm.userClubId = user.id;
       sm.summerWages = squadOf(st,user).reduce((s,p)=>s+p.wage,0)*CFG.SUMMER_WEEKS;
@@ -1236,6 +1582,8 @@ function endSeason(state){
       sm.euro = euroStatus(st, user); sm.euroWinners = {}; if (st.euro) for (const k in st.euro) sm.euroWinners[k] = st.euro[k].winner;
       const q = euroQualifiers(st, sm); sm.qualified = Object.keys(q).find(k=>q[k].includes(user.id)) || null;
       if (user.confidence<=CFG.SACK_CONF) st.gameOver = 'The board reviewed the season and decided to make a change. You have been sacked.';
+      if (cr.mode==='big' && cr.seasons<=2 && user.div===1 && user.leaguePos>3) st.gameOver = `The board wanted the title and got ${user.leaguePos}th. You have been sacked.`;
+      if (cr.mode==='giant' && cr.seasons===2 && user.div===4) st.gameOver = 'Two seasons in Division 4 is two too many for this club. You have been sacked.';
       st.jobOffer = null;
       if (!st.gameOver){
         const overach = (sm.userExpected - sm.userPos) >= 4 || sm.promoted.includes(user.id);
@@ -1250,10 +1598,14 @@ function endSeason(state){
   for (const mv of moves){ const up = mv.to<mv.c.div; mv.c.div = mv.to; mv.c.prestige = up? Math.max(mv.c.prestige, prestigeFor(mv.to,12)) : Math.min(mv.c.prestige, prestigeFor(mv.to,3)); }
   state.euroEntrants = euroQualifiers(state, summary);
   for (const c of state.clubs){ if (c.div>=1) c.support = Math.round((1-CFG.SUPPORT_BLEND)*supportOf(state, c) + CFG.SUPPORT_BLEND*demandTarget(state, c)); }
+  expireContracts(state);
   developPlayers(state);
+  for (const c of state.clubs) c.matches = 0;
   aiStrengthen(state);
-  for (const mg of activeManagers(state)){ const c = state.clubs[mg.userClub]; if (c.players.length<16) youthFill(state, c, 16); }
+  reservesSeasonEnd(state);
+  for (const mg of activeManagers(state)){ const c = state.clubs[mg.userClub]; if (c.players.length<16) emergencyFill(state, c); }
   for (const id in state.players) if (state.players[id].club===-1) delete state.players[id];
+  state.freeAgents = (state.freeAgents||[]).filter(id=>state.players[id]);
   for (const c of state.clubs){ c.st = {p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0}; }
   state.season++; state.week = 1;
   buildSchedule(state); updatePositionsByPrestige(state);
@@ -1285,7 +1637,7 @@ function newGame(opts={}){
     const c = { id:i, name, short, div, prestige: prestigeFor(div,idx), capacity: capacityFor(div,idx),
       balance: 0, players: [], formation:'4-4-2', confidence: CFG.CONF_START, overdraftWeeks:0, ledger: [], history: [],
       st:{p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0}, leaguePos: idx+1, cup:{lc:{round:0,out:false}, fa:{round:0,out:false}}, xi:null,
-      staff:{coach:1, physio:1, scout:1}, training:'normal', safety: clamp(Math.round(45 + prestigeFor(div,idx)/64*40 + rInt(-8,8)), 20, 95), build:null };
+      staff:{coach:1, physio:1, scout:1, youth:0}, training:'normal', safety: clamp(Math.round(45 + prestigeFor(div,idx)/64*40 + rInt(-8,8)), 20, 95), build:null, academy:1, academyBuild:null, reserves:[] };
     const [bHi,bLo] = CFG.START_BALANCE[div]; c.balance = round500(bHi - (bHi-bLo)*idx/15);
     c.support = Math.round(c.capacity*CFG.FILL[div]);
     const mean = CFG.DIV_MEAN[div] + (7.5-idx)*CFG.PRESTIGE_SKILL_SPREAD;
@@ -1294,7 +1646,66 @@ function newGame(opts={}){
   });
   makeEuroClubs(state);
   const names = opts.managers && opts.managers.length? opts.managers : [opts.managerName || 'The Gaffer'];
-  return finishNewGame(state, opts, names);
+  const mode = opts.mode||'classic';
+  if (mode==='giant') setupFallenGiant(state, opts);
+  if (mode==='big'){ opts.userClub = divClubs(state,1).slice().sort((a,b)=>b.prestige-a.prestige)[0].id; }
+  const st = finishNewGame(state, opts, names);
+  if (mode==='skint') setupSkint(st);
+  if (mode==='relegation') setupRelegation(st);
+  if (mode==='big') setupBigJob(st);
+  return st;
+}
+const MODES = {
+  classic:    { name:'Classic',           blurb:'A random Division 4 club, a small ground and a smaller bank balance. The way it was.' },
+  skint:      { name:'Skint',             blurb:'A Division 4 club deep in the overdraft with a wage bill it cannot afford. The bank gives you twelve weeks.' },
+  relegation: { name:'Relegation scrap',  blurb:'Take over the club bottom of Division 1 at Christmas, 22 games to save them.' },
+  giant:      { name:'Fallen giant',      blurb:'A famous club that has slid to Division 4: huge ground, ageing stars on big wages, a board that expects the glory days back.' },
+  big:        { name:'Big job',           blurb:'The biggest club in the land. The title is expected in your first season. Anything less and you are out.' },
+};
+function setupSkint(state){
+  const u = state.clubs[state.userClub];
+  // overpaid squad and a hole in the bank
+  for (const p of squadOf(state,u)){ p.wage = Math.round(p.wage*1.6/5)*5; p.years = Math.max(p.years, 2); }
+  u.balance = -Math.round(overdraftLimit(state, u)*1.2/500)*500;
+  u.overdraftWeeks = CFG.OVERDRAFT_SACK_WEEKS - 12;
+  u.confidence = 45;
+  news(state, `The club is £${fmt(-u.balance)} in the red, the wage bill is a disgrace and the bank has given the board twelve weeks. Sell, cut and survive.`, 'warn');
+}
+function setupRelegation(state){
+  // let the season run to Christmas, then hand over the club at the bottom of Division 1
+  const name = state.managerName;
+  for (let w=1; w<CFG.CONTRACT_WINDOW_WEEK; w++) advanceWeek(state);
+  updatePositions(state);
+  const bottom = tableFor(state,1)[15];
+  moveManager(state, bottom.id);
+  const m = state.managers[state.cur]; m.career = null; careerOf(m).mode = 'relegation'; noteClub(state, m);
+  state.news = []; state.userResults = {}; state.userEuro = {}; state.userSel = []; state.euroSel = []; state.scoutReport = [];
+  bottom.confidence = 40; bottom.ledger = [];
+  news(state, `Welcome to ${bottom.name}, ${name}. Bottom of Division 1 at Christmas with ${CFG.WEEKS - state.week + 1} weeks to go. Keep them up and you are a hero.`, 'warn');
+  saveCurrent(state);
+}
+function setupFallenGiant(state, opts){
+  const famous = ['Liverpool','Manchester United','Arsenal','Everton','Leeds United','Tottenham Hotspur'];
+  const giants = divClubs(state,1).filter(c=>famous.includes(c.name));
+  const g = pick(giants.length? giants : divClubs(state,1).slice(0,4)); const x = pick(divClubs(state,4));
+  // swap divisions and squads: the giant keeps its name, ground and support; the small club takes its place in Division 1
+  const gPlayers = g.players.slice(), xPlayers = x.players.slice();
+  g.players = xPlayers; x.players = gPlayers; for (const id of g.players) state.players[id].club = g.id; for (const id of x.players) state.players[id].club = x.id;
+  const gDiv = g.div, xDiv = x.div; g.div = xDiv; x.div = gDiv;
+  const gP = g.prestige; g.prestige = prestigeFor(4, 4); x.prestige = prestigeFor(1, 13);
+  const gBal = g.balance; g.balance = 20000; x.balance = Math.round(gBal*0.6);
+  g.support = Math.round(demandTarget(state, g)*2.2);
+  g.safety = 40;
+  // three ageing stars on wages the club cannot afford
+  for (let i=0;i<3;i++){ const p = makePlayer(state, ['FWD','MID','DEF'][i], rNorm(56, 4), rInt(32,34), g.id); refreshValues(p); p.wage = Math.round(p.wage*3.5/5)*5; p.years = 2; p.pot = p.skill; g.players.push(p.id); }
+  while (g.players.length>20){ const worst = squadOf(state,g).sort((a,b)=>a.skill-b.skill)[0]; removePlayer(state, worst, g); }
+  g.confidence = 45;
+  opts.userClub = g.id;
+  state.giantNote = `${g.name} have fallen all the way to Division 4. The ground holds ${fmt(g.capacity)}, three old stars are on £${fmt(squadOf(state,g).slice().sort((a,b)=>b.wage-a.wage)[0].wage)} a week, and the board remember better days. Get them back.`;
+}
+function setupBigJob(state){
+  const u = state.clubs[state.userClub]; u.confidence = 45;
+  news(state, `Welcome to ${u.name}. The board expect the title this season. Second will not do.`, 'warn');
 }
 function makeEuroClubs(state){
   if (state.clubs.some(c=>c.div===0)) return;
@@ -1315,10 +1726,12 @@ function finishNewGame(state, opts, names){
     jobOffer:null, jobOfferExpires:undefined, sackOffer:null, gameOver:null, userResults:{}, userEuro:{}, euroSel:[], offers:[], transferList:[], news:[], seasonSummary:null, scoutReport:[], retired:false, ready:false, pendingReview:false, trophies:{league:0, lc:0, fa:0, promo:0, ec:0, cwc:0, uefa:0} }));
   if (opts.userClub!==undefined) for (let i=1;i<state.managers.length;i++) if (state.managers[i].userClub===opts.userClub) state.managers[i].userClub = pool[8];
   buildSchedule(state);
+  state.gameId = (opts.gameId!==undefined)? opts.gameId : (Date.now().toString(36)+Math.floor(rand()*1e6).toString(36));
   for (let i=0;i<state.managers.length;i++){
     setCurrent(state, i);
+    { const cr = careerOf(state.managers[i]); cr.mode = opts.mode||'classic'; noteClub(state, state.managers[i]); }
     openPreseason(state); transferWeek(state);
-    news(state, `Welcome to ${state.clubs[state.userClub].name}, ${state.managerName}. The board expect a mid-table finish. Prove them wrong.`, 'info');
+    news(state, state.giantNote && i===0? state.giantNote : `Welcome to ${state.clubs[state.userClub].name}, ${state.managerName}. The board expect a mid-table finish. Prove them wrong.`, 'info');
     saveCurrent(state);
   }
   setCurrent(state, 0);
@@ -1339,7 +1752,7 @@ function nextFixture(state){
 }
 function buildXI(state, club, selectedIds, formationName){
   const fm = FORMATIONS[formationName||club.formation||'4-4-2'];
-  const sel = (selectedIds||[]).map(id=>state.players[id]).filter(p=>p && p.club===club.id && p.injury===0);
+  const sel = (selectedIds||[]).map(id=>state.players[id]).filter(p=>p && p.club===club.id && available(p));
   const need = [['GK',1],['DEF',fm.d],['MID',fm.m],['FWD',fm.f]];
   const used = new Set(); const xi = [];
   for (const [slot,n] of need){
@@ -1355,7 +1768,7 @@ function buildXI(state, club, selectedIds, formationName){
   };
   fill(sel);
   if (xi.length<11){
-    const rest = squadOf(state,club).filter(p=>p.injury===0 && !used.has(p.id));
+    const rest = squadOf(state,club).filter(p=>available(p) && !used.has(p.id));
     for (const [slot,n] of need){
       let have = xi.filter(x=>x.slot===slot).length; if (have>=n) continue;
       const c = rest.filter(p=>p.pos===slot && !used.has(p.id)).sort((a,b)=>b.skill-a.skill);
@@ -1370,7 +1783,7 @@ function unlistPlayer(state, pid){ const p = state.players[pid]; if (p) p.listed
 function rejectOffer(state, idx){ state.offers.splice(idx,1); }
 function declineJob(state){ state.jobOffer = null; }
 function boardMood(conf){ return conf>=75?'delighted':conf>=55?'content':conf>=35?'uneasy':conf>=18?'worried':'furious'; }
-const SAVE_VERSION = 3;
+const SAVE_VERSION = 4;
 function migrate(state){
   const from = state.v||1;
   if (!state.managers){ // pre-multiplayer save: wrap the single manager
@@ -1378,10 +1791,18 @@ function migrate(state){
       jobOffer: state.jobOffer===undefined? null : state.jobOffer, jobOfferExpires: state.jobOfferExpires, sackOffer: state.sackOffer||null, gameOver: state.gameOver||null, userResults: state.userResults||{}, offers: state.offers||[], transferList: state.transferList||[], news: state.news||[], seasonSummary: state.seasonSummary||null, retired:false, ready:false, pendingReview:false, trophies:{league:0, lc:0, fa:0, promo:0} }];
     state.cur = 0;
   }
-  for (const m of state.managers){ m.euroSel = m.euroSel||[]; m.userEuro = m.userEuro||{}; m.scoutReport = m.scoutReport||[]; m.trophies = Object.assign({league:0, lc:0, fa:0, promo:0, ec:0, cwc:0, uefa:0}, m.trophies||{}); }
+  for (const m of state.managers){ m.euroSel = m.euroSel||[]; m.userEuro = m.userEuro||{}; m.scoutReport = m.scoutReport||[]; m.trophies = Object.assign({league:0, lc:0, fa:0, promo:0, ec:0, cwc:0, uefa:0}, m.trophies||{});
+    if (!m.career){ const cr = careerOf(m); const club = state.clubs[m.userClub]; cr.seasons = club? club.history.length : Math.max(0, state.season-1); cr.titles[1] = m.trophies.league; cr.promoInto = Array.from({length:m.trophies.promo}, ()=>3); if (club) cr.clubs.push({ id: club.id, name: club.name, from: 1 }); } }
+  state.gameId = state.gameId || ('old'+Date.now().toString(36));
+  state.honours = state.honours||[]; state.records = state.records||{}; state.freeAgents = state.freeAgents||[];
+  for (const id in state.players){ const p = state.players[id];
+    if (p.years===undefined) p.years = rInt(CFG.CONTRACT_YEARS[0], CFG.CONTRACT_YEARS[1]);
+    if (p.morale===undefined) p.morale = clamp(Math.round(rNorm(CFG.MORALE_START, 8)), 20, 95);
+    if (p.yellows===undefined) p.yellows = 0; if (p.reds===undefined) p.reds = 0; if (p.ban===undefined) p.ban = 0; }
   for (const c of state.clubs){
     c.staff = c.staff||{coach:1, physio:1, scout:1}; c.training = c.training||'normal'; if (c.safety===undefined) c.safety = 55; if (c.build===undefined) c.build = null;
     c.cup = c.cup||{lc:{round:0,out:false}, fa:{round:0,out:false}}; if (c.euro===undefined) c.euro = null; c.gates = c.gates||[];
+    if (c.staff.youth===undefined) c.staff.youth = 0; c.academy = c.academy||1; if (c.academyBuild===undefined) c.academyBuild = null; c.reserves = c.reserves||[]; c.matches = c.matches||0;
   }
   if (!state.clubs.some(c=>c.div===0)){ makeEuroClubs(state); state.euro = null; for (const c of state.clubs) c.euro = null; }   // Europe starts next season
   if (!state.cups && state.cup){ state.cups = { fa: state.cup }; }
@@ -1398,7 +1819,10 @@ const Engine = { CFG, CLUB_DATA, FORMATIONS, newGame, advanceWeek, endSeason, au
   chooseSponsor, setSeasonTickets, seasonTicketForecast, takeLoan, repayLoan, loanMax, sponsorBase,
   takeSackOffer, resign, bottomClub, updatePositions,
   isHuman, managerOf, activeManagers, setCurrent, saveCurrent, withManager, retireManager, standings, humanListings, renameClub, renamePlayer, scoutSearch, topScorers, gateSummary, supportOf, demandTarget, turnover, ticketOf, setTicketPrice, ticketAdvice, renameAnyClub,
-  euroSlot, euroTieFor, euroStatus, euroRoundName, EURO_POOL, SAVE_VERSION, migrate };
+  euroSlot, euroTieFor, euroStatus, euroRoundName, EURO_POOL, SAVE_VERSION, migrate,
+  contractAsk, offerContract, releasePlayer, freeAgentsList, signFreeAgent, playerStatus, moraleWord, moraleFactor, available, wantsYears, letGo,
+  reservesOf, upgradeAcademy, promoteReserve, releaseReserve,
+  clubRecords, topClubScorers, careerOf, careerScore, careerSummary, SCORE, MODES };
 if (typeof module!=='undefined') module.exports = Engine;
 
 </script>
@@ -1410,10 +1834,46 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const money = n => (n<0?'-':'')+'£'+E.fmt(Math.abs(n));
 const SAVE_KEY = 'sm91-save';
-const APP_VERSION = '1.0.4';
+const APP_VERSION = '1.1.0';
 const FEEDBACK_URL = 'https://forms.gle/w9fsKD6hUvzu9GQh8';
 const ANALYTICS_TOKEN = 'f070e2a73ed4ad02f5341aa8b1f5b605';   // Mixpanel project token; empty means nothing is sent
 const ANALYTICS_HOST = 'https://api.mixpanel.com';
+const LADDER_URL = '';               // Cloudflare Worker URL for the shared ladder; empty means local hall of fame only
+const LADDER_SECRET = '2a7f90e50ccfeefa95b4aac8af049fb6';
+// ---------- hall of fame and ladder ----------
+const HOF_KEY = 'sm91-hof', NICK_KEY = 'sm91-nick', LADDER_OPT = 'sm91-ladder';
+const Ladder = {
+  on(){ try{ return !!LADDER_URL && /^https?:/.test(location.protocol) && localStorage.getItem(LADDER_OPT)!=='off'; }catch(e){ return false; } },
+  nick(){ try{ return localStorage.getItem(NICK_KEY)||''; }catch(e){ return ''; } },
+  setNick(v){ v = String(v||'').replace(/[^\p{L}\p{N} _.'-]/gu,'').replace(/\s+/g,' ').trim().slice(0,16); try{ localStorage.setItem(NICK_KEY, v); }catch(e){} return v; },
+  local(){ try{ return JSON.parse(localStorage.getItem(HOF_KEY)||'{}'); }catch(e){ return {}; } },
+  saveLocal(entries){ try{ localStorage.setItem(HOF_KEY, JSON.stringify(entries)); }catch(e){} },
+  record(state){ // update the local hall of fame for every manager in this game
+    const entries = this.local();
+    state.managers.forEach((m,i)=>{ const s = E.careerSummary(state, m); s.updated = Date.now(); s.gameId = state.gameId; entries[(state.gameId||'g')+':'+i] = s; });
+    this.saveLocal(entries);
+  },
+  async sha(s){ if (!crypto.subtle) return ''; const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)); return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join(''); },
+  playerId(i){ return Track.id()+'-'+i; },
+  async submit(state){ // post each manager's career to the boards that apply
+    if (!this.on()) return; const nick = this.nick(); if (!nick) return;
+    const posts = [];
+    state.managers.forEach((m,i)=>{
+      const s = E.careerSummary(state, m); if (s.score<=0) return;
+      const detail = { manager: s.manager, clubs: s.clubs.slice(-4), club: s.currentClub, division: s.division, seasons: s.seasons, trophies: s.trophies, mode: s.mode };
+      posts.push({ board:'career', player: this.playerId(i), score: s.score, detail });
+      if (s.mode==='classic' && s.firstTitle) posts.push({ board:'fastest_title', player: this.playerId(i), score: s.firstTitle, detail });
+      if (s.mode==='classic' && s.firstEuro) posts.push({ board:'fastest_euro', player: this.playerId(i), score: s.firstEuro, detail });
+    });
+    for (const p of posts){
+      try{ p.nick = nick; p.v = APP_VERSION; p.sig = await this.sha(`${LADDER_SECRET}|${p.board}|${p.player}|${p.score}`);
+        await fetch(LADDER_URL+'/submit', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(p) }); }catch(e){}
+    }
+  },
+  cache: {},
+  async top(board){ const c = this.cache[board]; if (c && Date.now()-c.t<5*60*1000) return c.rows; try{ const r = await fetch(LADDER_URL+'/top?board='+board+'&limit=100'); const j = await r.json(); if (j.ok){ this.cache[board] = { t: Date.now(), rows: j.rows }; return j.rows; } }catch(e){} return null; },
+  async me(){ try{ const r = await fetch(LADDER_URL+'/me?player='+encodeURIComponent(this.playerId(0))); const j = await r.json(); return j.ok? j.me : null; }catch(e){ return null; } },
+};
 // ---------- anonymous usage counts ----------
 // A random id per browser, no names, no club names, no save contents. Off if the token is empty, if the game
 // isn't running from a website, or if the player has turned it off on the How to play screen.
@@ -1446,14 +1906,22 @@ const Track = {
 
 // ---------- storage: artifact storage, then localStorage, then memory ----------
 const mem = {};
+// Saves are gzipped (about 6x smaller) so eight named saves fit inside the browser's storage limit; older plain saves still load.
+const Pack = {
+  async pack(str){ try{ if (typeof CompressionStream==='undefined' || str.length<20000) return str; const cs = new CompressionStream('gzip'); const w = cs.writable.getWriter(); w.write(new TextEncoder().encode(str)); w.close(); const buf = await new Response(cs.readable).arrayBuffer(); let bin=''; const bytes = new Uint8Array(buf); for (let i=0;i<bytes.length;i+=0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i,i+0x8000)); return 'gz:'+btoa(bin); }catch(e){ return str; } },
+  async unpack(str){ if (!str || !str.startsWith('gz:')) return str; try{ const bin = atob(str.slice(3)); const bytes = new Uint8Array(bin.length); for (let i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i); const ds = new DecompressionStream('gzip'); const w = ds.writable.getWriter(); w.write(bytes); w.close(); return await new Response(ds.readable).text(); }catch(e){ return null; } },
+};
 const Store = {
   async get(k){
-    if (window.storage && window.storage.get){ try{ const r = await window.storage.get(k, false); return r? r.value : null; }catch(e){ return null; } }
-    try{ return localStorage.getItem(k); }catch(e){ return mem[k]||null; }
+    let raw = null;
+    if (window.storage && window.storage.get){ try{ const r = await window.storage.get(k, false); raw = r? r.value : null; }catch(e){ raw = null; } }
+    else { try{ raw = localStorage.getItem(k); }catch(e){ raw = mem[k]||null; } }
+    return Pack.unpack(raw);
   },
   async set(k,v){
-    if (window.storage && window.storage.set){ try{ await window.storage.set(k, v, false); return; }catch(e){} }
-    try{ localStorage.setItem(k,v); return; }catch(e){ mem[k]=v; }
+    const packed = (k===SAVE_KEY || k.startsWith('sm91-slot-'))? await Pack.pack(v) : v;
+    if (window.storage && window.storage.set){ try{ await window.storage.set(k, packed, false); return; }catch(e){} }
+    try{ localStorage.setItem(k,packed); return; }catch(e){ mem[k]=v; }
   },
   async del(k){
     if (window.storage && window.storage.delete){ try{ await window.storage.delete(k, false); return; }catch(e){} }
@@ -1503,7 +1971,7 @@ function go(screen){ S.screen = screen; render(); $('#main').scrollTop = 0; }
 function render(){
   const st = S.state;
   const hdr = $('#hdr'), main = $('#main'), nav = $('#nav'), act = $('#act');
-  if (!st || S.screen==='title' || S.screen==='setup' || S.screen==='pass' || ((S.screen==='saves'||S.screen==='help') && !st)){
+  if (!st || S.screen==='title' || S.screen==='setup' || S.screen==='pass' || ((S.screen==='saves'||S.screen==='help'||S.screen==='hof') && !st)){
     hdr.innerHTML = ''; hdr.style.display='none'; nav.style.display='none';
   } else {
     hdr.style.display=''; nav.style.display='';
@@ -1524,16 +1992,66 @@ const SCREENS = {
       ${S.hasSave? `<button class="b" data-a="continue">Continue current game</button>`:''}
       ${S.slotCount? `<button class="b" data-a="saves">Load a saved game</button>`:''}
       <button class="b" data-a="setup">${S.hasSave?'Start a new game':'Start'}</button>
+      <button class="b" data-a="hof">Hall of fame${LADDER_URL? ' and ladder':''}</button>
       <button class="b" data-a="help">How to play</button>
       ${FEEDBACK_URL? `<a class="b" data-track="feedback_opened" href="${esc(FEEDBACK_URL)}" target="_blank" rel="noopener" style="text-decoration:none;text-align:left">Send feedback</a>`:''}
       <p class="dim" style="margin-top:24px;font-size:12px">Version ${APP_VERSION}. A tribute to the 1991 Amiga original. Real club names belong to their clubs.${ANALYTICS_TOKEN? ' Sends anonymous usage counts; see How to play.' : ''}</p></div>` };
   },
   setup(){
-    const n = S.setupCount || 1;
+    const n = S.setupCount || 1; const mode = S.setupMode || 'classic';
+    const modes = E.MODES;
+    const modePick = `<h2>How do you want to start?</h2>${Object.keys(modes).map(k=>`<button class="b ${mode===k?'on':''}" data-a="mode" data-m="${k}" ${n>1&&k!=='classic'?'disabled':''}>${modes[k].name}<br><span class="dim">${modes[k].blurb}</span></button>`).join('')}${n>1? '<p class="dim">Challenge starts are single-manager games.</p>' : ''}`;
     return { main: `<h1>Who's managing?</h1><p class="dim">One phone, up to eight managers, everyone starts in Division 4 at a random club. Pass the phone round each week.</p>
       <div class="grid2" style="grid-template-columns:repeat(8,1fr)">${[1,2,3,4,5,6,7,8].map(k=>`<button class="b ${n===k?'on':''}" data-a="setupcount" data-n="${k}" style="padding:10px 0;text-align:center">${k}</button>`).join('')}</div>
       ${Array.from({length:n}).map((_,i)=>`<input class="mgrname" maxlength="18" placeholder="Manager ${i+1}" autocomplete="off" value="${esc((S.setupNames||[])[i]||'')}">`).join('')}
+      ${n===1? modePick : ''}
       <button class="b" data-a="start">${n===1? 'Take the job' : 'Start the season'}</button>` };
+  },
+  hof(){
+    const st = S.state; const tab = S.tab.hof || (LADDER_URL? 'ladder' : 'mine');
+    const tabs = LADDER_URL? `<div class="grid2"><button class="b ${tab==='ladder'?'on':''}" data-a="hoftab" data-t="ladder">Ladder</button><button class="b ${tab==='mine'?'on':''}" data-a="hoftab" data-t="mine">Your careers</button></div>` : '';
+    let body = '';
+    if (tab==='ladder'){
+      const board = S.tab.board || 'career';
+      const names = { career:'Career points', fastest_title:'Fastest to the title', fastest_euro:'Fastest to Europe' };
+      const picker = `<div class="grid3">${Object.keys(names).map(b=>`<button class="b ${board===b?'on':''}" data-a="board" data-b="${b}" style="padding:8px 2px;font-size:12px;text-align:center">${names[b]}</button>`).join('')}</div>`;
+      const nick = Ladder.nick();
+      const nickBox = `<p class="dim">${nick? `You are on the ladder as <span class="hot">${esc(nick)}</span>.` : 'Pick a nickname to join. No account, nothing else is sent.'}</p><input id="nick" maxlength="16" value="${esc(nick)}" placeholder="Nickname" autocomplete="off"><button class="b" data-a="setnick">${nick? 'Change nickname' : 'Join the ladder'}</button>`;
+      const rows = S.ladderRows;
+      const me = S.ladderMe && S.ladderMe[board];
+      let table = rows===undefined? '<p class="dim">Loading...</p>' : rows===null? '<p class="dim">Could not reach the ladder. Try again later.</p>' : rows.length? `<table class="tight"><tr><th class="n">#</th><th>Manager</th><th>Club</th><th class="n">${board==='career'?'Pts':'Seasons'}</th></tr>${rows.map(r=>`<tr class="${nick && r.nick===nick?'me':''}"><td class="n">${r.rank}</td><td class="wrap">${esc(r.nick)}<br><span class="dim">${esc((r.detail&&r.detail.manager)||'')}${r.detail&&r.detail.seasons? ', '+r.detail.seasons+' seasons':''}</span></td><td class="wrap">${esc((r.detail&&r.detail.club)||'')}${r.detail&&r.detail.division? ' <span class="dim">D'+r.detail.division+'</span>':''}</td><td class="n">${r.score}</td></tr>`).join('')}</table>` : '<p class="dim">Nobody on this board yet. Finish a season.</p>';
+      if (me) table = `<p>Your best: <span class="hot">${me.score}</span>, ${ordinal(me.rank)} of ${me.of}.</p>` + table;
+      body = picker + nickBox + table + `<p class="dim" style="margin-top:8px">${{career:'Points for trophies and promotions: European Cup 100, Division 1 title 60, Cup Winners\' Cup and UEFA Cup 60, FA Cup 40, League Cup 25, lower titles 25/15/10, promotions 30/20/10, plus 2 a season up to 40.', fastest_title:'Seasons from a random Division 4 start to the Division 1 title. Classic starts only.', fastest_euro:'Seasons from a random Division 4 start to a European trophy. Classic starts only.'}[board]} Posted automatically at each season end; switch it off under How to play.</p>`;
+    } else {
+      const entries = Object.values(Ladder.local()).sort((a,b)=>b.score-a.score);
+      body = entries.length? `<table class="tight"><tr><th class="n">#</th><th>Manager</th><th>Club</th><th class="n">Pts</th></tr>${entries.map((e,i)=>`<tr><td class="n">${i+1}</td><td class="wrap">${esc(e.manager)}${e.retired?' <span class="dim">(retired)</span>':''}<br><span class="dim">${e.seasons} season${e.seasons===1?'':'s'}, ${trophyLine(e.trophies)}</span></td><td class="wrap">${esc(e.currentClub)} <span class="dim">D${e.division}</span></td><td class="n">${e.score}</td></tr>`).join('')}</table><p class="dim" style="margin-top:8px">Every manager from every game on this phone. Updated at each season end.</p>` : '<p class="dim">No careers yet. Finish a season.</p>';
+    }
+    return { main: `<h1>Hall of fame</h1>${tabs}${body}`, action: `<button class="b quiet" data-a="${st? 'back' : 'title'}">Back</button>` };
+  },
+  records(){
+    const st = S.state, u = user(); const r = E.clubRecords(st, u); const m = mgr(); const cs = E.careerSummary(st, m);
+    const line = (x, f) => x? f(x) : '<span class="dim">none yet</span>';
+    const scorers = E.topClubScorers(st, u, 10);
+    const honours = (st.honours||[]).slice().reverse().slice(0, 15).map(h=>`<div class="kv"><span>Season ${h.season}</span><span class="wrap">${[1,2,3,4].map(d=>'D'+d+' '+esc(st.clubs[h.champions[d]].short)).join(', ')}<br><span class="dim">LC ${esc(st.clubs[h.lc].short)}, FA ${esc(st.clubs[h.fa].short)}${['ec','cwc','uefa'].filter(k=>h[k]!==null&&h[k]!==undefined).map(k=>', '+euroComp(k).short+' '+esc(st.clubs[h[k]].short)).join('')}</span></span></div>`).join('');
+    return { main: `<h1>Records</h1>
+      <h2>Your career: ${esc(m.managerName)}</h2>
+      <div class="kv"><span>Career points</span><span class="hot">${cs.score}</span></div>
+      <div class="kv"><span>Seasons</span><span>${cs.seasons}</span></div>
+      <div class="kv"><span>Clubs</span><span class="wrap">${cs.clubs.map(esc).join(', ')||'none yet'}</span></div>
+      <div class="kv"><span>Trophies</span><span class="wrap">${trophyLine(cs.trophies)}</span></div>
+      <div class="kv"><span>Best finish</span><span>${m.career && m.career.best? ordinal(m.career.best.pos)+' in Division '+m.career.best.div+' (season '+m.career.best.season+')' : 'none yet'}</span></div>
+      ${cs.firstTitle? `<div class="kv"><span>First Division 1 title</span><span>season ${cs.firstTitle}</span></div>`:''}${cs.firstEuro? `<div class="kv"><span>First European trophy</span><span>season ${cs.firstEuro}</span></div>`:''}
+      <h2>${esc(u.name)} records</h2>
+      <div class="kv"><span>Record win</span><span class="wrap">${line(r.bigWin, x=>`${x.gf}-${x.ga} v ${esc(x.opp)}, ${x.comp}, season ${x.season}`)}</span></div>
+      <div class="kv"><span>Record defeat</span><span class="wrap">${line(r.bigLoss, x=>`${x.gf}-${x.ga} v ${esc(x.opp)}, ${x.comp}, season ${x.season}`)}</span></div>
+      <div class="kv"><span>Record gate</span><span class="wrap">${line(r.gate, x=>`${E.fmt(x.att)} v ${esc(x.opp)}, ${x.comp}, season ${x.season}`)}</span></div>
+      <div class="kv"><span>Record fee paid</span><span class="wrap">${line(r.feeIn, x=>`${money(x.amount)} for ${esc(x.name)} (${esc(x.other)}), season ${x.season}`)}</span></div>
+      <div class="kv"><span>Record fee received</span><span class="wrap">${line(r.feeOut, x=>`${money(x.amount)} for ${esc(x.name)} (${esc(x.other)}), season ${x.season}`)}</span></div>
+      <div class="kv"><span>Longest unbeaten run</span><span>${r.unbeaten.best? r.unbeaten.best+' league games (season '+r.unbeaten.bestSeason+')' : 'none yet'}${r.unbeaten.cur>=5? ', currently '+r.unbeaten.cur : ''}</span></div>
+      <h2>All-time scorers at the club</h2>${scorers.length? `<table class="tight"><tr><th class="n">#</th><th>Player</th><th class="n">Goals</th></tr>${scorers.map((x,i)=>`<tr><td class="n">${i+1}</td><td class="wrap">${esc(x.name)}</td><td class="n">${x.goals}</td></tr>`).join('')}</table>` : '<p class="dim">No goals yet.</p>'}
+      <p class="dim">Records count from when the game started.</p>
+      <h2>Roll of honour</h2>${honours||'<p class="dim">No seasons finished yet.</p>'}`,
+      action: `<button class="b quiet" data-a="back">Back</button>` };
   },
   help(){
     const st = S.state;
@@ -1542,12 +2060,19 @@ const SCREENS = {
       <h2>The week</h2><p>Home shows this week's fixture, the board's mood and the news. Squad is where you pick the XI, set a formation and choose how hard to train. Play the match from Home. On cup weeks you might have no game, which is a good week for hard training.</p>
       <h2>Money</h2><p>Gates, sponsorship and television money in; wages, staff and ground upkeep out. Summer wages land in one lump at the season review. The overdraft limit is half your turnover; eight weeks past it and the bank has you sacked. Loans are separate and cheaper than the overdraft. Cash in the bank earns interest.</p>
       <h2>Pre-season</h2><p>Each season starts with a sponsor to choose (safe money, per-win money, or a bigger cheque with a relegation clause) and a season ticket price. Cheap season tickets bring cash now but most of those fans would have paid on the gate anyway.</p>
-      <h2>Players</h2><p>Skill is what he is now; the ▲ is how far he could go, and you only see that with a scout. Players improve in training until about 30 (faster with a better coach), then decline. Fitness under 70 doubles the injury risk. Wages reset to match skill every summer.</p>
+      <h2>Players</h2><p>Skill is what he is now; the ▲ is how far he could go, and you only see that with a scout. Players improve in training until about 30 (faster with a better coach), then decline. Fitness under 70 doubles the injury risk.</p>
+      <h2>Contracts</h2><p>Every player is on a deal of one to four years at a fixed wage. Renew early and you lock a cheap wage before he improves; leave it late and he asks for what he is worth now. Players in their last year start to worry from week 20. If you do nothing, your assistant re-signs them at about 10% over the odds, provided they are happy to stay; the ones who are not leave for nothing. Out-of-contract players from every club appear under Free in the market each summer. You can release a player at any time by paying off half his remaining contract.</p>
+      <h2>Mood</h2><p>Playing, winning and a fair wage keep a player happy; sitting on the bench, losing, being listed for sale, or a bigger club sniffing around do the opposite. Unhappy players play a little worse and eventually ask for a transfer, and a player who has asked to leave will not talk about a new deal until he cheers up.</p>
+      <h2>Bookings</h2><p>Five yellow cards in a season is a one-match ban, ten is two, a red card is one to three. Bans apply to the next game in any competition and the squad screen shows who is one booking away.</p>
+      <h2>Youth</h2><p>The academy (Club, Youth) brings in prospects each summer: more of them with a better grade, better ones with a good youth coach. They sit in the youth team on tiny wages until you promote them, which signs them to a cheap three-year deal. Nobody stays past 21.</p>
       <h2>The market</h2><p>The weekly list is other clubs' fringe players at fair prices. The scout will search on a brief (position, age, skill, price) or you can browse any club and bid for anyone; clubs want well over the value and won't sell someone they just signed. List your own players and offers arrive over the following weeks. European clubs will come for your best player once you're in Division 3.</p>
       <h2>Staff and ground</h2><p>Coach speeds up training, physio shortens injuries, scout widens the search and reveals potential. Ground safety falls slowly; let it slide and you'll get crowd trouble and fines. Build a stand only when the Ground tab says you're turning people away. Set your own ticket price there too.</p>
       <h2>Cups and Europe</h2><p>League Cup in the first half of the season, FA Cup in the second, both straight knockout. Win the league for the European Cup, the FA Cup for the Cup Winners' Cup, or finish second or third for the UEFA Cup. European ties are two legs midweek on top of the league, with their own XI.</p>
+      <h2>Records and the hall of fame</h2><p>Records (from the Table screen) keeps your club's record win, gate and fees, all-time scorers and the roll of honour, and your own career points: trophies and promotions weighted by how hard they are. The hall of fame keeps every career from every game on this phone${LADDER_URL? ', and the ladder compares you with everyone else playing' : ''}.</p>
+      <h2>Challenge starts</h2><p>Besides the classic random Division 4 start: Skint (deep in the overdraft, twelve weeks to fix it), Relegation scrap (bottom of Division 1 at Christmas), Fallen giant (a famous club down in Division 4 with a wage bill to match) and Big job (the biggest club, title expected in year one). Only classic starts count on the "fastest" ladders.</p>
       <h2>Several managers</h2><p>Up to eight on one phone, passing it round each week. You can bid for each other's players (they decide on their turn), rename each other's rivals, and the managers' table settles who's winning.</p>
       <h2>Saves</h2><p>The game autosaves every week. Saves on the home screen keeps named copies you can load later, for instance before a cup final.</p>
+      ${LADDER_URL? `<h2>The ladder</h2><p>At each season end the game posts your nickname, career points and a few career facts (clubs, trophies, seasons) to a shared ladder so you can see how you compare. No account and nothing from your save beyond that. <button class="b" data-a="ladderopt" style="margin-top:8px">${ladderOn()? 'Posting to the ladder: on (tap to turn off)' : 'Posting to the ladder: off (tap to turn on)'}</button></p>` : ''}
       <h2>Usage counts</h2><p>To see whether anyone plays past the first week, the game sends a handful of anonymous counts (game started, weeks 1 and 5 reached, season finished) with a random id. No names, no club names, nothing from your save. ${ANALYTICS_TOKEN? `<button class="b" data-a="analytics" style="margin-top:8px">${analyticsOn()? 'Sending counts: on (tap to turn off)' : 'Sending counts: off (tap to turn on)'}</button><button class="b" data-a="pingtest">Send a test ping</button>${S.pingResult? `<span class="dim">${esc(S.pingResult)}</span>`:''}` : '<span class="dim">Not active in this build.</span>'}</p>`,
       action: `<button class="b quiet" data-a="${st? 'back' : 'title'}">Back</button>` };
   },
@@ -1648,7 +2173,8 @@ const SCREENS = {
       const on = ids.includes(p.id) && p.injury===0;
       const inXI = slotOf[p.id];
       const oop = inXI && inXI!==p.pos? `<span class="mark">@${inXI}</span>` : '';
-      return `<tr class="tap ${on?'sel':''}" data-a="toggle" data-id="${p.id}"><td>${on?'<span class="mark">■</span>':'□'}</td><td>${p.pos}</td><td class="wrap">${esc(p.name)} ${oop}${p.listed!==null?'<span class="pill">sale</span>':''}</td><td class="n">${p.skill}${potTag(p)}</td><td class="n">${p.age}</td><td class="n">${p.injury>0?`<span class="mark">inj ${p.injury}</span>`:p.fitness}</td><td><button class="b small" data-a="player" data-id="${p.id}">›</button></td></tr>`;
+      const tags = [`${p.years<=1? '<span class="mark">expires</span>' : p.years+'y'}`, moodTag(p), p.yellows>=4? `<span class="mark">${p.yellows}Y</span>` : p.yellows? p.yellows+'Y' : ''].filter(Boolean).join(' · ');
+      return `<tr class="tap ${on?'sel':''}" data-a="toggle" data-id="${p.id}"><td>${on?'<span class="mark">■</span>':'□'}</td><td>${p.pos}</td><td class="wrap">${esc(p.name)} ${oop}${p.listed!==null?'<span class="pill">sale</span>':''}${p.requested?'<span class="pill">wants out</span>':''}<br><span class="dim" style="font-size:12px">${tags}</span></td><td class="n">${p.skill}${potTag(p)}</td><td class="n">${p.age}</td><td class="n">${p.ban>0? `<span class="mark">ban ${p.ban}</span>` : p.injury>0?`<span class="mark">inj ${p.injury}</span>`:p.fitness}</td><td><button class="b small" data-a="player" data-id="${p.id}">›</button></td></tr>`;
     }).join('');
     const modeBar = inEurope(u)? `<div class="grid2"><button class="b ${!euroMode?'on':''}" data-a="ximode" data-m="league">League XI</button><button class="b ${euroMode?'on':''}" data-a="ximode" data-m="euro">European XI</button></div><p class="dim">${euroMode? 'This side plays your '+euroComp(u.euro.comp).name+' ties. Leave it empty and the league XI is used.' : 'This side plays league and domestic cup games.'}</p>` : '';
     return { main: `<h1>Squad and tactics</h1>${modeBar}
@@ -1659,13 +2185,15 @@ const SCREENS = {
       <p class="dim">${{light:'Rest and recover. Fitness comes back faster, nobody improves much.',normal:'A normal week. Younger players edge forward if the coach is any good.',hard:'Push them. Faster improvement, tired legs and the odd training knock.'}[u.training]} ${u.staff.scout>=1?'':'Hire a scout to see who has room to improve.'}</p>
       <p class="dim">Team: defence ${Math.round(str.defEff)}, midfield ${Math.round(str.mid)}, attack ${Math.round(str.att)}. ${xi.length}/11 picked${ids.length>11?', extras sit out':''}.</p>
       <table><tr><th></th><th>Pos</th><th>Player</th><th class="n">Sk</th><th class="n">Age</th><th class="n">Fit</th><th></th></tr>${rows}</table>
-      <p class="dim" style="margin-top:10px">Tap a row to pick or drop. ■ picked, @ playing out of position. Fitness under 70 doubles the injury risk.</p>` };
+      <p class="dim" style="margin-top:10px">Tap a row to pick or drop. ■ picked, @ playing out of position. Fitness under 70 doubles the injury risk. Five bookings is a one-match ban, ten is two. Contract years and mood under each name.</p>` };
   },
   player(){
     const st = S.state, u = user(), p = st.players[S.pid];
     if (!p) return SCREENS.squad();
     const mine = p.club===u.id;
     const club = st.clubs[p.club];
+    if (p.club===-2) return freeAgentPage(p);
+    if (p.reserve && mine) return reservePage(p);
     if (!club) return { main: `<h1>${esc(p.name)}</h1><p class="dim">He has left the league.</p>`, action: `<button class="b quiet" data-a="back">Back</button>` };
     const on = sel().includes(p.id);
     let actions = '';
@@ -1677,6 +2205,7 @@ const SCREENS = {
         <button class="b" data-a="setamt" data-amt="${Math.round(p.value*1.3/500)*500}">Dear<br><span class="dim">${money(Math.round(p.value*1.3/500)*500)}</span></button></div>
         <input id="amt" inputmode="numeric" value="${p.value}" autocomplete="off"><button class="b" data-a="list" data-id="${p.id}">List him at this price</button>`;
       else actions += `<p>Listed at ${money(p.listed)}. Offers arrive over the coming weeks.</p><button class="b" data-a="unlist" data-id="${p.id}">Take off the market</button>`;
+      actions += contractPanel(p);
       actions += `<h2>Rename</h2><input id="pname" maxlength="24" value="${esc(p.name)}" autocomplete="off"><button class="b" data-a="renameplayer" data-id="${p.id}">Change his name</button>`;
     } else {
       const fair = Math.round(p.value*1.3/500)*500, gen = Math.round(p.value*1.65/500)*500;
@@ -1700,7 +2229,10 @@ const SCREENS = {
       ${E.canSeePot(st,p)? `<div class="kv"><span>Potential</span><span>${p.pot>p.skill? `could reach ${p.pot}` : p.age>=30? 'past his best' : 'as good as he gets'}</span></div>` : ''}
       <div class="kv"><span>Age</span><span>${p.age}</span></div>
       <div class="kv"><span>Fitness</span><span>${p.injury>0? `injured, ${p.injury} wk` : p.fitness}</span></div>
+      ${mine? `<div class="kv"><span>Mood</span><span>${E.moraleWord(p.morale||60)}${p.requested? ', has asked to leave' : p.unsettled? ', unsettled by '+esc(p.unsettled.club) : ''}</span></div>` : ''}
+      <div class="kv"><span>Discipline</span><span>${p.ban>0? `<span class="hot">banned for ${p.ban} match${p.ban>1?'es':''}</span>, ` : ''}${p.yellows||0} yellow${(p.yellows||0)===1?'':'s'}${p.reds? ', '+p.reds+' red'+(p.reds>1?'s':'') : ''}</span></div>
       <div class="kv"><span>Wage</span><span>${money(p.wage)} a week</span></div>
+      <div class="kv"><span>Contract</span><span>${p.years<=1? '<span class="hot">expires this summer</span>' : p.years+' years left'}</span></div>
       <div class="kv"><span>Value</span><span>${money(p.value)}</span></div>
       <div class="kv"><span>This season</span><span>${p.apps} apps, ${p.goals} goals</span></div>
       ${p.signedS!==undefined? `<div class="kv"><span>Signed</span><span>season ${p.signedS}, week ${p.signedW}${p.paid? ' for '+money(p.paid) : ''}</span></div>` : ''}
@@ -1709,9 +2241,13 @@ const SCREENS = {
   },
   transfers(){
     const st = S.state, u = user(); const t = S.tab.transfers;
-    const tabs = `<div class="grid3">${['list','offers','scout'].map(k=>`<button class="b ${t===k?'on':''}" data-a="ttab" data-t="${k}">${{list:'For sale',offers:`Offers${st.offers.length?' ('+st.offers.length+')':''}`,scout:'Scout'}[k]}</button>`).join('')}</div>`;
+    const tabs = `<div class="grid2" style="grid-template-columns:repeat(4,1fr)">${['list','free','offers','scout'].map(k=>`<button class="b ${t===k?'on':''}" data-a="ttab" data-t="${k}" style="padding:10px 2px;font-size:12px;text-align:center">${{list:'For sale',free:`Free${E.freeAgentsList(st).length? ' ('+E.freeAgentsList(st).length+')':''}`,offers:`Offers${st.offers.length?' ('+st.offers.length+')':''}`,scout:'Scout'}[k]}</button>`).join('')}</div>`;
     let body = '';
-    if (t==='list'){
+    if (t==='free'){
+      const fa = E.freeAgentsList(st);
+      body = `<p class="dim">Out of contract and looking for a club. No fee beyond a signing-on bonus, but they want their wages. The best go quickly, and the rest drift out of the game by week ${E.CFG.FREE_AGENT_WEEKS}.</p>` + (fa.length? `<table><tr><th>Pos</th><th>Player</th><th class="n">Sk</th><th class="n">Age</th><th class="n">Wants</th></tr>` +
+        fa.map(p=>`<tr class="tap" data-a="player" data-id="${p.id}"><td>${p.pos}</td><td class="wrap">${esc(p.name)}<br><span class="dim">${p.lastClubName? 'ex '+esc(p.lastClubName) : 'unattached'}</span></td><td class="n">${p.skill}${potTag(p)}</td><td class="n">${p.age}</td><td class="n">${money(E.contractAsk(st,p))}/wk</td></tr>`).join('') + `</table>` : `<p class="dim">Nobody is without a club at the moment.</p>`);
+    } else if (t==='list'){
       body = `<p class="dim">Squad ${u.players.length}/20. Overdraft limit ${money(E.overdraftLimit(st, u))}.</p><table><tr><th>Pos</th><th>Player</th><th class="n">Sk</th><th class="n">Age</th><th class="n">Price</th></tr>`+
         st.transferList.filter(tl=>{ const p = st.players[tl.pid]; return p && p.club>=0 && p.club!==u.id; }).map(tl=>{ const p = st.players[tl.pid]; const c = st.clubs[p.club]; return `<tr class="tap" data-a="player" data-id="${p.id}"><td>${p.pos}</td><td class="wrap">${esc(p.name)}<br><span class="dim">${esc(c.short)}, D${c.div}</span></td><td class="n">${p.skill}${potTag(p)}</td><td class="n">${p.age}</td><td class="n">${money(tl.price)}<br><button class="b small" data-a="buy" data-id="${p.id}">Buy</button></td></tr>`; }).join('')+`</table>${humanMarket()}<p class="dim" style="margin-top:10px">The list changes every week. ${['A useless scout brings you six names and no opinions.','An average scout brings eight names.','A good scout brings ten names and picks out a couple with room to grow.','An excellent scout brings twelve names and can tell you about any player in the game.'][u.staff.scout]}</p>`;
     } else if (t==='offers'){
@@ -1740,12 +2276,12 @@ const SCREENS = {
     const cupLines = ['lc','fa'].map(k=>`<h2>${E.CFG.CUPS[k].name}</h2><p class="dim">${st.cups[k].history.length? cupSummary(k) : 'First round draw: '+cupTie(u,k)}</p>`).join('') + euroSection();
     return { main: `<h1>League tables</h1><div class="grid2" style="grid-template-columns:repeat(4,1fr)">${[1,2,3,4].map(x=>`<button class="b ${d===x?'on':''}" data-a="tdiv" data-d="${x}">Div ${x}</button>`).join('')}</div>
       <table class="tight"><tr><th class="n">#</th><th>Club</th><th class="n">P</th><th class="n">W</th><th class="n">D</th><th class="n">L</th><th class="n">GD</th><th class="n">Pts</th></tr>${rows}</table>
-      <p class="dim" style="margin-top:8px">Top two go up, bottom two go down.</p>${multi()? `<button class="b" data-a="standings">Managers' table</button>`:''}${scorersTable(d)}${cupLines}` };
+      <p class="dim" style="margin-top:8px">Top two go up, bottom two go down.</p><div class="grid2"><button class="b" data-a="records">Records</button><button class="b" data-a="hof">Hall of fame</button></div>${multi()? `<button class="b" data-a="standings">Managers' table</button>`:''}${scorersTable(d)}${cupLines}` };
   },
   club(){
     const t = S.tab.club;
-    const tabs = `<div class="grid2" style="grid-template-columns:repeat(4,1fr)">${['money','ground','staff','name'].map(k=>`<button class="b ${t===k?'on':''}" data-a="ctab" data-t="${k}">${{money:'Money',ground:'Ground',staff:'Staff',name:'Name'}[k]}</button>`).join('')}</div>`;
-    const body = t==='ground'? groundScreen() : t==='staff'? staffScreen() : t==='name'? nameScreen() : SCREENS.money().main;
+    const tabs = `<div class="grid2" style="grid-template-columns:repeat(5,1fr)">${['money','ground','staff','youth','name'].map(k=>`<button class="b ${t===k?'on':''}" data-a="ctab" data-t="${k}" style="padding:10px 2px;font-size:12px;text-align:center">${{money:'Money',ground:'Ground',staff:'Staff',youth:'Youth',name:'Name'}[k]}</button>`).join('')}</div>`;
+    const body = t==='ground'? groundScreen() : t==='staff'? staffScreen() : t==='youth'? youthScreen() : t==='name'? nameScreen() : SCREENS.money().main;
     return { main: tabs + body };
   },
   money(){
@@ -1761,6 +2297,7 @@ const SCREENS = {
       <div class="kv"><span>Turnover</span><span>about ${money(Math.round(E.turnover(st,u)/1000)*1000)} a season</span></div>
       <div class="kv"><span>Player wages</span><span>${money(wages)} a week</span></div>
       <div class="kv"><span>Staff wages</span><span>${money(E.staffWages(u))} a week</span></div>
+      ${(u.reserves||[]).length? `<div class="kv"><span>Youth wages</span><span>${money((u.reserves||[]).length*E.CFG.YOUTH_WAGE)} a week</span></div>`:''}
       <div class="kv"><span>Ground upkeep</span><span>${money(ground)} a week</span></div>
       <div class="kv"><span>Ground</span><span>${E.fmt(u.capacity)} capacity</span></div>
       <div class="kv"><span>Ticket price</span><span>£${E.ticketOf(u)} <span class="dim">(set it on the Ground tab)</span></span></div>
@@ -1851,7 +2388,8 @@ const SCREENS = {
     const list = others.map(m=>`<div class="kv"><span class="wrap">${esc(m.home.short)} v ${esc(m.away.short)}</span><span>${m.gH}-${m.gA}${m.extra?'*':''}</span></div>`).join('');
     const label = R.type==='cup'? `${E.CFG.CUPS[R.cup].name} results` : `Division ${u.div} results`;
     const inj = R.userMatch? R.userMatch.injuries.filter(p=>p.club===u.id) : [];
-    return { main: `${mine}${inj.length? `<p class="hot">Injured: ${inj.map(p=>esc(p.name)+' ('+p.injury+' wk)').join(', ')}</p>`:''}
+    const bans = R.results.filter(m=>m.home.id===u.id||m.away.id===u.id).flatMap(m=>m.bans||[]).filter(b=>b.p.club===u.id);
+    return { main: `${mine}${inj.length? `<p class="hot">Injured: ${inj.map(p=>esc(p.name)+' ('+p.injury+' wk)').join(', ')}</p>`:''}${bans.length? `<p class="hot">Suspended: ${bans.map(b=>esc(b.p.name)+' ('+b.n+' match'+(b.n>1?'es':'')+', '+b.why+')').join(', ')}</p>`:''}
       ${st.week>1 && R.type==='league'? `<p>Now ${ordinal(u.leaguePos)} in Division ${u.div}.</p>`:''}
       <h2>${label}</h2>${list||'<p class="dim">None.</p>'}${R.type==='cup'? '<p class="dim">* after extra time or penalties</p>':''}${sleighBogey(st)}
       <button class="b" data-a="results" style="margin-top:10px">All results</button>`,
@@ -1883,6 +2421,7 @@ const SCREENS = {
       <div class="kv"><span>Bank</span><span class="${u.balance<0?'hot':''}">${money(u.balance)}</span></div>
       ${job}<h2>Final table</h2><table><tr><th class="n">#</th><th>Club</th><th class="n">Pts</th></tr>${rows}</table>
       <p class="dim" style="margin-top:10px">Players have aged a year. Check the squad before the new season: some will have retired and the youth team has filled the gaps.</p>
+      ${S.nickPrompt? `<h2>The ladder</h2><p class="dim">Your career points go on a shared ladder with everyone else playing. Pick a nickname to join (nothing else is sent), or skip it.</p><input id="nick" maxlength="16" placeholder="Nickname" autocomplete="off"><div class="grid2"><button class="b" data-a="joinladder">Join the ladder</button><button class="b" data-a="skipladder">Not now</button></div>` : ''}
       ${FEEDBACK_URL? `<p class="dim">A season in, you'll have opinions. <a class="b small" data-track="feedback_opened" href="${esc(FEEDBACK_URL)}" target="_blank" rel="noopener" style="display:inline;width:auto;margin-top:6px;text-decoration:none">Send feedback</a> takes two minutes.</p>`:''}`,
       action: st.jobOffer!==null? '' : `<button class="b" data-a="newseason">${multi()? 'On to season '+st.season : 'Start season '+st.season}</button>` };
   },
@@ -1922,15 +2461,31 @@ const STAFF_INFO = {
   coach: { name:'Coach', blurb:['Useless. Training barely moves anyone.','Average. Steady progress for the younger lads.','Good. Players improve noticeably faster.','Excellent. The best young players fly.'] },
   physio: { name:'Physio', blurb:['Useless. Injuries drag on and fitness is slow to return.','Average. Normal injury times.','Good. Shorter lay-offs, quicker recovery.','Excellent. Half the lay-off, fitness back in days.'] },
   scout: { name:'Scout', blurb:['Useless. A short list and no idea about potential.','Average. Sees potential in your own squad.','Good. Longer list, spots young players with room to grow.','Excellent. Knows every player in the game.'] },
+  youth: { name:'Youth coach', blurb:['None. The youth team look after themselves.','Average. The lads tick along.','Good. One extra prospect a year, and they go further.','Excellent. The academy produces players other clubs will pay for.'] },
 };
 function staffScreen(){
   const st = S.state, u = user();
   const tiers = ['Useless','Average','Good','Excellent'];
   const mult = E.CFG.STAFF_DIV_MULT[u.div];
   return `<h1>Backroom staff</h1><p class="dim">Paid weekly, no notice needed. Division ${u.div} rates.</p>` +
-    ['coach','physio','scout'].map(r=>`<h2>${STAFF_INFO[r].name}: ${tiers[u.staff[r]]}</h2><p class="dim">${STAFF_INFO[r].blurb[u.staff[r]]}</p>
-      <div class="grid2" style="grid-template-columns:repeat(4,1fr)">${tiers.map((t,i)=>`<button class="b ${u.staff[r]===i?'on':''}" data-a="staff" data-r="${r}" data-t="${i}" style="padding:8px 2px;font-size:12px">${t}<br><span class="dim">${money(Math.round(E.CFG.STAFF_WAGE[i]*mult))}</span></button>`).join('')}</div>`).join('') +
+    ['coach','physio','scout','youth'].map(r=>`<h2>${STAFF_INFO[r].name}: ${tiers[u.staff[r]||0]}</h2><p class="dim">${STAFF_INFO[r].blurb[u.staff[r]]}</p>
+      <div class="grid2" style="grid-template-columns:repeat(4,1fr)">${tiers.map((t,i)=>`<button class="b ${(u.staff[r]||0)===i?'on':''}" data-a="staff" data-r="${r}" data-t="${i}" style="padding:8px 2px;font-size:12px">${r==='youth'&&i===0?'None':t}<br><span class="dim">${money(Math.round(E.CFG.STAFF_WAGE[i]*mult))}</span></button>`).join('')}</div>`).join('') +
     `<p class="dim" style="margin-top:8px">Total ${money(E.staffWages(u))} a week.</p>`;
+}
+function youthScreen(){
+  const st = S.state, u = user(); const lvl = u.academy||1; const rs = E.reservesOf(st, u);
+  const grades = ['','A couple of pitches and a tea urn. One prospect a year.','A proper set-up. Two prospects a year.','Floodlit pitches and a coach for every age group. Three a year.','The best in the land. Four a year, and good ones.'];
+  const build = u.academyBuild? `<p>Builders in: grade ${u.academyBuild.level} in ${u.academyBuild.weeksLeft} week${u.academyBuild.weeksLeft===1?'':'s'}.</p>`
+    : lvl<4? `<button class="b" data-a="academy">Upgrade to grade ${lvl+1}<br><span class="dim">${money(E.CFG.ACADEMY_COST[lvl])}, ${E.CFG.ACADEMY_WEEKS[lvl]} weeks</span></button>` : `<p class="dim">Nothing more to build.</p>`;
+  const rows = rs.sort((a,b)=>b.pot-a.pot).map(p=>`<tr class="tap" data-a="player" data-id="${p.id}"><td>${p.pos}</td><td class="wrap">${esc(p.name)}</td><td class="n">${p.skill}${potTag(p)}</td><td class="n">${p.age}</td><td class="n"><button class="b small" data-a="promote" data-id="${p.id}">Up</button></td></tr>`).join('');
+  return `<h1>Youth academy</h1>
+    <div class="kv"><span>Grade</span><span>${lvl} of 4</span></div>
+    <div class="kv"><span>Youth coach</span><span>${['none','average','good','excellent'][u.staff.youth||0]} <span class="dim">(Staff tab)</span></span></div>
+    <div class="kv"><span>Youth wages</span><span>${money(rs.length*E.CFG.YOUTH_WAGE)} a week</span></div>
+    <p class="dim">${grades[lvl]} The intake arrives each summer. A better coach adds a prospect and raises how far they can go. Promote them into the squad when you need them: they sign cheap three-year deals. Nobody stays past ${E.CFG.RESERVES_MAX_AGE}.</p>
+    ${build}
+    <h2>Youth team (${rs.length}/${E.CFG.RESERVES_CAP})</h2>
+    ${rs.length? `<table><tr><th>Pos</th><th>Player</th><th class="n">Sk</th><th class="n">Age</th><th></th></tr>${rows}</table><p class="dim" style="margin-top:6px">Squad ${u.players.length}/20. ▲ is how far he could go${u.staff.scout<1? ' (hire a scout to see it)':''}.</p>` : `<p class="dim">Empty. The first intake arrives at the end of the season.</p>`}`;
 }
 function nameScreen(){
   const u = user();
@@ -2033,7 +2588,55 @@ function euroSection(){
     return `<h2>${def.name}</h2><p class="dim">English clubs: ${eng||'none'}.${win}${mine}</p>`; }).join('');
 }
 function analyticsOn(){ try{ return localStorage.getItem('sm91-analytics')!=='off'; }catch(e){ return true; } }
-function readAmount(){ const i = $('#amt'); if (!i) return null; const raw = i.value.trim().toLowerCase().replace(/[£,\s]/g,''); let v = raw.endsWith('k')? parseFloat(raw)*1000 : raw.endsWith('m')? parseFloat(raw)*1e6 : parseFloat(raw); if (!isFinite(v) || v<1) return null; return Math.round(v); }
+function moodTag(p){ const m = p.morale===undefined? 60 : p.morale; const w = E.moraleWord(m); return m<50? `<span class="mark">${w}</span>` : w; }
+function yearsPicker(p){ const cur = S.cYears || E.wantsYears(p); return `<div class="grid2" style="grid-template-columns:repeat(4,1fr)">${[1,2,3,4].map(y=>`<button class="b ${cur===y?'on':''}" data-a="cyears" data-y="${y}" style="padding:8px 2px;text-align:center">${y} yr${y>1?'s':''}</button>`).join('')}</div>`; }
+function contractPanel(p){
+  const st = S.state; const ask = E.contractAsk(st, p); const status = E.playerStatus(st, p);
+  const statusText = {star:'one of your best', regular:'a regular', squad:'a squad player', fringe:'on the fringes'}[status];
+  const prefer = E.wantsYears(p);
+  let html = `<h2>Contract</h2><p class="dim">${money(p.wage)} a week, ${p.years<=1? 'expires this summer' : p.years+' years left'}. He sees himself as ${statusText} and would want about <span class="hot">${money(ask)}</span> a week for a new deal${p.age>=31? ', ideally short' : p.age<=24? ', and he will not sign long and cheap' : ''}.${p.years>1? ' Renewing early locks the wage before he improves (or declines).' : ''}</p>`;
+  if (p.requested) html += `<p class="hot">He has asked for a transfer and will not discuss a new contract until he is happier.</p>`;
+  else html += yearsPicker(p) + `<div class="grid3">${[Math.round(ask*0.9/5)*5, ask, Math.round(ask*1.1/5)*5].map(a=>`<button class="b" data-a="setcw" data-amt="${a}">${money(a)}</button>`).join('')}</div><input id="cwage" inputmode="numeric" value="${S.cWage||ask}" autocomplete="off"><button class="b" data-a="contract" data-id="${p.id}">Offer this deal</button>`;
+  if (p.years<=1) html += `<button class="b ${p.letGo?'on':''}" data-a="letgo" data-id="${p.id}">${p.letGo? 'Leaving in the summer (tap to keep him)' : 'Let him go when his deal ends'}</button><p class="dim">If you do neither, your assistant re-signs him at about 10% over his ask, provided he is happy enough to stay.</p>`;
+  const weeksLeft = Math.max(0, (p.years-1)*E.CFG.WEEKS + (E.CFG.WEEKS - st.week)); const payoff = Math.round(p.wage*weeksLeft*E.CFG.RELEASE_PAYOFF/500)*500;
+  html += `<button class="b ${S.confirmRelease===p.id?'on':''}" data-a="release" data-id="${p.id}">${S.confirmRelease===p.id? 'Really release him?' : `Release now (pay off ${money(payoff)})`}</button>`;
+  return html;
+}
+function reservePage(p){
+  const st = S.state, u = user();
+  const wage = Math.max(60, Math.round(E.wageFor(p.skill)*0.7/5)*5);
+  return { main: `<h1>${esc(p.name)}</h1>
+      <div class="kv"><span>Status</span><span>youth team</span></div>
+      <div class="kv"><span>Position</span><span>${p.pos}</span></div>
+      <div class="kv"><span>Skill</span><span>${p.skill}${potTag(p)}</span></div>
+      ${E.canSeePot(st,p)? `<div class="kv"><span>Potential</span><span>${p.pot>p.skill? `could reach ${p.pot}` : 'as good as he gets'}</span></div>` : ''}
+      <div class="kv"><span>Age</span><span>${p.age}</span></div>
+      <div class="kv"><span>Would sign for</span><span>${money(wage)} a week, 3 years</span></div>
+      <p class="dim">Squad ${u.players.length}/20. He develops slowly in the youth team and faster once he is playing.</p>
+      <button class="b" data-a="promote" data-id="${p.id}">Promote to the squad</button>
+      <button class="b ${S.confirmRelease===p.id?'on':''}" data-a="releasereserve" data-id="${p.id}">${S.confirmRelease===p.id? 'Really let him go?' : 'Let him go'}</button>
+      <h2>Rename</h2><input id="pname" maxlength="24" value="${esc(p.name)}" autocomplete="off"><button class="b" data-a="renameplayer" data-id="${p.id}">Change his name</button>`,
+    action: `<button class="b quiet" data-a="back">Back</button>` };
+}
+function freeAgentPage(p){
+  const st = S.state, u = user(); const ask = E.contractAsk(st, p); const fee = Math.max(2000, Math.round(p.value*0.1/500)*500);
+  return { main: `<h1>${esc(p.name)}</h1>
+      <div class="kv"><span>Status</span><span>free agent${p.lastClubName? ', last at '+esc(p.lastClubName) : ''}</span></div>
+      <div class="kv"><span>Position</span><span>${p.pos}</span></div>
+      <div class="kv"><span>Skill</span><span>${p.skill}${potTag(p)}</span></div>
+      ${E.canSeePot(st,p)? `<div class="kv"><span>Potential</span><span>${p.pot>p.skill? `could reach ${p.pot}` : p.age>=30? 'past his best' : 'as good as he gets'}</span></div>` : ''}
+      <div class="kv"><span>Age</span><span>${p.age}</span></div>
+      <div class="kv"><span>Wants</span><span>${money(ask)} a week</span></div>
+      <div class="kv"><span>Signing-on fee</span><span>${money(fee)}</span></div>
+      <h2>Offer terms</h2><p class="dim">No transfer fee. Squad ${u.players.length}/20.</p>${yearsPicker(p)}
+      <div class="grid3">${[Math.round(ask*0.9/5)*5, ask, Math.round(ask*1.1/5)*5].map(a=>`<button class="b" data-a="setcw" data-amt="${a}">${money(a)}</button>`).join('')}</div>
+      <input id="cwage" inputmode="numeric" value="${S.cWage||ask}" autocomplete="off"><button class="b" data-a="signfree" data-id="${p.id}">Sign him</button>`,
+    action: `<button class="b quiet" data-a="back">Back</button>` };
+}
+function ladderOn(){ try{ return localStorage.getItem(LADDER_OPT)!=='off'; }catch(e){ return true; } }
+function trophyLine(t){ if (!t) return ''; const parts = []; const titles = t.titles||{}; for (const d of [1,2,3,4]) if (titles[d]) parts.push(`${titles[d]} D${d} title${titles[d]>1?'s':''}`); if (t.fa) parts.push(`${t.fa} FA Cup${t.fa>1?'s':''}`); if (t.lc) parts.push(`${t.lc} League Cup${t.lc>1?'s':''}`); if (t.ec) parts.push(`${t.ec} European Cup${t.ec>1?'s':''}`); if (t.cwc) parts.push(`${t.cwc} CWC`); if (t.uefa) parts.push(`${t.uefa} UEFA Cup${t.uefa>1?'s':''}`); if (t.promo) parts.push(`${t.promo} promotion${t.promo>1?'s':''}`); return parts.join(', ') || 'no trophies yet'; }
+async function loadLadder(){ if (!LADDER_URL){ S.ladderRows = null; return; } const board = S.tab.board||'career'; const rows = await Ladder.top(board); S.ladderRows = rows; if (Ladder.nick()) S.ladderMe = await Ladder.me(); if (S.screen==='hof') render(); }
+function readAmount(sel){ const i = $(sel||'#amt'); if (!i) return null; const raw = i.value.trim().toLowerCase().replace(/[£,\s]/g,''); let v = raw.endsWith('k')? parseFloat(raw)*1000 : raw.endsWith('m')? parseFloat(raw)*1e6 : parseFloat(raw); if (!isFinite(v) || v<1) return null; return Math.round(v); }
 function jobOfferPanel(){
   const st = S.state; const c = st.clubs[st.jobOffer]; const cw = E.squadOf(st,c).reduce((s,p)=>s+p.wage,0);
   return `<h2>Job offer</h2><p><span class="hot">${esc(c.name)}</span> of Division ${c.div} want you as their manager. They have ${money(c.balance)} in the bank, a ${E.fmt(c.capacity)} seat ground and a wage bill of ${money(cw)} a week.${st.jobOfferExpires? ` Decide by week ${st.jobOfferExpires}.`:''}</p><div class="grid2"><button class="b" data-a="acceptjob">Take it</button><button class="b" data-a="declinejob">Stay put</button></div>`;
@@ -2058,14 +2661,15 @@ function startAnimation(){
   if (S.anim){ clearTimeout(S.anim); S.anim = null; }
   const token = ++animToken;
   const m = S.results.userMatch; const u = user(); const us = m.home.id===u.id;
-  const ev = m.scorers.slice(); let gH=0, gA=0, t=0, i=0;
+  const ev = m.scorers.map(s=>Object.assign({kind:'goal'}, s)).concat((m.cards||[]).map(c=>Object.assign({kind:'card'}, c))).sort((a,b)=>a.min-b.min); let gH=0, gA=0, t=0, i=0;
   const clock = $('#clock'), score = $('#score'), events = $('#events');
   const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const step = () => {
     if (token!==animToken) return;
     t++;
-    while (i<ev.length && ev[i].min<=t){ const s = ev[i++]; if (s.side==='H') gH++; else gA++;
-      const ours = (s.side==='H')===us;
+    while (i<ev.length && ev[i].min<=t){ const s = ev[i++]; const ours = (s.side==='H')===us;
+      if (s.kind==='card'){ events.insertAdjacentHTML('beforeend', `<div class="${ours?'us':''}"><span class="dim">${s.min}'</span> ${s.type==='R'? '<span class="mark">RED CARD</span>' : 'Booked'} ${esc(s.p.name)} (${esc(s.side==='H'?m.home.short:m.away.short)})</div>`); continue; }
+      if (s.side==='H') gH++; else gA++;
       events.insertAdjacentHTML('beforeend', `<div class="${ours?'us':''}">${s.min}' GOAL ${esc(s.p.name)} (${esc(s.side==='H'?m.home.short:m.away.short)}) ${gH}-${gA}</div>`); }
     clock.textContent = t+"'";
     score.innerHTML = `<span class="${us?'hot':''}">${esc(m.home.short)}</span> ${gH} - ${gA} <span class="${!us?'hot':''}">${esc(m.away.short)}</span><small>Attendance ${E.fmt(m.att)}</small>`;
@@ -2079,7 +2683,9 @@ function startAnimation(){
     let extra = '';
     if (m.extra==='aet') extra = `<div>After extra time: ${m.gH}-${m.gA}</div>`;
     else if (m.extra && m.extra.startsWith('pens')) extra = `<div>Level after extra time. ${esc(m.extra==='pens-H'?m.home.short:m.away.short)} win on penalties.</div>`;
-    events.innerHTML = m.scorers.map(s=>`<div class="${(s.side==='H')===us?'us':''}">${s.min}' GOAL ${esc(s.p.name)} (${esc(s.side==='H'?m.home.short:m.away.short)})</div>`).join('') + extra;
+    events.innerHTML = m.scorers.map(s=>`<div class="${(s.side==='H')===us?'us':''}">${s.min}' GOAL ${esc(s.p.name)} (${esc(s.side==='H'?m.home.short:m.away.short)})</div>`).join('') + extra
+      + ((m.cards||[]).filter(c=>c.type==='R').map(c=>`<div class="${(c.side==='H')===us?'us':''}"><span class="mark">Sent off:</span> ${esc(c.p.name)} ${c.min}'</div>`).join(''))
+      + ((m.cards||[]).some(c=>c.type==='Y')? `<div class="dim">Booked: ${(m.cards||[]).filter(c=>c.type==='Y').map(c=>esc(c.p.name)).join(', ')}</div>` : '');
     score.innerHTML = `<span class="${us?'hot':''}">${esc(m.home.short)}</span> ${m.gH} - ${m.gA} <span class="${!us?'hot':''}">${esc(m.away.short)}</span><small>Attendance ${E.fmt(m.att)}</small>`;
     $('#act').innerHTML = `<button class="b" data-a="afteranim">Full time</button>`;
   };
@@ -2093,11 +2699,13 @@ async function act(a, d){
   const st = S.state;
   switch(a){
     case 'setup': go('setup'); setTimeout(()=>{ const i=document.querySelector('.mgrname'); if(i) i.focus(); }, 50); break;
-    case 'setupcount': S.setupNames = Array.from(document.querySelectorAll('.mgrname')).map(i=>i.value); S.setupCount = +d.n; render(); break;
+    case 'setupcount': S.setupNames = Array.from(document.querySelectorAll('.mgrname')).map(i=>i.value); S.setupCount = +d.n; if (S.setupCount>1) S.setupMode = 'classic'; render(); break;
+    case 'mode': S.setupNames = Array.from(document.querySelectorAll('.mgrname')).map(i=>i.value); S.setupMode = d.m; render(); break;
     case 'start': {
       const names = Array.from(document.querySelectorAll('.mgrname')).map((i,k)=>i.value.trim() || (S.setupCount>1? 'Manager '+(k+1) : 'The Gaffer'));
-      S.state = E.newGame({ managers: names });
-      Track.send('game_started', { number_of_managers: names.length });
+      const mode = names.length>1? 'classic' : (S.setupMode||'classic');
+      S.state = E.newGame({ managers: names, mode });
+      Track.send('game_started', { number_of_managers: names.length, mode });
       S.hasSave = true; await save(); startTurn(0); break; }
     case 'continue': startTurn(st.cur); break;
     case 'taketurn': arriveAtTurn(); break;
@@ -2114,9 +2722,10 @@ async function act(a, d){
     case 'formation': if (S.xiMode==='euro') user().euroFormation = d.f; else user().formation = d.f; render(); break;
     case 'autopick': { const xi = E.autoSelect(st, user(), S.xiMode==='euro'? (user().euroFormation||user().formation) : user().formation); const ids = xi.map(x=>x.p.id); if (S.xiMode==='euro') st.euroSel = ids; else st.userSel = ids; render(); toast('Best available XI picked.'); break; }
     case 'clearpick': if (S.xiMode==='euro') st.euroSel = []; else st.userSel = []; render(); break;
-    case 'player': S.pid = +d.id; S.from = S.screen==='player'? S.from : S.screen; go('player'); break;
+    case 'player': S.pid = +d.id; S.from = S.screen==='player'? S.from : S.screen; S.cYears = null; S.cWage = null; go('player'); break;
     case 'back': if (S.from==='afterseason'){ S.from=null; startTurn(firstActive()); } else if (S.from==='title'){ go('title'); } else go(S.from||'squad'); break;
     case 'setamt': { const i = $('#amt'); if (i) i.value = d.amt; break; }
+    case 'setcw': { const i = $('#cwage'); if (i) i.value = d.amt; break; }
     case 'list': { const p = st.players[+d.id]; const amt = readAmount(); if (amt===null){ toast('Enter a price.'); break; } E.listPlayer(st, p.id, amt); await save(); render(); toast(p.name+' is up for sale.'); break; }
     case 'unlist': E.unlistPlayer(st, +d.id); render(); break;
     case 'bid': { const amt = readAmount(); if (amt===null){ toast('Enter an amount.'); break; } const rival = E.managerOf(st, st.players[+d.id].club); const err = E.bidForPlayer(st, +d.id, amt); if (err) toast(err); else { toast(rival? `Bid sent to ${rival.managerName}.` : 'Deal done.'); await save(); go(S.from||'transfers'); } break; }
@@ -2124,6 +2733,14 @@ async function act(a, d){
     case 'accept': { const err = E.acceptOffer(st, +d.i); if (err) toast(err); else { toast('Sold.'); await save(); render(); } break; }
     case 'reject': E.rejectOffer(st, +d.i); render(); break;
     case 'ttab': S.tab.transfers = d.t; render(); break;
+    case 'cyears': S.cWage = readAmount('#cwage'); S.cYears = +d.y; render(); break;
+    case 'academy': { const err = E.upgradeAcademy(st); if (err) toast(err); else { toast('Builders booked.'); await save(); render(); } break; }
+    case 'promote': { const err = E.promoteReserve(st, +d.id); if (err) toast(err); else { toast('Promoted.'); await save(); if (S.screen==='player') go(S.from||'club'); else render(); } break; }
+    case 'releasereserve': { if (S.confirmRelease!==+d.id){ S.confirmRelease = +d.id; render(); toast('Tap again to let him go.'); setTimeout(()=>{ S.confirmRelease=null; if (S.screen==='player') render(); }, 4000); break; } S.confirmRelease=null; const err = E.releaseReserve(st, +d.id); if (err) toast(err); else { toast('Gone.'); await save(); go(S.from||'club'); } break; }
+    case 'contract': { const yrs = S.cYears || E.wantsYears(st.players[+d.id]); const wage = readAmount('#cwage'); if (wage===null){ toast('Enter a wage.'); break; } const r = E.offerContract(st, +d.id, wage, yrs); toast(r.msg); if (r.ok){ S.cYears = null; S.cWage = null; await save(); } else S.cWage = wage; render(); break; }
+    case 'letgo': { const p = st.players[+d.id]; E.letGo(st, p.id, !p.letGo); await save(); render(); toast(p.letGo? `${p.name} will leave when his deal ends.` : `${p.name} is back in your plans.`); break; }
+    case 'release': { if (!S.confirmRelease || S.confirmRelease!==+d.id){ S.confirmRelease = +d.id; render(); toast('Tap again to release him.'); setTimeout(()=>{ S.confirmRelease=null; if (S.screen==='player') render(); }, 4000); break; } S.confirmRelease=null; const err = E.releasePlayer(st, +d.id); if (err) toast(err); else { toast('Released.'); await save(); go(S.from||'squad'); } break; }
+    case 'signfree': { const yrs = S.cYears || E.wantsYears(st.players[+d.id]); const wage = readAmount('#cwage'); if (wage===null){ toast('Enter a wage.'); break; } const r = E.signFreeAgent(st, +d.id, wage, yrs); toast(r.msg); if (r.ok){ S.cYears = null; await save(); go('transfers'); } else render(); break; }
     case 'scoutdiv': S.tab.scout = {div:+d.d}; render(); break;
     case 'ximode': S.xiMode = d.m; render(); break;
     case 'brief': { const b = S.tab.brief; b[d.k] = (d.k==='pos'||d.k==='age')? d.v : +d.v; render(); break; }
@@ -2141,6 +2758,14 @@ async function act(a, d){
     case 'fixtures': S.from = S.screen; go('fixtures'); break;
     case 'saves': S.from = S.screen==='title'? 'title' : S.screen; S.slots = await listSlots(); S.slotName = null; go('saves'); break;
     case 'help': S.from = S.screen==='title'? 'title' : S.screen; go('help'); break;
+    case 'hof': S.from = S.screen==='title'? 'title' : S.screen; S.ladderRows = undefined; go('hof'); loadLadder(); break;
+    case 'hoftab': S.tab.hof = d.t; render(); if (d.t==='ladder') loadLadder(); break;
+    case 'board': S.tab.board = d.b; S.ladderRows = undefined; render(); loadLadder(); break;
+    case 'setnick': { const v = Ladder.setNick($('#nick').value); if (!v){ toast('Give yourself a name.'); break; } toast(`You are ${v}.`); if (st) await Ladder.submit(st); S.ladderRows = undefined; Ladder.cache = {}; render(); loadLadder(); break; }
+    case 'joinladder': { const v = Ladder.setNick($('#nick').value); if (!v){ toast('Give yourself a name.'); break; } S.nickPrompt = false; toast(`You are ${v}.`); await Ladder.submit(st); render(); break; }
+    case 'skipladder': S.nickPrompt = false; try{ localStorage.setItem('sm91-nick-skipped', '1'); }catch(e){} render(); break;
+    case 'ladderopt': try{ localStorage.setItem(LADDER_OPT, ladderOn()? 'off' : 'on'); }catch(e){} render(); break;
+    case 'records': S.from = S.screen; go('records'); break;
     case 'analytics': try{ localStorage.setItem('sm91-analytics', analyticsOn()? 'off' : 'on'); }catch(e){} render(); break;
     case 'pingtest': S.pingResult = 'Sending...'; render(); S.pingResult = await Track.test(); render(); break;
     case 'title': S.slots = await listSlots(); S.slotCount = S.slots.length; go('title'); break;
@@ -2200,6 +2825,7 @@ async function playWeek(){
   if (before===1 && week===1) Track.once(st, 'kick', 'first_match_kicked_off', { number_of_managers: st.managers.length, set_preseason: !(st.preseason && st.preseason.pending) });
   const results = E.advanceWeek(st);
   S.pendingReview = st.season>before;
+  if (st.season>before){ Ladder.record(st); let skipped = false; try{ skipped = !!localStorage.getItem('sm91-nick-skipped'); }catch(e){} if (Ladder.on()){ if (Ladder.nick()) Ladder.submit(st); else if (!skipped) S.nickPrompt = true; } }
   const played = st.season>before? E.CFG.WEEKS : week;
   if (before===1 && played===1) Track.once(st, 'w1', 'week_1_completed', { number_of_managers: st.managers.length });
   if (before===1 && played===5) Track.once(st, 'w5', 'week_5_completed', { number_of_managers: st.managers.length });
