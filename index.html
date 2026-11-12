@@ -1834,11 +1834,11 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const money = n => (n<0?'-':'')+'£'+E.fmt(Math.abs(n));
 const SAVE_KEY = 'sm91-save';
-const APP_VERSION = '1.1.0';
+const APP_VERSION = '1.1.1';
 const FEEDBACK_URL = 'https://forms.gle/w9fsKD6hUvzu9GQh8';
 const ANALYTICS_TOKEN = 'f070e2a73ed4ad02f5341aa8b1f5b605';   // Mixpanel project token; empty means nothing is sent
 const ANALYTICS_HOST = 'https://api.mixpanel.com';
-const LADDER_URL = '';               // Cloudflare Worker URL for the shared ladder; empty means local hall of fame only
+const LADDER_URL = 'https://sm91-ladder.john-liesercox.workers.dev';   // Cloudflare Worker for the shared ladder; empty means local hall of fame only
 const LADDER_SECRET = '2a7f90e50ccfeefa95b4aac8af049fb6';
 // ---------- hall of fame and ladder ----------
 const HOF_KEY = 'sm91-hof', NICK_KEY = 'sm91-nick', LADDER_OPT = 'sm91-ladder';
