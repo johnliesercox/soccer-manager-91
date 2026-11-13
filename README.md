@@ -21,6 +21,10 @@ If you want offline visitors to pick up an update immediately, also change the `
 
 In `index.html`, near the top of the script, set `const FEEDBACK_URL = '';` to a Google Form link and a "Send feedback" button appears on the title screen.
 
+## Version 1.4: believable football (Phase 2.5)
+
+Same pixel stadium, better football underneath: a deterministic role planner (`src/matchday/behaviour.js`), bounded trajectories in metres per second (`trajectories.js`) and explicit ball-action beats (`interactions.js`) feed the shared scene that every renderer draws. Results are untouched. `ARCHITECTURE_MATCHDAY.md` carries the Phase 3 (isometric/3D) handover contract.
+
 ## Version 1.3: pixel stadium
 
 The match viewer now draws pixel-art players (generated in code, recoloured per kit), a referee, stands and a crowd, with a camera that follows the ball. Everything is still inlined into `index.html`; there are no image files to host. See `ARCHITECTURE_MATCHDAY.md` for the scene, sprite and renderer contracts.
