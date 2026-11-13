@@ -21,6 +21,10 @@ If you want offline visitors to pick up an update immediately, also change the `
 
 In `index.html`, near the top of the script, set `const FEEDBACK_URL = '';` to a Google Form link and a "Send feedback" button appears on the title screen.
 
+## Version 1.3: pixel stadium
+
+The match viewer now draws pixel-art players (generated in code, recoloured per kit), a referee, stands and a crowd, with a camera that follows the ball. Everything is still inlined into `index.html`; there are no image files to host. See `ARCHITECTURE_MATCHDAY.md` for the scene, sprite and renderer contracts.
+
 ## Version 1.2: matchday
 
 After each week you can watch your match on an animated top-down pitch (or take the instant result). The viewer is built from the modules in `src/matchday/` and inlined into `index.html` by `build.py`; it never changes a result. `ARCHITECTURE_MATCHDAY.md` in the project root explains the data contract and how to add a pixel-art, isometric or 3D renderer later. Sound is off by default; the View button switches to a colour-free tactics board.
