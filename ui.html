@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0055AA">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SM '91">
+<!--SITE-->
+<title>Soccer Manager '91</title>
+<style>
+:root{--blue:#0055AA;--deep:#003D80;--white:#FFFFFF;--black:#000000;--orange:#FF8800;--grey:#B8C8DC;--bevel-lo:#7A3F00;--bevel-hi:#FFD08A}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--blue);color:var(--white);font-family:"Courier New",Courier,"Lucida Console",monospace;font-weight:700;font-size:15px;line-height:1.35;overscroll-behavior:none}
+#app{display:flex;flex-direction:column;height:100%;max-width:520px;margin:0 auto;background:var(--blue)}
+body.md-wide #app{max-width:980px}
+header{padding:calc(10px + env(safe-area-inset-top)) 12px 8px;border-bottom:3px solid var(--white);display:flex;justify-content:space-between;align-items:flex-end;gap:8px;flex:none}
+header .club{color:var(--orange);font-size:17px;text-transform:uppercase;letter-spacing:.5px;line-height:1.15}
+header .meta{font-size:13px;color:var(--grey);text-align:right;white-space:nowrap;line-height:1.3}
+header .meta .neg{color:var(--orange)}
+main{flex:1;overflow-y:auto;padding:12px 12px 20px;-webkit-overflow-scrolling:touch}
+main::-webkit-scrollbar{display:none}
+h1{font-size:15px;margin:0 0 10px;color:var(--orange)}
+h2{font-size:15px;margin:16px 0 8px;color:var(--orange)}
+p{margin:0 0 10px}
+.dim{color:var(--grey)}
+.hot{color:var(--orange)}
+.b{display:block;width:100%;padding:12px 12px;background:var(--blue);color:var(--white);border:0;box-shadow:inset 2px 2px 0 var(--white),inset -2px -2px 0 var(--black);font:inherit;text-align:left;margin:0 0 8px;cursor:pointer;line-height:1.3}
+.b:active,.b.on{background:var(--orange);color:var(--black);box-shadow:inset 2px 2px 0 var(--bevel-hi),inset -2px -2px 0 var(--bevel-lo)}
+.b.on .dim{color:#5a3200}
+.b:focus-visible{outline:3px solid var(--orange);outline-offset:-5px}
+.b.small{padding:8px 10px;margin:0}
+.b:disabled{opacity:.45;cursor:default}
+.row{display:flex;gap:8px;margin-bottom:8px}
+.row .b{margin:0}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px}
+.grid3 .b{margin:0;padding:10px 6px;text-align:center}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
+.grid2 .b{margin:0;text-align:center}
+.pill{display:inline-block;background:var(--deep);padding:2px 6px;margin-left:4px;font-size:13px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+table.tight{font-size:13px}
+table.tight td,table.tight th{padding:5px 2px}
+td,th{padding:5px 3px;text-align:left;white-space:nowrap}
+th{color:var(--orange);font-weight:700;border-bottom:2px solid var(--white)}
+td.n,th.n{text-align:right}
+tr.me td{background:var(--deep);color:var(--orange)}
+tr.tap{cursor:pointer}
+tr.tap:active td{background:var(--orange);color:var(--black)}
+tr.sel td{background:var(--deep)}
+tr.line-promo td{border-bottom:2px dashed var(--grey)}
+tr.line-releg td{border-top:2px dashed var(--grey)}
+.news{margin:0 0 6px;padding-left:0;list-style:none}
+.news li{padding:6px 0;border-bottom:1px solid var(--deep)}
+.news li.warn{color:var(--orange)}
+.mark{color:var(--orange)}
+nav{display:grid;grid-template-columns:repeat(5,1fr);border-top:3px solid var(--white);flex:none;background:var(--blue)}
+nav button{background:var(--blue);color:var(--white);border:0;border-right:2px solid var(--deep);padding:11px 2px 10px;font:inherit;font-size:12px;cursor:pointer}
+nav button:last-child{border-right:0}
+nav button.on{background:var(--orange);color:var(--black)}
+nav button:focus-visible{outline:3px solid var(--orange);outline-offset:-4px}
+.action{flex:none;padding:8px 12px calc(10px + env(safe-area-inset-bottom));border-top:3px solid var(--white)}
+.action .b{margin:0;text-align:center;background:var(--orange);color:var(--black);box-shadow:inset 2px 2px 0 var(--bevel-hi),inset -2px -2px 0 var(--bevel-lo);font-size:16px}
+.action .b:active{background:var(--white)}
+.action .b.quiet{background:var(--blue);color:var(--white);box-shadow:inset 2px 2px 0 var(--white),inset -2px -2px 0 var(--black)}
+.title{padding:60px 0 20px;text-align:center}
+.title .logo{color:var(--orange);font-size:26px;line-height:1.15;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px}
+.title .sub{color:var(--grey);font-size:13px;margin-bottom:40px}
+input{width:100%;font:inherit;padding:12px;background:var(--white);color:var(--black);border:0;box-shadow:inset 2px 2px 0 var(--black),inset -2px -2px 0 var(--white);margin-bottom:10px}
+.clock{font-size:44px;color:var(--orange);text-align:center;margin:6px 0 4px;line-height:1}
+.score{font-size:26px;text-align:center;margin-bottom:10px;line-height:1.2}
+.score small{display:block;font-size:13px;color:var(--grey);margin-top:4px}
+.events{min-height:120px}
+.events div{padding:4px 0}
+.events .us{color:var(--orange)}
+.toast{position:fixed;left:50%;bottom:120px;transform:translateX(-50%);background:var(--black);color:var(--white);padding:10px 14px;max-width:90%;box-shadow:inset 2px 2px 0 var(--white);z-index:9;font-size:14px;pointer-events:none;opacity:0;transition:opacity .2s}
+.toast.show{opacity:1}
+.cursor::after{content:"_";animation:blink 1s steps(1) infinite;color:var(--orange)}
+@keyframes blink{50%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.cursor::after{animation:none}}
+.kv{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--deep)}
+.kv span:last-child{text-align:right}
+.bar{height:12px;background:var(--deep);box-shadow:inset 1px 1px 0 var(--black);margin:6px 0 12px}
+.bar i{display:block;height:100%;background:var(--orange)}
+.wrap{white-space:normal}
+/* matchday viewer */
+.md-board{display:flex;justify-content:space-between;align-items:center;font-size:17px;line-height:1.2;margin-bottom:4px}
+.md-board .t{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:uppercase}
+.md-board .t.a{text-align:right}
+.md-board .s{font-size:30px;color:var(--orange);padding:0 10px;white-space:nowrap}
+.md-clock{text-align:center;color:var(--grey);font-size:13px;margin-bottom:6px;white-space:pre}
+.md-stage{height:min(64vh,560px);background:#1E5F2A;box-shadow:inset 2px 2px 0 var(--black),inset -2px -2px 0 var(--white);margin-bottom:6px;overflow:hidden}
+@media (orientation:landscape) and (max-height:500px){.md-stage{height:min(60vh,300px)}}
+@media (min-width:600px) and (min-height:501px){.md-stage{height:min(64vh,400px)}}
+@media (min-width:900px) and (min-height:600px){body.md-wide #app{max-width:1240px} body.md-wide main{padding-bottom:12px} body.md-wide .md-wrap{display:grid;grid-template-columns:minmax(0,1fr) 300px;grid-template-rows:auto auto auto minmax(0,1fr) auto;column-gap:12px;height:100%;max-height:820px} body.md-wide .md-board,body.md-wide .md-clock{grid-column:1/3} body.md-wide .md-board{font-size:20px} body.md-wide .md-stage{grid-column:1;grid-row:3/6;height:auto;min-height:420px;margin-bottom:0} body.md-wide .md-comm{grid-column:2;grid-row:3;margin-bottom:0} body.md-wide .md-log{grid-column:2;grid-row:4;max-height:none;min-height:0;overflow-y:auto} body.md-wide .md-controls2{grid-column:2;grid-row:5;grid-template-columns:1fr;margin-top:0;align-self:end}}
+@media (min-width:1600px) and (min-height:900px){body.md-wide #app{max-width:1500px}}
+.md-clock.ff{color:var(--orange)}
+.md-comm{min-height:42px;padding:6px 8px;background:var(--deep);font-size:14px;margin-bottom:6px}
+.md-log{font-size:13px;max-height:160px;overflow-y:auto}
+.md-log div{padding:3px 0;border-bottom:1px solid var(--deep)}
+.md-log .us{color:var(--orange)}
+.md-controls{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr 1.2fr;gap:6px}
+.md-controls .b{margin:0;padding:11px 4px;font-size:14px;text-align:center}
+.md-controls2{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:6px}
+.md-controls2 .b{margin:0;font-size:13px;padding:9px 6px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:380px){.md-controls2 .b{font-size:12px;padding:9px 4px}}
+.md-tie{font-size:20px;text-align:center;margin:18px 0;line-height:1.3}
+</style>
+</head>
+<body>
+<div id="app">
+  <header id="hdr"></header>
+  <main id="main"></main>
+  <nav id="nav"></nav>
+  <div class="action" id="act"></div>
+</div>
+<div class="toast" id="toast"></div>
+<div id="updatebar" style="display:none;position:fixed;top:0;left:0;right:0;z-index:10;background:var(--orange);color:var(--black);text-align:center;padding:10px 12px;font:inherit;cursor:pointer;box-shadow:inset 0 -3px 0 var(--bevel-lo)">Version updated. Tap to restart.</div>
+<script>
+/*ENGINE*/</script>
+<script>
+/*MATCHDAY*/
+</script>
+<script>
+(function(){
+'use strict';
+const E = Engine;
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const money = n => (n<0?'-':'')+'£'+E.fmt(Math.abs(n));
+const SAVE_KEY = 'sm91-save';
+const APP_VERSION = '1.4.0';
+const CHANGELOG = [
+  { v:'1.4.0', when:'November 2026', notes:[
+    'The football is more believable. Players now have jobs: one defender presses, another covers, the back line holds its shape, two teammates offer the carrier an angle, keepers come off their line and set themselves for shots. Everyone moves at walking, jogging, running or sprinting pace and nobody teleports.',
+    'Passes connect: the passer sets his feet and kicks, the ball leaves his foot, the receiver runs to meet it and takes a touch before playing on. Shots have a run-up, keepers dive, blocks and slide tackles look like what they are, and the ball sits at the feet of whoever has it.',
+    'A calmer camera that frames the play rather than chasing the ball, keeps the goal in view during attacks, and a clear "NEXT HIGHLIGHT" cue whenever the clock jumps ahead. A keeper who is sent off is replaced in goal by a defender.',
+    'On a desktop the match viewer spreads out: a big pitch on the left, commentary, the event log and the Camera, View and Sound buttons on the right.',
+  ]},
+  { v:'1.3.0', when:'November 2026', notes:[
+    'Pixel stadium. Matches are now drawn with pixel-art players in your kit colours: running, turning, passing, shooting, slide tackles, keeper dives, bookings and goal celebrations, with a referee, stands and a crowd that jumps when you score.',
+    'The camera follows the ball; tap Camera to see the whole pitch, and tap any player to see his name and position. The marker pitch and the tactics board are still there under View.',
+    'Real formations on the pitch: a 4-3-3 lines up as a 4-3-3, a 5-3-2 as a 5-3-2, the shape pushes up when attacking and drops deeper when defending, corners fill the box and the scorer wheels away to celebrate.',
+  ]},
+  { v:'1.2.0', when:'November 2026', notes:[
+    'Matchday. After each week you can watch your game on an animated top-down pitch: numbered players, the ball, a running clock, commentary and an event log. Or take the instant result, as before.',
+    'Play, pause, 1x, 2x and 4x speed, and Skip straight to the final whistle. The score only appears as it is earned; the result underneath is the same official result whatever you do with the controls.',
+    'Hot-seat games: every manager gets their own matchday turn before the shared results board, so nobody sees another manager\'s result early.',
+    'A second "tactics board" view (O and X markers) that works without colour, and an optional synthesised whistle and crowd, off by default.',
+    'Extra-time goals now have scorers, in the match report and the records.',
+  ]},
+  { v:'1.1.2', when:'November 2026', notes:[
+    'This screen. From now on every update tells you what changed, here and with a line on the home screen.',
+  ]},
+  { v:'1.1.1', when:'November 2026', notes:[
+    'The ladder is live. Pick a nickname at your next season review and your career points go on a shared board with everyone else playing. Three boards: career points, fastest to the Division 1 title, fastest to a European trophy.',
+  ]},
+  { v:'1.1.0', when:'November 2026', notes:[
+    'Contracts. Every player is on a one-to-four-year deal at a fixed wage. Renew early to lock a cheap wage, leave it late and he asks for what he is worth now. Expiring players worry from week 20; do nothing and your assistant re-signs the ones happy to stay at about 10% over the odds. Out-of-contract players from every club appear under Free in the market each summer.',
+    'Mood. Playing, winning and a fair wage keep players happy. Benching, losing, listing for sale and bigger clubs sniffing around do not. Unhappy players play a little worse and eventually ask for a transfer.',
+    'Bookings and bans. Five yellows is a one-match ban, ten is two, a red is one to three. The squad screen shows who is one booking away.',
+    'Youth academy. Build it in four grades, hire a youth coach, and promote the prospects who arrive each summer (Club, Youth).',
+    'Records and hall of fame. Club records, all-time scorers, the roll of honour and your career points (Table, Records). The hall of fame on the title screen keeps every career from every game on this phone.',
+    'Challenge starts. Skint, Relegation scrap, Fallen giant and Big job, chosen when you start a single-manager game.',
+    'Saves are compressed so eight named saves fit on a phone. Your existing game carries on: players were given contracts and the academy is at grade 1.',
+  ]},
+  { v:'1.0.4', when:'September 2026', notes:['The game checks for updates on every launch and shows a bar to restart when one is ready.'] },
+  { v:'1.0.3', when:'September 2026', notes:['A new game now starts straight on Play the match; the sponsor and season ticket decisions use safe defaults in season one unless you open them.', 'Send feedback button on the home screen and the season review.'] },
+  { v:'1.0.0', when:'September 2026', notes:['First release: four divisions, two cups, Europe, staff, training, ground, sponsors, season tickets, loans, sackings, job offers, named saves and up to eight managers on one phone.'] },
+];
+const SEEN_KEY = 'sm91-seen-version';
+function seenVersion(){ try{ return localStorage.getItem(SEEN_KEY)||''; }catch(e){ return APP_VERSION; } }
+function markSeen(){ try{ localStorage.setItem(SEEN_KEY, APP_VERSION); }catch(e){} }
+const FEEDBACK_URL = 'https://forms.gle/w9fsKD6hUvzu9GQh8';
+const ANALYTICS_TOKEN = 'f070e2a73ed4ad02f5341aa8b1f5b605';   // Mixpanel project token; empty means nothing is sent
+const ANALYTICS_HOST = 'https://api.mixpanel.com';
+const LADDER_URL = 'https://sm91-ladder.john-liesercox.workers.dev';   // Cloudflare Worker for the shared ladder; empty means local hall of fame only
+const LADDER_SECRET = '2a7f90e50ccfeefa95b4aac8af049fb6';
+// ---------- hall of fame and ladder ----------
+const HOF_KEY = 'sm91-hof', NICK_KEY = 'sm91-nick', LADDER_OPT = 'sm91-ladder';
+const Ladder = {
+  on(){ try{ return !!LADDER_URL && /^https?:/.test(location.protocol) && localStorage.getItem(LADDER_OPT)!=='off'; }catch(e){ return false; } },
+  nick(){ try{ return localStorage.getItem(NICK_KEY)||''; }catch(e){ return ''; } },
+  setNick(v){ v = String(v||'').replace(/[^\p{L}\p{N} _.'-]/gu,'').replace(/\s+/g,' ').trim().slice(0,16); try{ localStorage.setItem(NICK_KEY, v); }catch(e){} return v; },
+  local(){ try{ return JSON.parse(localStorage.getItem(HOF_KEY)||'{}'); }catch(e){ return {}; } },
+  saveLocal(entries){ try{ localStorage.setItem(HOF_KEY, JSON.stringify(entries)); }catch(e){} },
+  record(state){ // update the local hall of fame for every manager in this game
+    const entries = this.local();
+    state.managers.forEach((m,i)=>{ const s = E.careerSummary(state, m); s.updated = Date.now(); s.gameId = state.gameId; entries[(state.gameId||'g')+':'+i] = s; });
+    this.saveLocal(entries);
+  },
+  async sha(s){ if (!crypto.subtle) return ''; const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)); return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join(''); },
+  playerId(i){ return Track.id()+'-'+i; },
+  async submit(state){ // post each manager's career to the boards that apply
+    if (!this.on()) return; const nick = this.nick(); if (!nick) return;
+    const posts = [];
+    state.managers.forEach((m,i)=>{
+      const s = E.careerSummary(state, m); if (s.score<=0) return;
+      const detail = { manager: s.manager, clubs: s.clubs.slice(-4), club: s.currentClub, division: s.division, seasons: s.seasons, trophies: s.trophies, mode: s.mode };
+      posts.push({ board:'career', player: this.playerId(i), score: s.score, detail });
+      if (s.mode==='classic' && s.firstTitle) posts.push({ board:'fastest_title', player: this.playerId(i), score: s.firstTitle, detail });
+      if (s.mode==='classic' && s.firstEuro) posts.push({ board:'fastest_euro', player: this.playerId(i), score: s.firstEuro, detail });
+    });
+    for (const p of posts){
+      try{ p.nick = nick; p.v = APP_VERSION; p.sig = await this.sha(`${LADDER_SECRET}|${p.board}|${p.player}|${p.score}`);
+        await fetch(LADDER_URL+'/submit', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(p) }); }catch(e){}
+    }
+  },
+  cache: {},
+  async top(board){ const c = this.cache[board]; if (c && Date.now()-c.t<5*60*1000) return c.rows; try{ const r = await fetch(LADDER_URL+'/top?board='+board+'&limit=100'); const j = await r.json(); if (j.ok){ this.cache[board] = { t: Date.now(), rows: j.rows }; return j.rows; } }catch(e){} return null; },
+  async me(){ try{ const r = await fetch(LADDER_URL+'/me?player='+encodeURIComponent(this.playerId(0))); const j = await r.json(); return j.ok? j.me : null; }catch(e){ return null; } },
+};
+// ---------- anonymous usage counts ----------
+// A random id per browser, no names, no club names, no save contents. Off if the token is empty, if the game
+// isn't running from a website, or if the player has turned it off on the How to play screen.
+const Track = {
+  enabled(){ try{ return !!ANALYTICS_TOKEN && /^https?:/.test(location.protocol) && localStorage.getItem('sm91-analytics')!=='off'; }catch(e){ return false; } },
+  id(){ try{ let v = localStorage.getItem('sm91-did'); if (!v){ v = (crypto.randomUUID? crypto.randomUUID() : Math.random().toString(36).slice(2)+Date.now().toString(36)); localStorage.setItem('sm91-did', v); } return v; }catch(e){ return 'anon'; } },
+  send(event, props){
+    if (!this.enabled()) return;
+    try{
+      const payload = [{ event, properties: Object.assign({ token: ANALYTICS_TOKEN, distinct_id: this.id(), time: Math.floor(Date.now()/1000), app_version: APP_VERSION, standalone: !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches), $insert_id: event+'-'+Date.now()+'-'+Math.random().toString(36).slice(2,8) }, props||{}) }];
+      const body = 'data='+encodeURIComponent(JSON.stringify(payload));
+      const url = ANALYTICS_HOST+'/track?ip=1';
+      if (navigator.sendBeacon) navigator.sendBeacon(url, new Blob([body], {type:'application/x-www-form-urlencoded'}));
+      else fetch(url, { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body, keepalive:true }).catch(()=>{});
+    }catch(e){}
+  },
+  once(state, key, event, props){ state.analytics = state.analytics||{}; if (state.analytics[key]) return; state.analytics[key] = true; this.send(event, props); },
+  async test(){
+    if (!ANALYTICS_TOKEN) return 'No token in this build.';
+    if (!/^https?:/.test(location.protocol)) return 'Only works from the website, not from a file or this preview.';
+    if (!this.enabled()) return 'Switched off on this phone. Turn it on above and try again.';
+    try{
+      const payload = [{ event:'test_ping', properties:{ token: ANALYTICS_TOKEN, distinct_id: this.id(), time: Math.floor(Date.now()/1000), app_version: APP_VERSION, $insert_id: 'ping-'+Date.now() } }];
+      const r = await fetch(ANALYTICS_HOST+'/track?ip=1&verbose=1', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body: 'data='+encodeURIComponent(JSON.stringify(payload)) });
+      const t = await r.text();
+      return `Mixpanel replied ${r.status}: ${t.slice(0,120)}`;
+    }catch(e){ return 'Could not reach Mixpanel: '+(e.message||e)+'. Usually an ad blocker or network filter.'; }
+  },
+};
+
+// ---------- storage: artifact storage, then localStorage, then memory ----------
+const mem = {};
+// Saves are gzipped (about 6x smaller) so eight named saves fit inside the browser's storage limit; older plain saves still load.
+const Pack = {
+  async pack(str){ try{ if (typeof CompressionStream==='undefined' || str.length<20000) return str; const cs = new CompressionStream('gzip'); const w = cs.writable.getWriter(); w.write(new TextEncoder().encode(str)); w.close(); const buf = await new Response(cs.readable).arrayBuffer(); let bin=''; const bytes = new Uint8Array(buf); for (let i=0;i<bytes.length;i+=0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i,i+0x8000)); return 'gz:'+btoa(bin); }catch(e){ return str; } },
+  async unpack(str){ if (!str || !str.startsWith('gz:')) return str; try{ const bin = atob(str.slice(3)); const bytes = new Uint8Array(bin.length); for (let i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i); const ds = new DecompressionStream('gzip'); const w = ds.writable.getWriter(); w.write(bytes); w.close(); return await new Response(ds.readable).text(); }catch(e){ return null; } },
+};
+const Store = {
+  async get(k){
+    let raw = null;
+    if (window.storage && window.storage.get){ try{ const r = await window.storage.get(k, false); raw = r? r.value : null; }catch(e){ raw = null; } }
+    else { try{ raw = localStorage.getItem(k); }catch(e){ raw = mem[k]||null; } }
+    return Pack.unpack(raw);
+  },
+  async set(k,v){
+    const packed = (k===SAVE_KEY || k.startsWith('sm91-slot-'))? await Pack.pack(v) : v;
+    if (window.storage && window.storage.set){ try{ await window.storage.set(k, packed, false); return; }catch(e){} }
+    try{ localStorage.setItem(k,packed); return; }catch(e){ mem[k]=v; }
+  },
+  async del(k){
+    if (window.storage && window.storage.delete){ try{ await window.storage.delete(k, false); return; }catch(e){} }
+    try{ localStorage.removeItem(k); }catch(e){ delete mem[k]; }
+  }
+};
+function serialize(state){
+  const copy = Object.assign({}, state, { lastResults: null, lastWeek: null, v: E.SAVE_VERSION, app: APP_VERSION });
+  copy.clubs = state.clubs.map(c=>Object.assign({}, c, { xi: null }));
+  return JSON.stringify(copy);
+}
+async function save(){ if (!S.state) return; try{ E.saveCurrent(S.state); await Store.set(SAVE_KEY, serialize(S.state)); }catch(e){} }
+const SLOT_INDEX = 'sm91-slots';
+async function listSlots(){ try{ const raw = await Store.get(SLOT_INDEX); return raw? JSON.parse(raw) : []; }catch(e){ return []; } }
+async function saveSlot(name){
+  const st = S.state; E.saveCurrent(st);
+  const slots = await listSlots(); const id = Date.now(); const key = 'sm91-slot-'+id;
+  await Store.set(key, serialize(st));
+  slots.unshift({ id, key, name, club: user().name, manager: st.managerName, managers: E.activeManagers(st).length, season: st.season, week: st.week, ts: id });
+  while (slots.length>8){ const drop = slots.pop(); await Store.del(drop.key); }
+  await Store.set(SLOT_INDEX, JSON.stringify(slots));
+  return slots;
+}
+async function loadSlot(id){
+  const slots = await listSlots(); const s = slots.find(x=>x.id===id); if (!s) return 'That save has gone.';
+  const raw = await Store.get(s.key); if (!raw) return 'That save is empty.';
+  S.state = E.restore(JSON.parse(raw)); S.hasSave = true; S.pendingReview = false; S.results = null; S.tab.report = null;
+  await save(); return null;
+}
+async function deleteSlot(id){ const slots = await listSlots(); const s = slots.find(x=>x.id===id); if (s) await Store.del(s.key); await Store.set(SLOT_INDEX, JSON.stringify(slots.filter(x=>x.id!==id))); }
+function multi(){ return S.state && E.activeManagers(S.state).length>1; }
+function mgr(){ return S.state.managers[S.state.cur]; }
+async function load(){ try{ const raw = await Store.get(SAVE_KEY); if (!raw) return null; const st = JSON.parse(raw); return E.restore(st); }catch(e){ return null; } }
+
+// ---------- app state ----------
+const S = { state:null, screen:'title', tab:{transfers:'list', table:null, scout:{}, club:'money', results:null, brief:{pos:'ANY', age:'any', skill:0, value:0}, report:null}, hasSave:false, results:null, pendingReview:false, anim:null, prevSeason:1 };
+
+function user(){ return S.state.clubs[S.state.userClub]; }
+function sel(){ const st = S.state; if (!st.userSel) st.userSel = []; if (!st.euroSel) st.euroSel = []; return S.xiMode==='euro'? st.euroSel : st.userSel; }
+function inEurope(u){ return !!(u.euro && !u.euro.out); }
+function euroComp(k){ return E.CFG.EURO.comps[k]; }
+function fmtEuroTie(t){ if (!t) return ''; if (t.final) return `${euroComp(t.comp).name} final v ${esc(t.opp.name)} (neutral)`; return `${euroComp(t.comp).name} ${E.euroRoundName(t.comp, t.round)}, ${t.g1? '2nd' : '1st'} leg v ${esc(t.opp.name)} (${t.g1? (t.homeFirst? 'A' : 'H') : (t.homeFirst? 'H' : 'A')})${t.g1? `, first leg ${t.homeFirst? t.g1[0]+'-'+t.g1[1] : t.g1[1]+'-'+t.g1[0]}` : ''}`; }
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(()=>t.classList.remove('show'), 2200); }
+function go(screen){ if (S.md && S.md.viewer && screen!=='matchview') Matchday.ui.closeViewer(); S.screen = screen; document.body.classList.toggle('md-wide', screen==='matchview'); render(); $('#main').scrollTop = 0; }
+
+// ---------- rendering ----------
+function render(){
+  const st = S.state;
+  const hdr = $('#hdr'), main = $('#main'), nav = $('#nav'), act = $('#act');
+  if (!st || S.screen==='title' || S.screen==='setup' || S.screen==='pass' || S.screen==='matchview' || S.screen==='matchpick' || ((S.screen==='saves'||S.screen==='help'||S.screen==='hof'||S.screen==='whatsnew') && !st)){
+    hdr.innerHTML = ''; hdr.style.display='none'; nav.style.display='none';
+  } else {
+    hdr.style.display=''; nav.style.display='';
+    const u = user();
+    hdr.innerHTML = `<div class="club">${esc(u.name)}${multi()? `<br><span style="font-size:12px;color:var(--grey);text-transform:none;letter-spacing:0">${esc(st.managerName)}</span>`:''}</div><div class="meta">Div ${u.div}, season ${st.season}<br>Week ${st.week} of ${E.CFG.WEEKS}<br><span class="${u.balance<0?'neg':''}">${money(u.balance)}</span></div>`;
+    nav.innerHTML = ['home','squad','transfers','table','club'].map(k=>`<button data-nav="${k}" class="${S.screen===k?'on':''}">${{home:'Home',squad:'Squad',transfers:'Market',table:'Table',club:'Club'}[k]}</button>`).join('');
+  }
+  const r = SCREENS[S.screen];
+  const out = r();
+  main.innerHTML = out.main;
+  act.innerHTML = out.action || '';
+  act.style.display = out.action? '' : 'none';
+}
+
+const SCREENS = {
+  title(){
+    return { main: `<div class="title"><div class="logo">Soccer<br>Manager '91</div><div class="sub">Four divisions. Sixteen players. One overdraft.</div>
+      ${S.hasSave? `<button class="b" data-a="continue">Continue current game</button>`:''}
+      ${S.slotCount? `<button class="b" data-a="saves">Load a saved game</button>`:''}
+      <button class="b" data-a="setup">${S.hasSave?'Start a new game':'Start'}</button>
+      <button class="b" data-a="hof">Hall of fame${LADDER_URL? ' and ladder':''}</button>
+      <button class="b" data-a="whatsnew">What's new${seenVersion()!==APP_VERSION? ' <span class="hot">(updated)</span>':''}</button>
+      <button class="b" data-a="help">How to play</button>
+      ${FEEDBACK_URL? `<a class="b" data-track="feedback_opened" href="${esc(FEEDBACK_URL)}" target="_blank" rel="noopener" style="text-decoration:none;text-align:left">Send feedback</a>`:''}
+      <p class="dim" style="margin-top:24px;font-size:12px">Version ${APP_VERSION}. A tribute to the 1991 Amiga original. Real club names belong to their clubs.${ANALYTICS_TOKEN? ' Sends anonymous usage counts; see How to play.' : ''}</p></div>` };
+  },
+  setup(){
+    const n = S.setupCount || 1; const mode = S.setupMode || 'classic';
+    const modes = E.MODES;
+    const modePick = `<h2>How do you want to start?</h2>${Object.keys(modes).map(k=>`<button class="b ${mode===k?'on':''}" data-a="mode" data-m="${k}" ${n>1&&k!=='classic'?'disabled':''}>${modes[k].name}<br><span class="dim">${modes[k].blurb}</span></button>`).join('')}${n>1? '<p class="dim">Challenge starts are single-manager games.</p>' : ''}`;
+    return { main: `<h1>Who's managing?</h1><p class="dim">One phone, up to eight managers, everyone starts in Division 4 at a random club. Pass the phone round each week.</p>
+      <div class="grid2" style="grid-template-columns:repeat(8,1fr)">${[1,2,3,4,5,6,7,8].map(k=>`<button class="b ${n===k?'on':''}" data-a="setupcount" data-n="${k}" style="padding:10px 0;text-align:center">${k}</button>`).join('')}</div>
+      ${Array.from({length:n}).map((_,i)=>`<input class="mgrname" maxlength="18" placeholder="Manager ${i+1}" autocomplete="off" value="${esc((S.setupNames||[])[i]||'')}">`).join('')}
+      ${n===1? modePick : ''}
+      <button class="b" data-a="start">${n===1? 'Take the job' : 'Start the season'}</button>` };
+  },
+  whatsnew(){
+    const st = S.state;
+    const body = CHANGELOG.map((c,i)=>`<h2>Version ${c.v}${i===0? ' (this one)':''} <span class="dim" style="font-size:12px">${c.when}</span></h2>${c.notes.map(n=>`<p>${n}</p>`).join('')}`).join('');
+    return { main: `<h1>What's new</h1>${body}<p class="dim">Have a view on any of it? The feedback button is on the home screen.</p>`, action: `<button class="b quiet" data-a="${st? 'back' : 'title'}">Back</button>` };
+  },
+  hof(){
+    const st = S.state; const tab = S.tab.hof || (LADDER_URL? 'ladder' : 'mine');
+    const tabs = LADDER_URL? `<div class="grid2"><button class="b ${tab==='ladder'?'on':''}" data-a="hoftab" data-t="ladder">Ladder</button><button class="b ${tab==='mine'?'on':''}" data-a="hoftab" data-t="mine">Your careers</button></div>` : '';
+    let body = '';
+    if (tab==='ladder'){
+      const board = S.tab.board || 'career';
+      const names = { career:'Career points', fastest_title:'Fastest to the title', fastest_euro:'Fastest to Europe' };
+      const picker = `<div class="grid3">${Object.keys(names).map(b=>`<button class="b ${board===b?'on':''}" data-a="board" data-b="${b}" style="padding:8px 2px;font-size:12px;text-align:center">${names[b]}</button>`).join('')}</div>`;
+      const nick = Ladder.nick();
+      const nickBox = `<p class="dim">${nick? `You are on the ladder as <span class="hot">${esc(nick)}</span>.` : 'Pick a nickname to join. No account, nothing else is sent.'}</p><input id="nick" maxlength="16" value="${esc(nick)}" placeholder="Nickname" autocomplete="off"><button class="b" data-a="setnick">${nick? 'Change nickname' : 'Join the ladder'}</button>`;
+      const rows = S.ladderRows;
+      const me = S.ladderMe && S.ladderMe[board];
+      let table = rows===undefined? '<p class="dim">Loading...</p>' : rows===null? '<p class="dim">Could not reach the ladder. Try again later.</p>' : rows.length? `<table class="tight"><tr><th class="n">#</th><th>Manager</th><th>Club</th><th class="n">${board==='career'?'Pts':'Seasons'}</th></tr>${rows.map(r=>`<tr class="${nick && r.nick===nick?'me':''}"><td class="n">${r.rank}</td><td class="wrap">${esc(r.nick)}<br><span class="dim">${esc((r.detail&&r.detail.manager)||'')}${r.detail&&r.detail.seasons? ', '+r.detail.seasons+' seasons':''}</span></td><td class="wrap">${esc((r.detail&&r.detail.club)||'')}${r.detail&&r.detail.division? ' <span class="dim">D'+r.detail.division+'</span>':''}</td><td class="n">${r.score}</td></tr>`).join('')}</table>` : '<p class="dim">Nobody on this board yet. Finish a season.</p>';
+      if (me) table = `<p>Your best: <span class="hot">${me.score}</span>, ${ordinal(me.rank)} of ${me.of}.</p>` + table;
+      body = picker + nickBox + table + `<p class="dim" style="margin-top:8px">${{career:'Points for trophies and promotions: European Cup 100, Division 1 title 60, Cup Winners\' Cup and UEFA Cup 60, FA Cup 40, League Cup 25, lower titles 25/15/10, promotions 30/20/10, plus 2 a season up to 40.', fastest_title:'Seasons from a random Division 4 start to the Division 1 title. Classic starts only.', fastest_euro:'Seasons from a random Division 4 start to a European trophy. Classic starts only.'}[board]} Posted automatically at each season end; switch it off under How to play.</p>`;
+    } else {
+      const entries = Object.values(Ladder.local()).sort((a,b)=>b.score-a.score);
+      body = entries.length? `<table class="tight"><tr><th class="n">#</th><th>Manager</th><th>Club</th><th class="n">Pts</th></tr>${entries.map((e,i)=>`<tr><td class="n">${i+1}</td><td class="wrap">${esc(e.manager)}${e.retired?' <span class="dim">(retired)</span>':''}<br><span class="dim">${e.seasons} season${e.seasons===1?'':'s'}, ${trophyLine(e.trophies)}</span></td><td class="wrap">${esc(e.currentClub)} <span class="dim">D${e.division}</span></td><td class="n">${e.score}</td></tr>`).join('')}</table><p class="dim" style="margin-top:8px">Every manager from every game on this phone. Updated at each season end.</p>` : '<p class="dim">No careers yet. Finish a season.</p>';
+    }
+    return { main: `<h1>Hall of fame</h1>${tabs}${body}`, action: `<button class="b quiet" data-a="${st? 'back' : 'title'}">Back</button>` };
+  },
+  records(){
+    const st = S.state, u = user(); const r = E.clubRecords(st, u); const m = mgr(); const cs = E.careerSummary(st, m);
+    const line = (x, f) => x? f(x) : '<span class="dim">none yet</span>';
+    const scorers = E.topClubScorers(st, u, 10);
+    const honours = (st.honours||[]).slice().reverse().slice(0, 15).map(h=>`<div class="kv"><span>Season ${h.season}</span><span class="wrap">${[1,2,3,4].map(d=>'D'+d+' '+esc(st.clubs[h.champions[d]].short)).join(', ')}<br><span class="dim">LC ${esc(st.clubs[h.lc].short)}, FA ${esc(st.clubs[h.fa].short)}${['ec','cwc','uefa'].filter(k=>h[k]!==null&&h[k]!==undefined).map(k=>', '+euroComp(k).short+' '+esc(st.clubs[h[k]].short)).join('')}</span></span></div>`).join('');
+    return { main: `<h1>Records</h1>
+      <h2>Your career: ${esc(m.managerName)}</h2>
+      <div class="kv"><span>Career points</span><span class="hot">${cs.score}</span></div>
+      <div class="kv"><span>Seasons</span><span>${cs.seasons}</span></div>
+      <div class="kv"><span>Clubs</span><span class="wrap">${cs.clubs.map(esc).join(', ')||'none yet'}</span></div>
+      <div class="kv"><span>Trophies</span><span class="wrap">${trophyLine(cs.trophies)}</span></div>
+      <div class="kv"><span>Best finish</span><span>${m.career && m.career.best? ordinal(m.career.best.pos)+' in Division '+m.career.best.div+' (season '+m.career.best.season+')' : 'none yet'}</span></div>
+      ${cs.firstTitle? `<div class="kv"><span>First Division 1 title</span><span>season ${cs.firstTitle}</span></div>`:''}${cs.firstEuro? `<div class="kv"><span>First European trophy</span><span>season ${cs.firstEuro}</span></div>`:''}
+      <h2>${esc(u.name)} records</h2>
+      <div class="kv"><span>Record win</span><span class="wrap">${line(r.bigWin, x=>`${x.gf}-${x.ga} v ${esc(x.opp)}, ${x.comp}, season ${x.season}`)}</span></div>
+      <div class="kv"><span>Record defeat</span><span class="wrap">${line(r.bigLoss, x=>`${x.gf}-${x.ga} v ${esc(x.opp)}, ${x.comp}, season ${x.season}`)}</span></div>
+      <div class="kv"><span>Record gate</span><span class="wrap">${line(r.gate, x=>`${E.fmt(x.att)} v ${esc(x.opp)}, ${x.comp}, season ${x.season}`)}</span></div>
+      <div class="kv"><span>Record fee paid</span><span class="wrap">${line(r.feeIn, x=>`${money(x.amount)} for ${esc(x.name)} (${esc(x.other)}), season ${x.season}`)}</span></div>
+      <div class="kv"><span>Record fee received</span><span class="wrap">${line(r.feeOut, x=>`${money(x.amount)} for ${esc(x.name)} (${esc(x.other)}), season ${x.season}`)}</span></div>
+      <div class="kv"><span>Longest unbeaten run</span><span>${r.unbeaten.best? r.unbeaten.best+' league games (season '+r.unbeaten.bestSeason+')' : 'none yet'}${r.unbeaten.cur>=5? ', currently '+r.unbeaten.cur : ''}</span></div>
+      <h2>All-time scorers at the club</h2>${scorers.length? `<table class="tight"><tr><th class="n">#</th><th>Player</th><th class="n">Goals</th></tr>${scorers.map((x,i)=>`<tr><td class="n">${i+1}</td><td class="wrap">${esc(x.name)}</td><td class="n">${x.goals}</td></tr>`).join('')}</table>` : '<p class="dim">No goals yet.</p>'}
+      <p class="dim">Records count from when the game started.</p>
+      <h2>Roll of honour</h2>${honours||'<p class="dim">No seasons finished yet.</p>'}`,
+      action: `<button class="b quiet" data-a="back">Back</button>` };
+  },
+  help(){
+    const st = S.state;
+    return { main: `<h1>How to play</h1>
+      <p>You've been handed a Division 4 club and a modest bank balance. Get promoted, win cups, get to Europe, don't go bust. Each week you pick a team, do your business, then play the match.</p>
+      <h2>The week</h2><p>Home shows this week's fixture, the board's mood and the news. Squad is where you pick the XI, set a formation and choose how hard to train. Play the match from Home. On cup weeks you might have no game, which is a good week for hard training.</p>
+      <h2>Money</h2><p>Gates, sponsorship and television money in; wages, staff and ground upkeep out. Summer wages land in one lump at the season review. The overdraft limit is half your turnover; eight weeks past it and the bank has you sacked. Loans are separate and cheaper than the overdraft. Cash in the bank earns interest.</p>
+      <h2>Pre-season</h2><p>Each season starts with a sponsor to choose (safe money, per-win money, or a bigger cheque with a relegation clause) and a season ticket price. Cheap season tickets bring cash now but most of those fans would have paid on the gate anyway.</p>
+      <h2>Players</h2><p>Skill is what he is now; the ▲ is how far he could go, and you only see that with a scout. Players improve in training until about 30 (faster with a better coach), then decline. Fitness under 70 doubles the injury risk.</p>
+      <h2>Contracts</h2><p>Every player is on a deal of one to four years at a fixed wage. Renew early and you lock a cheap wage before he improves; leave it late and he asks for what he is worth now. Players in their last year start to worry from week 20. If you do nothing, your assistant re-signs them at about 10% over the odds, provided they are happy to stay; the ones who are not leave for nothing. Out-of-contract players from every club appear under Free in the market each summer. You can release a player at any time by paying off half his remaining contract.</p>
+      <h2>Mood</h2><p>Playing, winning and a fair wage keep a player happy; sitting on the bench, losing, being listed for sale, or a bigger club sniffing around do the opposite. Unhappy players play a little worse and eventually ask for a transfer, and a player who has asked to leave will not talk about a new deal until he cheers up.</p>
+      <h2>Bookings</h2><p>Five yellow cards in a season is a one-match ban, ten is two, a red card is one to three. Bans apply to the next game in any competition and the squad screen shows who is one booking away.</p>
+      <h2>Youth</h2><p>The academy (Club, Youth) brings in prospects each summer: more of them with a better grade, better ones with a good youth coach. They sit in the youth team on tiny wages until you promote them, which signs them to a cheap three-year deal. Nobody stays past 21.</p>
+      <h2>The market</h2><p>The weekly list is other clubs' fringe players at fair prices. The scout will search on a brief (position, age, skill, price) or you can browse any club and bid for anyone; clubs want well over the value and won't sell someone they just signed. List your own players and offers arrive over the following weeks. European clubs will come for your best player once you're in Division 3.</p>
+      <h2>Staff and ground</h2><p>Coach speeds up training, physio shortens injuries, scout widens the search and reveals potential. Ground safety falls slowly; let it slide and you'll get crowd trouble and fines. Build a stand only when the Ground tab says you're turning people away. Set your own ticket price there too.</p>
+      <h2>Cups and Europe</h2><p>League Cup in the first half of the season, FA Cup in the second, both straight knockout. Win the league for the European Cup, the FA Cup for the Cup Winners' Cup, or finish second or third for the UEFA Cup. European ties are two legs midweek on top of the league, with their own XI.</p>
+      <h2>Records and the hall of fame</h2><p>Records (from the Table screen) keeps your club's record win, gate and fees, all-time scorers and the roll of honour, and your own career points: trophies and promotions weighted by how hard they are. The hall of fame keeps every career from every game on this phone${LADDER_URL? ', and the ladder compares you with everyone else playing' : ''}.</p>
+      <h2>Challenge starts</h2><p>Besides the classic random Division 4 start: Skint (deep in the overdraft, twelve weeks to fix it), Relegation scrap (bottom of Division 1 at Christmas), Fallen giant (a famous club down in Division 4 with a wage bill to match) and Big job (the biggest club, title expected in year one). Only classic starts count on the "fastest" ladders.</p>
+      <h2>Several managers</h2><p>Up to eight on one phone, passing it round each week. You can bid for each other's players (they decide on their turn), rename each other's rivals, and the managers' table settles who's winning.</p>
+      <h2>Saves</h2><p>The game autosaves every week. Saves on the home screen keeps named copies you can load later, for instance before a cup final.</p>
+      ${LADDER_URL? `<h2>The ladder</h2><p>At each season end the game posts your nickname, career points and a few career facts (clubs, trophies, seasons) to a shared ladder so you can see how you compare. No account and nothing from your save beyond that. <button class="b" data-a="ladderopt" style="margin-top:8px">${ladderOn()? 'Posting to the ladder: on (tap to turn off)' : 'Posting to the ladder: off (tap to turn on)'}</button></p>` : ''}
+      <h2>Usage counts</h2><p>To see whether anyone plays past the first week, the game sends a handful of anonymous counts (game started, weeks 1 and 5 reached, season finished) with a random id. No names, no club names, nothing from your save. ${ANALYTICS_TOKEN? `<button class="b" data-a="analytics" style="margin-top:8px">${analyticsOn()? 'Sending counts: on (tap to turn off)' : 'Sending counts: off (tap to turn on)'}</button><button class="b" data-a="pingtest">Send a test ping</button>${S.pingResult? `<span class="dim">${esc(S.pingResult)}</span>`:''}` : '<span class="dim">Not active in this build.</span>'}</p>`,
+      action: `<button class="b quiet" data-a="${st? 'back' : 'title'}">Back</button>` };
+  },
+  saves(){
+    const st = S.state; const slots = S.slots||[];
+    const when = ts => { const d = new Date(ts); return d.toLocaleDateString(undefined,{day:'numeric',month:'short'})+' '+d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'}); };
+    const cur = st? `<h2>Save this game</h2><p class="dim">Saves the whole game${multi()? ' for every manager':''} as it is right now. Up to eight saves are kept; the oldest is dropped.</p>
+      <input id="slotname" maxlength="30" value="${esc(S.slotName||`${user().short}, season ${st.season} week ${st.week}`)}" autocomplete="off"><button class="b" data-a="saveslot">Save</button>` : '';
+    const list = slots.length? slots.map(s=>`<div style="margin:12px 0 4px"><span class="hot">${esc(s.name)}</span><br><span class="dim">${esc(s.club)}, ${esc(s.manager)}${s.managers>1? ' +'+(s.managers-1) : ''}. Season ${s.season}, week ${s.week}. ${when(s.ts)}</span></div>
+      <div class="grid2"><button class="b" data-a="loadslot" data-i="${s.id}">Load</button><button class="b ${S.confirmDel===s.id?'on':''}" data-a="delslot" data-i="${s.id}">${S.confirmDel===s.id? 'Really delete?' : 'Delete'}</button></div>`).join('') : '<p class="dim">No saved games yet.</p>';
+    return { main: `<h1>Saved games</h1>${cur}<h2>Saved games</h2><p class="dim">Loading one replaces the game in progress. Cowards' corner is open.</p>${list}`,
+      action: `<button class="b quiet" data-a="${st? 'back' : 'title'}">Back</button>` };
+  },
+  pass(){
+    const st = S.state; const m = mgr(); const c = st.clubs[m.userClub];
+    return { main: `<div class="title"><div class="logo">${esc(m.managerName)}</div><div class="sub">${esc(c.name)}, Division ${c.div}. Week ${st.week}.</div>
+      <p class="dim">${S.md && S.md.passing? 'Matchday. ' : ''}Pass the phone over. Nobody else should be looking.</p>
+      <button class="b" data-a="taketurn">I'm ${esc(m.managerName)}</button></div>` };
+  },
+  weekmulti(){
+    const st = S.state; const R = S.results;
+    const lines = E.activeManagers(st).map(m=>{ const c = st.clubs[m.userClub]; const r = R.results.find(x=>x.home.id===c.id||x.away.id===c.id);
+      if (!r){ const er0 = R.results.find(x=>x.euro && (x.home.id===c.id||x.away.id===c.id)); return `<div class="kv"><span class="wrap"><span class="hot">${esc(m.managerName)}</span> ${esc(c.short)}</span><span class="dim">no game</span></div>${er0? `<div class="kv"><span class="wrap"><span class="dim">${euroComp(er0.euro.comp).short}</span> ${esc(er0.home.short)} v ${esc(er0.away.short)}</span><span>${er0.gH}-${er0.gA}${er0.extra?'*':''}</span></div>`:''}`; }
+      const home = r.home.id===c.id; const won = home? r.gH>r.gA||r.extra==='pens-H' : r.gA>r.gH||r.extra==='pens-A'; const drew = r.gH===r.gA && !r.extra;
+      const er = R.results.find(x=>x.euro && (x.home.id===c.id||x.away.id===c.id));
+      const euroLine = er? `<div class="kv"><span class="wrap"><span class="dim">${euroComp(er.euro.comp).short}</span> ${esc(er.home.short)} v ${esc(er.away.short)}</span><span>${er.gH}-${er.gA}${er.extra?'*':''}${er.agg? ` <span class="dim">(agg)</span>`:''}</span></div>` : '';
+      return `<div class="kv"><span class="wrap"><span class="hot">${esc(m.managerName)}</span> ${esc(r.home.short)} v ${esc(r.away.short)}</span><span class="${won?'hot':''}">${r.gH}-${r.gA}${r.extra?'*':''} ${won?'W':drew?'D':'L'}</span></div>${euroLine}`; }).join('');
+    const label = R.type==='cup'? E.CFG.CUPS[R.cup].name : 'League';
+    return { main: `<h1>Week ${R.week}: ${label}</h1>${lines}${sleighBogey(st)}<button class="b" data-a="results" style="margin-top:12px">All results</button><button class="b" data-a="standings">Managers' table</button>`,
+      action: `<button class="b" data-a="nextround">${S.pendingReview? 'Season over. Standings' : 'Next week'}</button>` };
+  },
+  standings(){
+    const st = S.state; const rows = E.standings(st).map((r,i)=>`<tr class="${r.m===mgr()?'me':''}"><td class="n">${i+1}</td><td class="wrap">${esc(r.m.managerName)}<br><span class="dim">${esc(r.c.short)}</span></td><td class="n">D${r.c.div}</td><td class="n">${ordinal(r.pos)}</td><td class="n">${money(r.c.balance)}</td><td class="n">${r.m.trophies.league}/${r.m.trophies.lc}/${r.m.trophies.fa}/${r.m.trophies.promo}/${(r.m.trophies.ec||0)+(r.m.trophies.cwc||0)+(r.m.trophies.uefa||0)}</td></tr>`).join('');
+    const retired = st.managers.filter(m=>m.retired).map(m=>esc(m.managerName)).join(', ');
+    return { main: `<h1>Managers' table</h1><table class="tight"><tr><th class="n">#</th><th>Manager</th><th class="n">Div</th><th class="n">Pos</th><th class="n">Bank</th><th class="n">Ttl/LC/FA/Up/Eur</th></tr>${rows}</table>
+      <p class="dim" style="margin-top:8px">Ranked by division, then league position, then bank balance. Trophies: titles, League Cups, FA Cups, promotions, European trophies.</p>${retired? `<p class="dim">Walked away: ${retired}.</p>`:''}`,
+      action: `<button class="b quiet" data-a="back">Back</button>` };
+  },
+  home(){
+    const st = S.state, u = user();
+    const nf = E.nextFixture(st);
+    const exp = E.expectedPos(st,u);
+    let fix;
+    if (nf.type==='none') fix = `<p>No match this week. You're out of the ${E.CFG.CUPS[nf.cup].name}, so the ground stays quiet. A good week for hard training.</p>`;
+    else {
+      const comp = nf.type==='cup'? `${E.CFG.CUPS[nf.cup].name} ${E.CUP_ROUND_NAMES[nf.round]}` : 'League';
+      const where = nf.neutral? 'at a neutral ground' : nf.home? 'at home' : 'away';
+      fix = `<p>${comp}: <span class="hot">${esc(nf.opp.name)}</span> ${where}<br><span class="dim">Division ${nf.opp.div}, ${nf.opp.div===u.div? 'currently '+ordinal(nf.opp.leaguePos) : 'a '+(nf.opp.div<u.div?'bigger':'smaller')+' club'}</span></p>`;
+    }
+    const es = E.euroSlot(st.week); const et = inEurope(u)? E.euroTieFor(st, u.id) : null;
+    const euroLine = (es && et && ((es.final && et.final) || (!es.final && !et.final && et.round===es.slot)))? `<p>Also this week: <span class="hot">${fmtEuroTie(et)}</span>. Two games in a week; pick your European XI on the Squad screen.</p>` : '';
+    const table = E.tableFor(st,u.div);
+    const pos = st.week>1? `${ordinal(u.leaguePos)} in Division ${u.div}, ${u.st.pts} pts from ${u.st.p}` : `Season ${st.season}, pre-season`;
+    const news = st.news.filter(n=>n.s===st.season || st.week<=2).slice(0,8);
+    const pre = st.preseason && st.preseason.pending;
+    const firstSeason = st.season===1;
+    const preLine = !pre? '' : firstSeason? `<p class="dim">Sponsor and season tickets will use safe defaults at kick-off. <button class="b small" data-a="preseason" style="display:inline;width:auto">Set them yourself</button></p>` : `<p class="hot">Pre-season: the sponsor and season ticket prices need sorting before the first game.</p>`;
+    const updNote = seenVersion()!==APP_VERSION? `<p class="hot">Updated to ${APP_VERSION}. <button class="b small" data-a="whatsnew" style="display:inline;width:auto">See what's new</button></p>` : '';
+    return { main: `<h1>This week</h1>${updNote}${preLine}${fix}${euroLine}
+      <div class="kv"><span>League</span><span>${pos}</span></div>
+      <div class="kv"><span>Board</span><span>${E.boardMood(u.confidence)}, expect ${ordinal(exp)}</span></div>
+      <div class="kv"><span>League Cup</span><span>${cupStatus(u,'lc')}</span></div>
+      <div class="kv"><span>FA Cup</span><span>${cupStatus(u,'fa')}</span></div>
+      ${u.euro? `<div class="kv"><span>${euroComp(u.euro.comp).short}</span><span>${euroStatusText(u)}</span></div>` : ''}
+      ${st.sponsor? `<div class="kv"><span>Sponsor</span><span>${esc(st.sponsor.name)}</span></div>`:''}
+      <div class="kv"><span>Selected</span><span>${selectionSummary()}</span></div>
+      ${u.build? `<div class="kv"><span>Builders</span><span>${E.fmt(u.build.seats)} seats, ${u.build.weeksLeft} wk to go</span></div>`:''}
+      ${u.safety<E.CFG.CROWD_TROUBLE_BELOW? `<div class="kv"><span>Ground</span><span class="hot">${u.safety<E.CFG.SAFETY_RESTRICT_BELOW?'capacity restricted':'crowd trouble risk'}</span></div>`:''}
+      ${st.jobOffer!==null? jobOfferPanel() : ''}
+      <div class="grid2" style="grid-template-columns:repeat(4,1fr);margin-top:12px"><button class="b" data-a="fixtures" style="padding:12px 4px;text-align:center">Fixtures</button><button class="b" data-a="results" style="padding:12px 4px;text-align:center">Results</button><button class="b" data-a="saves" style="padding:12px 4px;text-align:center">Saves</button><button class="b ${S.confirmResign?'on':''}" data-a="resign" style="padding:12px 4px;text-align:center">${S.confirmResign?'Really?':'Resign'}</button></div>
+      <h2>News</h2>${news.length? `<ul class="news">${news.map(n=>`<li class="${n.kind==='warn'?'warn':''}"><span class="dim">Wk ${n.w}</span> ${esc(n.text)}</li>`).join('')}</ul>` : '<p class="dim">Nothing yet.</p>'}
+      <p class="dim" style="margin-top:14px">Manager: ${esc(st.managerName)}. <button class="b small" data-a="help" style="display:inline;width:auto;margin-top:6px">How to play</button> ${FEEDBACK_URL? `<a class="b small" data-track="feedback_opened" href="${esc(FEEDBACK_URL)}" target="_blank" rel="noopener" style="display:inline;width:auto;margin-top:6px;text-decoration:none">Send feedback</a> `:''}${multi()? `<button class="b small ${S.confirmRetire?'on':''}" data-a="retire" style="display:inline;width:auto;margin-top:6px">${S.confirmRetire?'Really retire? Tap again':'Retire from the game'}</button>` : `<button class="b small ${S.confirmQuit?'on':''}" data-a="quit" style="display:inline;width:auto;margin-top:6px">${S.confirmQuit?'Really abandon? Tap again':'Abandon this game'}</button>`}</p>`,
+      action: (pre && !firstSeason)? `<button class="b" data-a="preseason">Pre-season decisions</button>` : multi()? `<button class="b" data-a="ready">${nf.type==='none'? 'Ready (no game this week)' : 'Ready for kick-off'}</button>` : nf.type==='none'? `<button class="b" data-a="play">Skip to next week</button>` : `<button class="b" data-a="play">Play the match</button>` };
+  },
+  preseason(){
+    const st = S.state, u = user(); const ps = st.preseason;
+    if (!ps) return SCREENS.home();
+    const typeText = { safe: 'Paid in full now. No strings.', perwin: 'Paid per league win, week by week. Back yourselves.', bold: 'Bigger cheque now, but relegation (or bottom four in Division 4) means paying most of it back.' };
+    const sponsor = ps.sponsorDone? `<p>Signed with <span class="hot">${esc(st.sponsor.name)}</span>: ${st.sponsor.type==='perwin'? money(st.sponsor.perWin)+' per league win' : money(st.sponsor.amount)+(st.sponsor.type==='bold'? ', '+money(st.sponsor.clawback)+' back if you go down' : '')}.</p>`
+      : ps.offers.map((o,i)=>`<button class="b" data-a="sponsor" data-i="${i}"><span class="hot">${esc(o.name)}</span><br>${o.type==='perwin'? money(o.perWin)+' per win' : money(o.amount)+(o.type==='bold'? ', clawback '+money(o.clawback) : '')}<br><span class="dim">${typeText[o.type]}</span></button>`).join('');
+    const tickets = ps.ticketsDone? `<p>${E.fmt(st.seasonTicket.sold)} sold at ${money(st.seasonTicket.price)}, ${money(st.seasonTicket.sold*st.seasonTicket.price)} in the bank.</p>`
+      : `<p class="dim">Match tickets are £${E.ticketOf(u)} (change that on the Ground tab first if you want to). Holders get all 15 home league games. Cheap tickets bring cash now but most of those fans would have paid on the gate anyway.</p>` +
+        [8,10,12,15].map(m=>{ const f = E.seasonTicketForecast(st,u,m); return `<button class="b" data-a="tickets" data-m="${m}">£${f.price} <span class="dim">(${m} games' worth)</span><br><span class="dim">about ${E.fmt(f.sold)} sold, ${money(f.income)} now</span></button>`; }).join('');
+    return { main: `<h1>Pre-season, season ${st.season}</h1><h2>Shirt sponsor</h2>${sponsor}<h2>Season tickets</h2>${tickets}`,
+      action: ps.pending? `<button class="b quiet" data-a="home">Decide later (defaults apply at kick-off)</button>` : `<button class="b" data-a="home">Done</button>` };
+  },
+  squad(){
+    const st = S.state, u = user();
+    if (!inEurope(u)) S.xiMode = 'league';
+    const euroMode = S.xiMode==='euro';
+    const ids = sel();
+    const fmName = euroMode? (u.euroFormation||u.formation) : u.formation;
+    const xi = E.buildXI(st, u, ids, fmName);
+    const slotOf = {}; xi.forEach(x=>slotOf[x.p.id]=x.slot);
+    const str = E.teamStrength(xi);
+    const sq = E.squadOf(st,u).slice().sort((a,b)=>posOrder(a.pos)-posOrder(b.pos)||b.skill-a.skill);
+    const fms = Object.keys(E.FORMATIONS);
+    const rows = sq.map(p=>{
+      const on = ids.includes(p.id) && p.injury===0;
+      const inXI = slotOf[p.id];
+      const oop = inXI && inXI!==p.pos? `<span class="mark">@${inXI}</span>` : '';
+      const tags = [`${p.years<=1? '<span class="mark">expires</span>' : p.years+'y'}`, moodTag(p), p.yellows>=4? `<span class="mark">${p.yellows}Y</span>` : p.yellows? p.yellows+'Y' : ''].filter(Boolean).join(' · ');
+      return `<tr class="tap ${on?'sel':''}" data-a="toggle" data-id="${p.id}"><td>${on?'<span class="mark">■</span>':'□'}</td><td>${p.pos}</td><td class="wrap">${esc(p.name)} ${oop}${p.listed!==null?'<span class="pill">sale</span>':''}${p.requested?'<span class="pill">wants out</span>':''}<br><span class="dim" style="font-size:12px">${tags}</span></td><td class="n">${p.skill}${potTag(p)}</td><td class="n">${p.age}</td><td class="n">${p.ban>0? `<span class="mark">ban ${p.ban}</span>` : p.injury>0?`<span class="mark">inj ${p.injury}</span>`:p.fitness}</td><td><button class="b small" data-a="player" data-id="${p.id}">›</button></td></tr>`;
+    }).join('');
+    const modeBar = inEurope(u)? `<div class="grid2"><button class="b ${!euroMode?'on':''}" data-a="ximode" data-m="league">League XI</button><button class="b ${euroMode?'on':''}" data-a="ximode" data-m="euro">European XI</button></div><p class="dim">${euroMode? 'This side plays your '+euroComp(u.euro.comp).name+' ties. Leave it empty and the league XI is used.' : 'This side plays league and domestic cup games.'}</p>` : '';
+    return { main: `<h1>Squad and tactics</h1>${modeBar}
+      <div class="grid3">${fms.map(f=>`<button class="b ${fmName===f?'on':''}" data-a="formation" data-f="${f}">${f}</button>`).join('')}</div>
+      <div class="row"><button class="b" data-a="autopick">Pick the best XI</button><button class="b" data-a="clearpick">Clear</button></div>
+      <p class="dim" style="margin:12px 0 6px">Training this week</p>
+      <div class="grid3">${['light','normal','hard'].map(k=>`<button class="b ${u.training===k?'on':''}" data-a="training" data-t="${k}">${{light:'Light',normal:'Normal',hard:'Hard'}[k]}</button>`).join('')}</div>
+      <p class="dim">${{light:'Rest and recover. Fitness comes back faster, nobody improves much.',normal:'A normal week. Younger players edge forward if the coach is any good.',hard:'Push them. Faster improvement, tired legs and the odd training knock.'}[u.training]} ${u.staff.scout>=1?'':'Hire a scout to see who has room to improve.'}</p>
+      <p class="dim">Team: defence ${Math.round(str.defEff)}, midfield ${Math.round(str.mid)}, attack ${Math.round(str.att)}. ${xi.length}/11 picked${ids.length>11?', extras sit out':''}.</p>
+      <table><tr><th></th><th>Pos</th><th>Player</th><th class="n">Sk</th><th class="n">Age</th><th class="n">Fit</th><th></th></tr>${rows}</table>
+      <p class="dim" style="margin-top:10px">Tap a row to pick or drop. ■ picked, @ playing out of position. Fitness under 70 doubles the injury risk. Five bookings is a one-match ban, ten is two. Contract years and mood under each name.</p>` };
+  },
+  player(){
+    const st = S.state, u = user(), p = st.players[S.pid];
+    if (!p) return SCREENS.squad();
+    const mine = p.club===u.id;
+    const club = st.clubs[p.club];
+    if (p.club===-2) return freeAgentPage(p);
+    if (p.reserve && mine) return reservePage(p);
+    if (!club) return { main: `<h1>${esc(p.name)}</h1><p class="dim">He has left the league.</p>`, action: `<button class="b quiet" data-a="back">Back</button>` };
+    const on = sel().includes(p.id);
+    let actions = '';
+    if (mine){
+      actions = `<button class="b" data-a="toggle" data-id="${p.id}" data-back="1">${on?'Drop from the XI':'Pick for the XI'}</button>`;
+      if (p.listed===null) actions += `<h2>Put up for sale</h2><p class="dim">Valued at ${money(p.value)}. Cheaper sells faster.</p><div class="grid3">
+        <button class="b" data-a="setamt" data-amt="${Math.round(p.value*0.8/500)*500}">Quick<br><span class="dim">${money(Math.round(p.value*0.8/500)*500)}</span></button>
+        <button class="b" data-a="setamt" data-amt="${p.value}">Fair<br><span class="dim">${money(p.value)}</span></button>
+        <button class="b" data-a="setamt" data-amt="${Math.round(p.value*1.3/500)*500}">Dear<br><span class="dim">${money(Math.round(p.value*1.3/500)*500)}</span></button></div>
+        <input id="amt" inputmode="numeric" value="${p.value}" autocomplete="off"><button class="b" data-a="list" data-id="${p.id}">List him at this price</button>`;
+      else actions += `<p>Listed at ${money(p.listed)}. Offers arrive over the coming weeks.</p><button class="b" data-a="unlist" data-id="${p.id}">Take off the market</button>`;
+      actions += contractPanel(p);
+      actions += `<h2>Rename</h2><input id="pname" maxlength="24" value="${esc(p.name)}" autocomplete="off"><button class="b" data-a="renameplayer" data-id="${p.id}">Change his name</button>`;
+    } else {
+      const fair = Math.round(p.value*1.3/500)*500, gen = Math.round(p.value*1.65/500)*500;
+      const tl = st.transferList.find(t=>t.pid===p.id);
+      const rival = E.managerOf(st, p.club);
+      if (rival){
+        const ask = p.listed!==null? p.listed : null;
+        const start = ask!==null? ask : p.value;
+        actions = `<h2>Bid for ${esc(rival.managerName)}'s player</h2><p class="dim">${ask!==null? `Listed at ${money(ask)}. ` : ''}Valued at ${money(p.value)}. ${esc(rival.managerName)} decides on their turn and the money moves when they accept. Bid whatever you like; it's between the two of you.</p>
+          <div class="grid3">${[Math.round(p.value*0.5/500)*500, start, Math.round(p.value*1.5/500)*500].map(a=>`<button class="b" data-a="setamt" data-amt="${a}">${money(a)}</button>`).join('')}</div>
+          <input id="amt" inputmode="numeric" value="${start}" autocomplete="off"><button class="b" data-a="bid" data-id="${p.id}">Send the bid</button>`;
+      } else
+      actions = (tl? `<button class="b" data-a="buy" data-id="${p.id}" data-back="1">Sign him for ${money(tl.price)}</button>` : '') + `<h2>${tl?'Or haggle':'Make a bid'}</h2><p class="dim">${esc(club.name)} value him at ${money(p.value)}. Clubs rarely sell for less than that, and they hate selling at all. Around ${money(fair)} might work; ${money(gen)} is hard to refuse.</p>
+        <div class="grid3">${[p.value, fair, gen].map(a=>`<button class="b" data-a="setamt" data-amt="${a}">${money(a)}</button>`).join('')}</div>
+        <input id="amt" inputmode="numeric" value="${fair}" autocomplete="off"><button class="b" data-a="bid" data-id="${p.id}">Bid this amount</button>`;
+    }
+    return { main: `<h1>${esc(p.name)}</h1>
+      <div class="kv"><span>Club</span><span>${esc(club? club.name : 'Abroad')}${club && club.div===0? ' <span class="dim">(Europe)</span>':''}</span></div>
+      <div class="kv"><span>Position</span><span>${p.pos}</span></div>
+      <div class="kv"><span>Skill</span><span>${p.skill}${potTag(p)}</span></div>
+      ${E.canSeePot(st,p)? `<div class="kv"><span>Potential</span><span>${p.pot>p.skill? `could reach ${p.pot}` : p.age>=30? 'past his best' : 'as good as he gets'}</span></div>` : ''}
+      <div class="kv"><span>Age</span><span>${p.age}</span></div>
+      <div class="kv"><span>Fitness</span><span>${p.injury>0? `injured, ${p.injury} wk` : p.fitness}</span></div>
+      ${mine? `<div class="kv"><span>Mood</span><span>${E.moraleWord(p.morale||60)}${p.requested? ', has asked to leave' : p.unsettled? ', unsettled by '+esc(p.unsettled.club) : ''}</span></div>` : ''}
+      <div class="kv"><span>Discipline</span><span>${p.ban>0? `<span class="hot">banned for ${p.ban} match${p.ban>1?'es':''}</span>, ` : ''}${p.yellows||0} yellow${(p.yellows||0)===1?'':'s'}${p.reds? ', '+p.reds+' red'+(p.reds>1?'s':'') : ''}</span></div>
+      <div class="kv"><span>Wage</span><span>${money(p.wage)} a week</span></div>
+      <div class="kv"><span>Contract</span><span>${p.years<=1? '<span class="hot">expires this summer</span>' : p.years+' years left'}</span></div>
+      <div class="kv"><span>Value</span><span>${money(p.value)}</span></div>
+      <div class="kv"><span>This season</span><span>${p.apps} apps, ${p.goals} goals</span></div>
+      ${p.signedS!==undefined? `<div class="kv"><span>Signed</span><span>season ${p.signedS}, week ${p.signedW}${p.paid? ' for '+money(p.paid) : ''}</span></div>` : ''}
+      <div style="height:12px"></div>${actions}`,
+      action: `<button class="b quiet" data-a="back">Back</button>` };
+  },
+  transfers(){
+    const st = S.state, u = user(); const t = S.tab.transfers;
+    const tabs = `<div class="grid2" style="grid-template-columns:repeat(4,1fr)">${['list','free','offers','scout'].map(k=>`<button class="b ${t===k?'on':''}" data-a="ttab" data-t="${k}" style="padding:10px 2px;font-size:12px;text-align:center">${{list:'For sale',free:`Free${E.freeAgentsList(st).length? ' ('+E.freeAgentsList(st).length+')':''}`,offers:`Offers${st.offers.length?' ('+st.offers.length+')':''}`,scout:'Scout'}[k]}</button>`).join('')}</div>`;
+    let body = '';
+    if (t==='free'){
+      const fa = E.freeAgentsList(st);
+      body = `<p class="dim">Out of contract and looking for a club. No fee beyond a signing-on bonus, but they want their wages. The best go quickly, and the rest drift out of the game by week ${E.CFG.FREE_AGENT_WEEKS}.</p>` + (fa.length? `<table><tr><th>Pos</th><th>Player</th><th class="n">Sk</th><th class="n">Age</th><th class="n">Wants</th></tr>` +
+        fa.map(p=>`<tr class="tap" data-a="player" data-id="${p.id}"><td>${p.pos}</td><td class="wrap">${esc(p.name)}<br><span class="dim">${p.lastClubName? 'ex '+esc(p.lastClubName) : 'unattached'}</span></td><td class="n">${p.skill}${potTag(p)}</td><td class="n">${p.age}</td><td class="n">${money(E.contractAsk(st,p))}/wk</td></tr>`).join('') + `</table>` : `<p class="dim">Nobody is without a club at the moment.</p>`);
+    } else if (t==='list'){
+      body = `<p class="dim">Squad ${u.players.length}/20. Overdraft limit ${money(E.overdraftLimit(st, u))}.</p><table><tr><th>Pos</th><th>Player</th><th class="n">Sk</th><th class="n">Age</th><th class="n">Price</th></tr>`+
+        st.transferList.filter(tl=>{ const p = st.players[tl.pid]; return p && p.club>=0 && p.club!==u.id; }).map(tl=>{ const p = st.players[tl.pid]; const c = st.clubs[p.club]; return `<tr class="tap" data-a="player" data-id="${p.id}"><td>${p.pos}</td><td class="wrap">${esc(p.name)}<br><span class="dim">${esc(c.short)}, D${c.div}</span></td><td class="n">${p.skill}${potTag(p)}</td><td class="n">${p.age}</td><td class="n">${money(tl.price)}<br><button class="b small" data-a="buy" data-id="${p.id}">Buy</button></td></tr>`; }).join('')+`</table>${humanMarket()}<p class="dim" style="margin-top:10px">The list changes every week. ${['A useless scout brings you six names and no opinions.','An average scout brings eight names.','A good scout brings ten names and picks out a couple with room to grow.','An excellent scout brings twelve names and can tell you about any player in the game.'][u.staff.scout]}</p>`;
+    } else if (t==='offers'){
+      body = st.offers.length? st.offers.map((o,i)=>{ const p = st.players[o.pid]; if (!p || p.club!==u.id) return ''; return `<p><span class="hot">${esc(o.name)}</span> offer <span class="hot">${money(o.amount)}</span> for ${esc(p.name)} (${p.pos} ${p.skill}, valued ${money(p.value)}).${o.human!==undefined? ' <span class="dim">A rival manager. They pay when you accept.</span>':''}<br><span class="dim">Expires week ${o.expires}.</span></p><div class="grid2"><button class="b" data-a="accept" data-i="${i}">Accept</button><button class="b" data-a="reject" data-i="${i}">Reject</button></div>`; }).join('')
+        : `<p class="dim">No offers on the table. Put a player up for sale from his page in the Squad screen and clubs will come sniffing.</p>`;
+    } else {
+      const sc = S.tab.scout;
+      if (sc.club===undefined || sc.club===null){
+        const div = sc.div!==undefined? sc.div : u.div;
+        body = scoutBrief() + `<h2>Or browse a club</h2><p class="dim">Bid for any player in the game. You'll pay over the odds.${u.staff.scout<2? ' A good scout can also browse Europe.' : ''}</p><div class="grid2" style="grid-template-columns:repeat(5,1fr)">${[1,2,3,4].map(d=>`<button class="b ${div===d?'on':''}" data-a="scoutdiv" data-d="${d}" style="padding:10px 2px;font-size:12px;text-align:center">Div ${d}</button>`).join('')}<button class="b ${div===0?'on':''}" data-a="scoutdiv" data-d="0" style="padding:10px 2px;font-size:12px;text-align:center">Europe</button></div>`+
+          (div===0 && u.staff.scout<2? `<p class="dim">Your scout doesn't have the contacts abroad. Hire a good one.</p>` :
+          E.divClubs(st,div).filter(c=>c.id!==u.id).sort((a,b)=>div===0? b.rating-a.rating : a.name.localeCompare(b.name)).map(c=>{ const hm = E.managerOf(st,c.id); return `<button class="b" data-a="scoutclub" data-c="${c.id}">${esc(c.name)}${div===0? ` <span class="dim">${c.rating}</span>`:''}${hm? ` <span class="dim">(${esc(hm.managerName)})</span>`:''}</button>`; }).join(''));
+      } else {
+        const c = st.clubs[sc.club];
+        const sq = E.squadOf(st,c).slice().sort((a,b)=>posOrder(a.pos)-posOrder(b.pos)||b.skill-a.skill);
+        body = `<button class="b" data-a="scoutback">‹ ${esc(c.name)}, ${c.div? 'Division '+c.div : 'Europe'}</button><table><tr><th>Pos</th><th>Player</th><th class="n">Sk</th><th class="n">Age</th><th class="n">Value</th></tr>`+
+          sq.map(p=>`<tr class="tap" data-a="player" data-id="${p.id}"><td>${p.pos}</td><td class="wrap">${esc(p.name)}</td><td class="n">${p.skill}${potTag(p)}</td><td class="n">${p.age}</td><td class="n">${money(p.value)}</td></tr>`).join('')+`</table>`;
+      }
+    }
+    return { main: `<h1>Transfer market</h1>${tabs}${body}` };
+  },
+  table(){
+    const st = S.state, u = user(); const d = S.tab.table || u.div;
+    const tb = E.tableFor(st,d);
+    const rows = tb.map((c,i)=>`<tr class="${c.id===u.id?'me':''} ${i===1&&d>1?'line-promo':''} ${i===14&&d<4?'line-releg':''}"><td class="n">${i+1}</td><td class="wrap">${esc(c.short)}</td><td class="n">${c.st.p}</td><td class="n">${c.st.w}</td><td class="n">${c.st.d}</td><td class="n">${c.st.l}</td><td class="n">${c.st.gf-c.st.ga>0?'+':''}${c.st.gf-c.st.ga}</td><td class="n">${c.st.pts}</td></tr>`).join('');
+    const cupLines = ['lc','fa'].map(k=>`<h2>${E.CFG.CUPS[k].name}</h2><p class="dim">${st.cups[k].history.length? cupSummary(k) : 'First round draw: '+cupTie(u,k)}</p>`).join('') + euroSection();
+    return { main: `<h1>League tables</h1><div class="grid2" style="grid-template-columns:repeat(4,1fr)">${[1,2,3,4].map(x=>`<button class="b ${d===x?'on':''}" data-a="tdiv" data-d="${x}">Div ${x}</button>`).join('')}</div>
+      <table class="tight"><tr><th class="n">#</th><th>Club</th><th class="n">P</th><th class="n">W</th><th class="n">D</th><th class="n">L</th><th class="n">GD</th><th class="n">Pts</th></tr>${rows}</table>
+      <p class="dim" style="margin-top:8px">Top two go up, bottom two go down.</p><div class="grid2"><button class="b" data-a="records">Records</button><button class="b" data-a="hof">Hall of fame</button></div>${multi()? `<button class="b" data-a="standings">Managers' table</button>`:''}${scorersTable(d)}${cupLines}` };
+  },
+  club(){
+    const t = S.tab.club;
+    const tabs = `<div class="grid2" style="grid-template-columns:repeat(5,1fr)">${['money','ground','staff','youth','name'].map(k=>`<button class="b ${t===k?'on':''}" data-a="ctab" data-t="${k}" style="padding:10px 2px;font-size:12px;text-align:center">${{money:'Money',ground:'Ground',staff:'Staff',youth:'Youth',name:'Name'}[k]}</button>`).join('')}</div>`;
+    const body = t==='ground'? groundScreen() : t==='staff'? staffScreen() : t==='youth'? youthScreen() : t==='name'? nameScreen() : SCREENS.money().main;
+    return { main: tabs + body };
+  },
+  money(){
+    const st = S.state, u = user();
+    const wages = E.squadOf(st,u).reduce((s,p)=>s+p.wage,0);
+    const ground = Math.round(u.capacity*E.CFG.GROUND_COST_PER_SEAT);
+    const ledger = u.ledger.slice(-25).reverse();
+    const rn = r => r>=6?'won':r===5?'final':r===4?'SF':r===3?'QF':'R'+(r+1);
+    const hist = u.history.slice().reverse().map(h=>`<div class="kv"><span>Season ${h.season}</span><span>Div ${h.div}, ${ordinal(h.pos)}, ${h.pts} pts, LC ${rn(h.lc||0)}, FA ${rn(h.fa||0)}</span></div>`).join('');
+    return { main: `<h1>Finances</h1>
+      <div class="kv"><span>Balance</span><span class="${u.balance<0?'hot':''}">${money(u.balance)}</span></div>
+      <div class="kv"><span>Overdraft limit</span><span>${money(E.overdraftLimit(st, u))}</span></div>
+      <div class="kv"><span>Turnover</span><span>about ${money(Math.round(E.turnover(st,u)/1000)*1000)} a season</span></div>
+      <div class="kv"><span>Player wages</span><span>${money(wages)} a week</span></div>
+      <div class="kv"><span>Staff wages</span><span>${money(E.staffWages(u))} a week</span></div>
+      ${(u.reserves||[]).length? `<div class="kv"><span>Youth wages</span><span>${money((u.reserves||[]).length*E.CFG.YOUTH_WAGE)} a week</span></div>`:''}
+      <div class="kv"><span>Ground upkeep</span><span>${money(ground)} a week</span></div>
+      <div class="kv"><span>Ground</span><span>${E.fmt(u.capacity)} capacity</span></div>
+      <div class="kv"><span>Ticket price</span><span>£${E.ticketOf(u)} <span class="dim">(set it on the Ground tab)</span></span></div>
+      <div class="kv"><span>Sponsor</span><span>${st.sponsor? esc(st.sponsor.name)+(st.sponsor.type==='perwin'? ', '+money(st.sponsor.perWin)+' a win' : st.sponsor.type==='bold'? ', clawback '+money(st.sponsor.clawback) : '') : 'not yet signed'}</span></div>
+      <div class="kv"><span>Season tickets</span><span>${st.seasonTicket? E.fmt(st.seasonTicket.sold)+' at £'+st.seasonTicket.price : 'not yet on sale'}</span></div>
+      <h2>Bank loan</h2>
+      ${st.loan? `<p>${money(st.loan.amount)} borrowed, ${money(st.loan.weekly)} a week, ${st.loan.weeksLeft} payments left.</p><button class="b" data-a="repay">Settle it now for ${money(Math.round(st.loan.weekly*st.loan.weeksLeft*0.95/500)*500)}</button>`
+        : `<p class="dim">Up to ${money(E.loanMax(st, u))} at 12%, repaid over 36 weeks. Separate from the overdraft, which is ${money(E.overdraftLimit(st, u))}.</p><div class="grid3">${[0.25,0.5,1].map(f=>{ const mx = E.loanMax(st, u); const a = f===1? mx : Math.floor(mx*f/5000)*5000; return `<button class="b" data-a="loan" data-amt="${a}">${money(a)}<br><span class="dim">${money(Math.round(a*1.12/36))}/wk</span></button>`; }).join('')}</div>`}
+      <p class="dim" style="margin-top:10px">Money in the bank earns 0.1% a week (about 5% a year). Anything below zero costs 0.25% a week. Eight weeks past the overdraft limit and the bank pulls the plug. The limit is half your turnover (gates, television and sponsorship), so it grows as the club does.</p>
+      <h2>Recent</h2>${ledger.length? ledger.map(l=>`<div class="kv"><span class="dim">Wk ${l.w}</span><span>${esc(l.label)} <span class="${l.amount<0?'':'hot'}">${money(l.amount)}</span></span></div>`).join('') : '<p class="dim">Nothing yet.</p>'}
+      ${hist? `<h2>Past seasons</h2>${hist}`:''}` };
+  },
+  fixtures(){
+    const st = S.state, u = user();
+    const rows = st.schedule.map((wk,i)=>{
+      const w = i+1; const r = st.userResults[w];
+      let comp, oppName, where, res = '';
+      if (r){
+        const opp = st.clubs[r.opp]; comp = r.cup? E.CFG.CUPS[r.cup].short+' '+ROUND_SHORT[r.round] : 'League';
+        oppName = opp.short; where = r.home? 'H':'A';
+        const won = r.gF>r.gA || (r.extra==='pens-H'&&r.home) || (r.extra==='pens-A'&&!r.home);
+        res = `<span class="${won?'hot':''}">${r.gF}-${r.gA}${r.extra?'*':''}</span>`;
+        if (r.club!==u.id) oppName += ` <span class="dim">(with ${esc(st.clubs[r.club].short)})</span>`;
+      } else if (wk.type==='league'){
+        const f = st.fixtures[u.div][wk.round].find(x=>x.h===u.id||x.a===u.id);
+        comp = 'League'; oppName = st.clubs[f.h===u.id? f.a : f.h].short; where = f.h===u.id? 'H':'A';
+      } else {
+        const cup = E.CFG.CUPS[wk.cup]; comp = cup.short+' '+ROUND_SHORT[wk.round];
+        const mine = u.cup[wk.cup];
+        const t = (!mine.out && wk.round===mine.round)? st.cups[wk.cup].ties.find(x=>x.h===u.id||x.a===u.id) : null;
+        if (mine.out){ oppName = '<span class="dim">out</span>'; where=''; }
+        else if (t){ oppName = st.clubs[t.h===u.id? t.a : t.h].short; where = wk.round===5? 'N' : t.h===u.id? 'H':'A'; }
+        else { oppName = '<span class="dim">if still in</span>'; where=''; }
+      }
+      let euroRow = '';
+      const ue = (st.userEuro||{})[w]; const slot = E.euroSlot(w);
+      if (ue){ const won = ue.gF>ue.gA || (ue.extra==='pens-H'&&ue.home) || (ue.extra==='pens-A'&&!ue.home); euroRow = `<tr class="${w===st.week?'me':''}"><td></td><td>${euroComp(ue.comp).short}</td><td class="wrap">${esc(st.clubs[ue.opp].short)}${ue.agg? ` <span class="dim">agg ${ue.agg[0]}-${ue.agg[1]}</span>`:''}</td><td>${ue.final?'N':ue.home?'H':'A'}</td><td class="n"><span class="${won?'hot':''}">${ue.gF}-${ue.gA}${ue.extra?'*':''}</span></td></tr>`; }
+      else if (slot && inEurope(u) && w>=st.week){ const et = E.euroTieFor(st, u.id); const mine = (slot.final && et && et.final) || (et && !et.final && !slot.final && et.round===slot.slot); euroRow = `<tr class="${w===st.week?'me':''}"><td></td><td>${euroComp(u.euro.comp).short}</td><td class="wrap">${mine? esc(et.opp.short) : '<span class="dim">if still in</span>'}</td><td>${mine? (slot.final?'N': (slot.leg===1? (et.homeFirst?'H':'A') : (et.homeFirst?'A':'H'))) : ''}</td><td></td></tr>`; }
+      return `<tr class="${w===st.week?'me':''}"><td class="n">${w}</td><td>${comp}</td><td class="wrap">${oppName}</td><td>${where}</td><td class="n">${res}</td></tr>${euroRow}`;
+    }).join('');
+    return { main: `<h1>Season ${st.season} fixtures</h1><table class="tight"><tr><th class="n">Wk</th><th>Comp</th><th>Opponent</th><th></th><th class="n">Score</th></tr>${rows}</table><p class="dim" style="margin-top:8px">* after extra time or penalties. N is a neutral ground.</p>`,
+      action: `<button class="b quiet" data-a="back">Back</button>` };
+  },
+  results(){
+    const st = S.state, u = user(); const info = st.lastWeekInfo;
+    if (!info) return { main: `<h1>Results</h1><p class="dim">No games played yet.</p>`, action: `<button class="b quiet" data-a="back">Back</button>` };
+    let body = '';
+    if (info.type==='league'){
+      const d = S.tab.results || u.div;
+      body = `<div class="grid2" style="grid-template-columns:repeat(4,1fr)">${[1,2,3,4].map(x=>`<button class="b ${d===x?'on':''}" data-a="rdiv" data-d="${x}">Div ${x}</button>`).join('')}</div>` + resultLines(st.lastSlim.filter(m=>m.div===d));
+    } else {
+      body = `<p class="dim">${E.CFG.CUPS[info.cup].name} ${E.CUP_ROUND_NAMES[info.round]}</p>` + resultLines(st.lastSlim);
+    }
+    const euroRes = st.lastSlim.filter(m=>m.euro);
+    if (euroRes.length){ body += `<h2>Europe</h2>` + ['ec','cwc','uefa'].map(k=>{ const ms = euroRes.filter(m=>m.euro.comp===k); return ms.length? `<p class="dim" style="margin-bottom:4px">${euroComp(k).name} ${E.euroRoundName(k, ms[0].euro.round)}${ms[0].euro.leg? ', '+(ms[0].euro.leg===1?'first':'second')+' legs' : ''}</p>` + resultLines(ms) : ''; }).join(''); }
+    return { main: `<h1>Week ${info.week} results</h1>${body}${sleighBogey(st)}`, action: `<button class="b quiet" data-a="back">Back</button>` };
+  },
+  sacked(){
+    const st = S.state, u = user(); const c = st.clubs[st.sackOffer];
+    const resigned = /resigned/.test(st.gameOver||'');
+    return { main: `<div class="title" style="padding-top:30px"><div class="logo">${resigned? 'Resigned' : 'Sacked'}</div><p>${esc(st.gameOver)}</p>
+      <p class="dim">${esc(st.managerName)} leaves ${esc(u.name)} after ${u.history.length} full season${u.history.length===1?'':'s'}, with the club ${ordinal(u.leaguePos)} in Division ${u.div} and ${money(u.balance)} in the bank.</p></div>
+      ${c? `<h2>One door closes</h2><p><span class="hot">${esc(c.name)}</span>, bottom of Division 4, will take anyone. They have ${money(c.balance)} in the bank and a ${E.fmt(c.capacity)} seat ground.</p>
+      <div class="grid2"><button class="b" data-a="takesack">Take the job</button><button class="b" data-a="walkaway">Walk away</button></div>` : `<button class="b" data-a="walkaway">Start again</button>`}` };
+  },
+  weekdone(){
+    const st = S.state, u = user(); const R = S.results;
+    let mine = '';
+    if (R.userMatch){
+      const m = R.userMatch; const us = m.home.id===u.id;
+      const res = m.gH===m.gA? 'Draw' : (m.gH>m.gA)===us? 'Win' : 'Defeat';
+      const scorers = m.scorers.map(s=>`${esc(s.p.name)} ${s.min}'`+(s.side==='H'?'':' (a)')).join(', ');
+      mine = `<h1>${res}: ${esc(m.home.short)} ${m.gH} - ${m.gA} ${esc(m.away.short)}${m.extra? (m.extra.startsWith('pens')? ' (pens)':' (aet)'):''}</h1><p class="dim">${scorers||'No goals.'}${m.extra&&m.extra.startsWith('pens')? ' Won on penalties by '+(m.extra==='pens-H'?esc(m.home.short):esc(m.away.short))+'.':''}</p>`;
+    } else mine = `<h1>No match this week</h1>`;
+    if (R.euroMatch){ const m = R.euroMatch; const us = m.home.id===u.id; const agg = m.agg? (us? `${m.agg.b}-${m.agg.a}` : `${m.agg.a}-${m.agg.b}`) : null; const through = m.winner!==undefined? m.winner===u.id : (m.euro.final? ((m.gH>m.gA||m.extra==='pens-H')===us) : null);
+      mine += `<h2>${euroComp(m.euro.comp).name}${m.euro.leg? ' '+(m.euro.leg===1?'first':'second')+' leg' : ' final'}: ${esc(m.home.short)} ${m.gH} - ${m.gA} ${esc(m.away.short)}${m.extra? (m.extra.startsWith('pens')? ' (pens)':' (aet)'):''}</h2><p class="dim">${m.scorers.map(s=>esc(s.p.name)+' '+s.min+"'").join(', ')||'No goals.'}${agg? ` Aggregate ${agg}.`:''}${through===true? ' <span class="hot">Through.</span>' : through===false? ' Out.' : ''}</p>`; }
+    const others = R.results.filter(m=>m!==R.userMatch && (R.type==='cup' || m.home.div===u.div));
+    const list = others.map(m=>`<div class="kv"><span class="wrap">${esc(m.home.short)} v ${esc(m.away.short)}</span><span>${m.gH}-${m.gA}${m.extra?'*':''}</span></div>`).join('');
+    const label = R.type==='cup'? `${E.CFG.CUPS[R.cup].name} results` : `Division ${u.div} results`;
+    const inj = R.userMatch? R.userMatch.injuries.filter(p=>p.club===u.id) : [];
+    const bans = R.results.filter(m=>m.home.id===u.id||m.away.id===u.id).flatMap(m=>m.bans||[]).filter(b=>b.p.club===u.id);
+    return { main: `${mine}${inj.length? `<p class="hot">Injured: ${inj.map(p=>esc(p.name)+' ('+p.injury+' wk)').join(', ')}</p>`:''}${bans.length? `<p class="hot">Suspended: ${bans.map(b=>esc(b.p.name)+' ('+b.n+' match'+(b.n>1?'es':'')+', '+b.why+')').join(', ')}</p>`:''}
+      ${st.week>1 && R.type==='league'? `<p>Now ${ordinal(u.leaguePos)} in Division ${u.div}.</p>`:''}
+      <h2>${label}</h2>${list||'<p class="dim">None.</p>'}${R.type==='cup'? '<p class="dim">* after extra time or penalties</p>':''}${sleighBogey(st)}
+      <button class="b" data-a="results" style="margin-top:10px">All results</button>`,
+      action: `<button class="b" data-a="continue-week">${mgr().pendingReview? 'Season review' : st.gameOver? 'See the board' : 'Continue'}</button>` };
+  },
+  review(){
+    const st = S.state, u = user(); const sm = st.seasonSummary;
+    const old = st.clubs[sm.userClubId!==undefined? sm.userClubId : u.id];
+    const moved = old.id!==u.id;
+    const prize = E.prizeFor(sm.userDiv, sm.userPos);
+    const promoted = sm.promoted.includes(old.id), relegated = sm.relegated.includes(old.id);
+    const cupLine = ['lc','fa'].map(k=>sm.cupWinners[k]!==null? `${E.CFG.CUPS[k].short}: ${esc(st.clubs[sm.cupWinners[k]].short)}` : '').filter(Boolean).join(', ');
+    let verdict = promoted? `${esc(old.short)} go up to Division ${old.div}. The board are thrilled and the bank is nervous.` : relegated? `${esc(old.short)} go down to Division ${old.div}. The board are not thrilled.` : sm.userPos<=sm.userExpected-3? `A better season than the board expected.` : sm.userPos>=sm.userExpected+3? `Below what the board expected. They've noticed.` : `About what the board expected.`;
+    const tb = sm.tables[sm.userDiv];
+    const rows = tb.map((c,i)=>`<tr class="${c.id===old.id?'me':''}"><td class="n">${i+1}</td><td class="wrap">${esc(st.clubs[c.id].short)}</td><td class="n">${c.st.pts}</td></tr>`).join('');
+    let job = '';
+    if (st.jobOffer!==null) job = jobOfferPanel();
+    return { main: `<h1>Season ${sm.season} review</h1>
+      <p>${moved? esc(old.short)+' finished' : 'Finished'} <span class="hot">${ordinal(sm.userPos)}</span> in Division ${sm.userDiv} (board expected ${ordinal(sm.userExpected)}). ${verdict}</p>${moved? `<p class="hot">You have moved to ${esc(u.name)} in Division ${u.div}.</p>`:''}
+      <div class="kv"><span>League prize money</span><span>${money(prize)}</span></div>
+      <div class="kv"><span>Television money</span><span>${money(E.CFG.TV[sm.userDiv])}</span></div>
+      <div class="kv"><span>Summer wages</span><span>${money(-(sm.summerWages||0))}</span></div>
+      <div class="kv"><span>Cups</span><span>${cupLine}</span></div>
+      ${sm.euro? `<div class="kv"><span>${esc(sm.euro.name)}</span><span>${sm.euro.won? '<span class="hot">Winners!</span>' : 'out in the '+E.euroRoundName(sm.euro.comp, sm.euro.round).toLowerCase()}</span></div>` : ''}
+      ${sm.euroWinners? `<div class="kv"><span>Europe</span><span class="wrap">${['ec','cwc','uefa'].map(k=>sm.euroWinners[k]!==null&&sm.euroWinners[k]!==undefined? euroComp(k).short+': '+esc(st.clubs[sm.euroWinners[k]].short) : '').filter(Boolean).join(', ')}</span></div>` : ''}
+      ${sm.qualified? `<div class="kv"><span>Next season</span><span class="hot">${euroComp(sm.qualified).name}</span></div>` : ''}
+      ${sm.clawback? `<div class="kv"><span>Sponsor clawback</span><span class="hot">${money(-sm.clawback)}</span></div>`:''}
+      <div class="kv"><span>Board mood</span><span>${E.boardMood(u.confidence)}</span></div>
+      <div class="kv"><span>Bank</span><span class="${u.balance<0?'hot':''}">${money(u.balance)}</span></div>
+      ${job}<h2>Final table</h2><table><tr><th class="n">#</th><th>Club</th><th class="n">Pts</th></tr>${rows}</table>
+      <p class="dim" style="margin-top:10px">Players have aged a year. Check the squad before the new season: some will have retired and the youth team has filled the gaps.</p>
+      ${S.nickPrompt? `<h2>The ladder</h2><p class="dim">Your career points go on a shared ladder with everyone else playing. Pick a nickname to join (nothing else is sent), or skip it.</p><input id="nick" maxlength="16" placeholder="Nickname" autocomplete="off"><div class="grid2"><button class="b" data-a="joinladder">Join the ladder</button><button class="b" data-a="skipladder">Not now</button></div>` : ''}
+      ${FEEDBACK_URL? `<p class="dim">A season in, you'll have opinions. <a class="b small" data-track="feedback_opened" href="${esc(FEEDBACK_URL)}" target="_blank" rel="noopener" style="display:inline;width:auto;margin-top:6px;text-decoration:none">Send feedback</a> takes two minutes.</p>`:''}`,
+      action: st.jobOffer!==null? '' : `<button class="b" data-a="newseason">${multi()? 'On to season '+st.season : 'Start season '+st.season}</button>` };
+  },
+  gameover(){
+    const st = S.state, u = user();
+    return { main: `<div class="title"><div class="logo">Sacked</div><p>${esc(st.gameOver)}</p><p class="dim">${esc(st.managerName)} leaves ${esc(u.name)} after ${u.history.length} full season${u.history.length===1?'':'s'}, with the club ${ordinal(u.leaguePos)} in Division ${u.div} and ${money(u.balance)} in the bank.</p></div>`,
+      action: `<button class="b" data-a="setup">Start again</button>` };
+  },
+};
+
+// ---------- ground and staff ----------
+function groundScreen(){
+  const st = S.state, u = user();
+  const restricted = u.safety < E.CFG.SAFETY_RESTRICT_BELOW;
+  const risk = u.safety < E.CFG.CROWD_TROUBLE_BELOW;
+  const safetyWord = u.safety>=80?'excellent':u.safety>=60?'sound':u.safety>=45?'tired':u.safety>=25?'poor':'dangerous';
+  return `<h1>${esc(u.name)}'s ground</h1>${ticketLines(u)}
+    <h2>The ground</h2>
+    <div class="kv"><span>Capacity</span><span>${E.fmt(u.capacity)}${restricted? ` <span class="hot">(restricted to ${E.fmt(Math.round(u.capacity*0.6))})</span>`:''}</span></div>
+    <div class="kv"><span>Upkeep</span><span>${money(Math.round(u.capacity*E.CFG.GROUND_COST_PER_SEAT))} a week</span></div>
+    ${gateLines(u)}
+    <div class="kv"><span>Safety</span><span>${Math.round(u.safety)}/100, ${safetyWord}</span></div>
+    <div class="bar"><i style="width:${Math.round(u.safety)}%"></i></div>
+    ${risk? `<p class="hot">${restricted? 'The FA has restricted your capacity until the ground is made safe.' : 'Below 45 there is a growing risk of crowd trouble, and fines to go with it.'}</p>`:''}
+    <p class="dim">Safety falls slowly every week. Spend on it before the FA notices.</p>
+    <h2>Safety work</h2>
+    <div class="grid2">
+      <button class="b" data-a="safety" data-p="10">+10 safety<br><span class="dim">${money(E.safetyCost(u,10))}</span></button>
+      <button class="b" data-a="safety" data-p="25">+25 safety<br><span class="dim">${money(E.safetyCost(u,25))}</span></button>
+    </div>
+    <h2>New stand</h2>
+    ${u.build? `<p>Builders are in: a ${E.fmt(u.build.seats)}-seat stand, ready in ${u.build.weeksLeft} week${u.build.weeksLeft===1?'':'s'}.</p>`
+      : `<p class="dim">£${E.CFG.SEAT_COST} a seat, paid up front, ${E.CFG.BUILD_WEEKS} weeks to build. Only worth it if you're turning people away.</p>
+      <div class="grid3">${[1000,2500,5000].map(n=>`<button class="b" data-a="build" data-n="${n}">+${E.fmt(n)}<br><span class="dim">${money(E.buildCost(n))}</span></button>`).join('')}</div>`}`;
+}
+const STAFF_INFO = {
+  coach: { name:'Coach', blurb:['Useless. Training barely moves anyone.','Average. Steady progress for the younger lads.','Good. Players improve noticeably faster.','Excellent. The best young players fly.'] },
+  physio: { name:'Physio', blurb:['Useless. Injuries drag on and fitness is slow to return.','Average. Normal injury times.','Good. Shorter lay-offs, quicker recovery.','Excellent. Half the lay-off, fitness back in days.'] },
+  scout: { name:'Scout', blurb:['Useless. A short list and no idea about potential.','Average. Sees potential in your own squad.','Good. Longer list, spots young players with room to grow.','Excellent. Knows every player in the game.'] },
+  youth: { name:'Youth coach', blurb:['None. The youth team look after themselves.','Average. The lads tick along.','Good. One extra prospect a year, and they go further.','Excellent. The academy produces players other clubs will pay for.'] },
+};
+function staffScreen(){
+  const st = S.state, u = user();
+  const tiers = ['Useless','Average','Good','Excellent'];
+  const mult = E.CFG.STAFF_DIV_MULT[u.div];
+  return `<h1>Backroom staff</h1><p class="dim">Paid weekly, no notice needed. Division ${u.div} rates.</p>` +
+    ['coach','physio','scout','youth'].map(r=>`<h2>${STAFF_INFO[r].name}: ${tiers[u.staff[r]||0]}</h2><p class="dim">${STAFF_INFO[r].blurb[u.staff[r]]}</p>
+      <div class="grid2" style="grid-template-columns:repeat(4,1fr)">${tiers.map((t,i)=>`<button class="b ${(u.staff[r]||0)===i?'on':''}" data-a="staff" data-r="${r}" data-t="${i}" style="padding:8px 2px;font-size:12px">${r==='youth'&&i===0?'None':t}<br><span class="dim">${money(Math.round(E.CFG.STAFF_WAGE[i]*mult))}</span></button>`).join('')}</div>`).join('') +
+    `<p class="dim" style="margin-top:8px">Total ${money(E.staffWages(u))} a week.</p>`;
+}
+function youthScreen(){
+  const st = S.state, u = user(); const lvl = u.academy||1; const rs = E.reservesOf(st, u);
+  const grades = ['','A couple of pitches and a tea urn. One prospect a year.','A proper set-up. Two prospects a year.','Floodlit pitches and a coach for every age group. Three a year.','The best in the land. Four a year, and good ones.'];
+  const build = u.academyBuild? `<p>Builders in: grade ${u.academyBuild.level} in ${u.academyBuild.weeksLeft} week${u.academyBuild.weeksLeft===1?'':'s'}.</p>`
+    : lvl<4? `<button class="b" data-a="academy">Upgrade to grade ${lvl+1}<br><span class="dim">${money(E.CFG.ACADEMY_COST[lvl])}, ${E.CFG.ACADEMY_WEEKS[lvl]} weeks</span></button>` : `<p class="dim">Nothing more to build.</p>`;
+  const rows = rs.sort((a,b)=>b.pot-a.pot).map(p=>`<tr class="tap" data-a="player" data-id="${p.id}"><td>${p.pos}</td><td class="wrap">${esc(p.name)}</td><td class="n">${p.skill}${potTag(p)}</td><td class="n">${p.age}</td><td class="n"><button class="b small" data-a="promote" data-id="${p.id}">Up</button></td></tr>`).join('');
+  return `<h1>Youth academy</h1>
+    <div class="kv"><span>Grade</span><span>${lvl} of 4</span></div>
+    <div class="kv"><span>Youth coach</span><span>${['none','average','good','excellent'][u.staff.youth||0]} <span class="dim">(Staff tab)</span></span></div>
+    <div class="kv"><span>Youth wages</span><span>${money(rs.length*E.CFG.YOUTH_WAGE)} a week</span></div>
+    <p class="dim">${grades[lvl]} The intake arrives each summer. A better coach adds a prospect and raises how far they can go. Promote them into the squad when you need them: they sign cheap three-year deals. Nobody stays past ${E.CFG.RESERVES_MAX_AGE}.</p>
+    ${build}
+    <h2>Youth team (${rs.length}/${E.CFG.RESERVES_CAP})</h2>
+    ${rs.length? `<table><tr><th>Pos</th><th>Player</th><th class="n">Sk</th><th class="n">Age</th><th></th></tr>${rows}</table><p class="dim" style="margin-top:6px">Squad ${u.players.length}/20. ▲ is how far he could go${u.staff.scout<1? ' (hire a scout to see it)':''}.</p>` : `<p class="dim">Empty. The first intake arrives at the end of the season.</p>`}`;
+}
+function nameScreen(){
+  const u = user();
+  return `<h1>Club name</h1><p class="dim">Call it what you like. The short name is what shows in tables and results, so keep it under 12 characters.</p>
+    <p class="dim" style="margin-bottom:4px">Full name</p><input id="clubname" maxlength="28" value="${esc(u.name)}" autocomplete="off">
+    <p class="dim" style="margin-bottom:4px">Short name</p><input id="clubshort" maxlength="12" value="${esc(u.short)}" autocomplete="off">
+    <button class="b" data-a="renameclub">Save the name</button>
+    <p class="dim">Players are renamed from their own page in the Squad screen.</p>
+    <h2>Other clubs</h2><p class="dim">Rename any club in the game (except one another manager is running). Handy if you've borrowed a name and there are now two of them.</p>
+    ${otherClubRename()}`;
+}
+function otherClubRename(){
+  const st = S.state, u = user(); const t = S.tab.rename || (S.tab.rename = {div:u.div, club:null});
+  const tabs = `<div class="grid2" style="grid-template-columns:repeat(5,1fr)">${[1,2,3,4].map(d=>`<button class="b ${t.div===d?'on':''}" data-a="rndiv" data-d="${d}" style="padding:10px 2px;font-size:12px;text-align:center">Div ${d}</button>`).join('')}<button class="b ${t.div===0?'on':''}" data-a="rndiv" data-d="0" style="padding:10px 2px;font-size:12px;text-align:center">Europe</button></div>`;
+  if (t.club!==null && t.club!==undefined){
+    const c = st.clubs[t.club];
+    return tabs + `<p>Renaming <span class="hot">${esc(c.name)}</span></p>
+      <p class="dim" style="margin-bottom:4px">Full name</p><input id="oname" maxlength="28" value="${esc(c.name)}" autocomplete="off">
+      <p class="dim" style="margin-bottom:4px">Short name</p><input id="oshort" maxlength="12" value="${esc(c.short)}" autocomplete="off">
+      <div class="grid2"><button class="b" data-a="renameother" data-c="${c.id}">Save</button><button class="b" data-a="rnclub" data-c="">Cancel</button></div>`;
+  }
+  return tabs + E.divClubs(st, t.div).filter(c=>c.id!==u.id).sort((a,b)=>a.name.localeCompare(b.name)).map(c=>{ const hm = E.managerOf(st,c.id); return `<button class="b" data-a="rnclub" data-c="${c.id}" ${hm?'disabled':''}>${esc(c.name)} <span class="dim">(${esc(c.short)})${hm? ', '+esc(hm.managerName):''}</span></button>`; }).join('');
+}
+function potTag(p){ const st = S.state; if (!E.canSeePot(st,p) || p.pot<=p.skill) return ''; return ` <span class="mark">▲${p.pot-p.skill}</span>`; }
+
+const ROUND_SHORT = ['R1','R2','R3','QF','SF','Final'];
+function humanMarket(){
+  const st = S.state; if (!multi()) return '';
+  const list = E.humanListings(st);
+  if (!list.length) return `<h2>Rival managers' players</h2><p class="dim">Nobody has listed anyone. You can still bid for any of their players from the Scout tab; they decide on their turn.</p>`;
+  return `<h2>Rival managers' players for sale</h2><table><tr><th>Pos</th><th>Player</th><th class="n">Sk</th><th class="n">Age</th><th class="n">Asking</th></tr>` +
+    list.filter(({p})=>st.clubs[p.club]).map(({p,m})=>`<tr class="tap" data-a="player" data-id="${p.id}"><td>${p.pos}</td><td class="wrap">${esc(p.name)}<br><span class="dim">${esc(m.managerName)}, ${esc(st.clubs[p.club].short)}</span></td><td class="n">${p.skill}${potTag(p)}</td><td class="n">${p.age}</td><td class="n">${money(p.listed)}</td></tr>`).join('') + `</table>`;
+}
+const AGE_BANDS = { any:{label:'Any age'}, u22:{label:'Under 22', max:21}, mid:{label:'22 to 26', min:22, max:26}, prime:{label:'27 to 30', min:27, max:30}, vet:{label:'Over 30', min:31} };
+function scoutBrief(){
+  const st = S.state, u = user(); const b = S.tab.brief; const tier = u.staff.scout;
+  const tierNote = ['Your scout is useless: he covers your own division and comes back with five names, picked more or less at random.','Your scout covers the divisions either side of yours and brings back the ten best matches.','Your scout covers the whole league, brings back twenty names and can tell you how far each one might go.','Your scout covers the whole league, brings back forty names with potential for every one of them.'][tier];
+  const seg = (key, opts, cur) => `<div class="grid2" style="grid-template-columns:repeat(${opts.length},1fr)">${opts.map(([v,l])=>`<button class="b ${String(cur)===String(v)?'on':''}" data-a="brief" data-k="${key}" data-v="${v}" style="padding:8px 2px;font-size:12px;text-align:center">${l}</button>`).join('')}</div>`;
+  let results = '';
+  if (S.tab.report){
+    const r = S.tab.report;
+    const live = r.list.filter(p=>st.players[p.id] && p.club>=0 && p.club!==u.id);
+    results = `<p class="dim">${r.total} match${r.total===1?'':'es'}${live.length<r.total? `, showing the best ${live.length}` : ''}.</p>` + (live.length? `<table><tr><th>Pos</th><th>Player</th><th class="n">Sk</th><th class="n">Age</th><th class="n">Value</th></tr>` +
+      live.map(p=>{ const c = st.clubs[p.club]; const hm = E.managerOf(st, c.id); return `<tr class="tap" data-a="player" data-id="${p.id}"><td>${p.pos}</td><td class="wrap">${esc(p.name)}<br><span class="dim">${esc(c.short)}, ${c.div? 'D'+c.div : 'Europe'}${hm? ' ('+esc(hm.managerName)+')' : ''}</span></td><td class="n">${p.skill}${potTag(p)}</td><td class="n">${p.age}</td><td class="n">${money(p.value)}</td></tr>`; }).join('') + `</table>` : `<p class="dim">Nobody fits the brief. Loosen it.</p>`);
+  }
+  return `<h2>Brief the scout</h2><p class="dim">${tierNote}</p>
+    ${seg('pos', [['ANY','Any'],['GK','GK'],['DEF','DEF'],['MID','MID'],['FWD','FWD']], b.pos)}
+    ${seg('age', Object.entries(AGE_BANDS).map(([k,v])=>[k,v.label]), b.age)}
+    ${seg('skill', [[0,'Any skill'],[30,'30+'],[40,'40+'],[50,'50+'],[60,'60+'],[70,'70+']], b.skill)}
+    ${seg('value', [[0,'Any price'],[50000,'To £50k'],[150000,'To £150k'],[500000,'To £500k']], b.value)}
+    <button class="b" data-a="scoutgo">Send him out</button>${results}`;
+}
+function ticketLines(u){
+  const st = S.state; const a = E.ticketAdvice(st, u);
+  const fmtP = p => '£'+(Number.isInteger(p)? p : p.toFixed(2));
+  const why = a.sellingOut? `You're selling out at ${fmtP(a.current)}. ${a.suggested>a.current? `Raising it toward ${fmtP(a.suggested)} would still fill the ground and take more on the day.` : 'Prices are about right for the crowd you can hold.'}`
+    : a.current>a.going*1.15? `${fmtP(a.current)} is well above the Division ${u.div} going rate of ${fmtP(a.going)}, and it's costing you bodies on the terraces.`
+    : a.current<a.going*0.85? `${fmtP(a.current)} is cheap for Division ${u.div}. The crowd likes it, the bank less so.`
+    : `Around the Division ${u.div} going rate of ${fmtP(a.going)}. ${a.suggested>a.current? `You could go to ${fmtP(a.suggested)} without emptying the ground.` : 'Fine where it is.'}`;
+  return `<h2>Ticket price: ${fmtP(a.current)}</h2>
+    <div class="kv"><span>Typical gate at this price</span><span>${E.fmt(a.gateNow)}, ${money(a.revenueNow)} a game</span></div>
+    <div class="kv"><span>At ${fmtP(a.suggested)} (suggested)</span><span>${E.fmt(a.gateSuggested)}, ${money(a.revenueSuggested)} a game</span></div>
+    <p class="dim">${why} Dearer tickets thin the crowd, cheaper ones fill it; the trick is a price that just fills the ground on a normal week.</p>
+    <div class="grid2" style="grid-template-columns:repeat(5,1fr)">${[[-1,'-£1'],[-0.5,'-50p'],[0.5,'+50p'],[1,'+£1']].map(([d,l])=>`<button class="b" data-a="ticket" data-p="${a.current+d}" style="text-align:center;padding:10px 2px">${l}</button>`).join('')}<button class="b" data-a="ticket" data-p="${a.suggested}" style="text-align:center;padding:10px 2px;font-size:12px">Use ${fmtP(a.suggested)}</button></div>`;
+}
+function gateLines(u){
+  const st = S.state; const g = E.gateSummary(st, u);
+  const room = g.capacity - g.support;
+  const demand = `<div class="kv"><span>Support</span><span>about ${E.fmt(g.support)} a game</span></div>
+    <div class="kv"><span>Big game</span><span>up to ${E.fmt(g.bigGame)}</span></div>`;
+  const trend = g.target>g.support*1.1? `Support is growing: a club of your standing in Division ${u.div} draws about ${E.fmt(g.target)}, and yours is heading there season by season.` : g.target<g.support*0.9? `Support is drifting down toward the ${E.fmt(g.target)} a club of your standing draws in Division ${u.div}.` : `Support is about right for a club of your standing in Division ${u.div}.`;
+  const verdict = g.bigGame<=g.capacity*0.8? 'Plenty of room, even for the big games. Spend on players, not concrete.' : g.support>=g.capacity*0.95? `<span class="hot">Demand has outgrown the ground. Every extra seat would sell most weeks.</span>` : `Big games will sell out. A stand of ${E.fmt(Math.max(1000, Math.round((g.bigGame-g.capacity)/500)*500))} seats would cover them.`;
+  if (!g.n) return demand + `<p class="dim">${trend} ${verdict}</p><div class="kv"><span>Home crowds</span><span class="dim">no home games yet</span></div>`;
+  return demand + `<div class="kv"><span>Home crowds (last ${g.n})</span><span>avg ${E.fmt(g.avg)}, best ${E.fmt(g.max)}</span></div>
+    <div class="kv"><span>Sold out</span><span>${g.sellouts} of ${g.n}</span></div>
+    <div class="bar"><i style="width:${Math.min(100, Math.round(g.fill*100))}%"></i></div>
+    <p class="dim" style="margin-top:-6px">Average fill ${Math.round(g.fill*100)}% of capacity. ${trend} ${verdict}</p>
+    <p class="dim">Last ${g.n}: ${g.list.join(', ')}${g.sellouts? ' (* sold out)':''}</p>`;
+}
+function scorersTable(div){
+  const st = S.state, u = user();
+  const list = E.topScorers(st, div, 10);
+  if (!list.length) return `<h2>Top scorers, Division ${div}</h2><p class="dim">No goals yet.</p>`;
+  return `<h2>Top scorers, Division ${div}</h2><table class="tight"><tr><th class="n">#</th><th>Player</th><th>Club</th><th class="n">Gls</th><th class="n">Apps</th></tr>` +
+    list.map((p,i)=>`<tr class="${p.club===u.id?'me':''}"><td class="n">${i+1}</td><td class="wrap">${esc(p.name)}</td><td class="wrap">${esc(st.clubs[p.club].short)}</td><td class="n">${p.goals}</td><td class="n">${p.apps}</td></tr>`).join('') +
+    `</table><p class="dim" style="margin-top:6px">League and cup goals this season.</p>`;
+}
+function euroStatusText(u){
+  const st = S.state; const s = E.euroStatus(st, u); if (!s) return '';
+  if (s.won) return 'Winners!';
+  if (s.out) return `Out in the ${E.euroRoundName(s.comp, Math.max(0, s.round)).toLowerCase()}`;
+  return `In the ${E.euroRoundName(s.comp, s.round).toLowerCase()}`;
+}
+function euroSection(){
+  const st = S.state, u = user(); if (!st.euro) return '';
+  return ['ec','cwc','uefa'].map(k=>{ const e = st.euro[k]; const def = euroComp(k);
+    const eng = e.entrants.filter(id=>st.clubs[id].div>=1).map(id=>{ const c = st.clubs[id]; const s = E.euroStatus(st, c); return `${esc(c.short)}: ${s.won? 'winners' : s.out? 'out, '+E.euroRoundName(k, Math.max(0,s.round)) : 'in, '+E.euroRoundName(k, s.round)}`; }).join('; ');
+    const win = e.winner!==null? ` ${esc(st.clubs[e.winner].name)} won it.` : e.alive.length===2? ` Final: ${esc(st.clubs[e.alive[0]].short)} v ${esc(st.clubs[e.alive[1]].short)}, week ${E.CFG.EURO.finalWeek}.` : e.alive.length<=8? ` Still in: ${e.alive.map(id=>esc(st.clubs[id].short)).join(', ')}.` : '';
+    const mine = (u.euro && u.euro.comp===k && !u.euro.out)? ` <span class="hot">Next: ${fmtEuroTie(E.euroTieFor(st, u.id))}</span>` : '';
+    return `<h2>${def.name}</h2><p class="dim">English clubs: ${eng||'none'}.${win}${mine}</p>`; }).join('');
+}
+function analyticsOn(){ try{ return localStorage.getItem('sm91-analytics')!=='off'; }catch(e){ return true; } }
+function moodTag(p){ const m = p.morale===undefined? 60 : p.morale; const w = E.moraleWord(m); return m<50? `<span class="mark">${w}</span>` : w; }
+function yearsPicker(p){ const cur = S.cYears || E.wantsYears(p); return `<div class="grid2" style="grid-template-columns:repeat(4,1fr)">${[1,2,3,4].map(y=>`<button class="b ${cur===y?'on':''}" data-a="cyears" data-y="${y}" style="padding:8px 2px;text-align:center">${y} yr${y>1?'s':''}</button>`).join('')}</div>`; }
+function contractPanel(p){
+  const st = S.state; const ask = E.contractAsk(st, p); const status = E.playerStatus(st, p);
+  const statusText = {star:'one of your best', regular:'a regular', squad:'a squad player', fringe:'on the fringes'}[status];
+  const prefer = E.wantsYears(p);
+  let html = `<h2>Contract</h2><p class="dim">${money(p.wage)} a week, ${p.years<=1? 'expires this summer' : p.years+' years left'}. He sees himself as ${statusText} and would want about <span class="hot">${money(ask)}</span> a week for a new deal${p.age>=31? ', ideally short' : p.age<=24? ', and he will not sign long and cheap' : ''}.${p.years>1? ' Renewing early locks the wage before he improves (or declines).' : ''}</p>`;
+  if (p.requested) html += `<p class="hot">He has asked for a transfer and will not discuss a new contract until he is happier.</p>`;
+  else html += yearsPicker(p) + `<div class="grid3">${[Math.round(ask*0.9/5)*5, ask, Math.round(ask*1.1/5)*5].map(a=>`<button class="b" data-a="setcw" data-amt="${a}">${money(a)}</button>`).join('')}</div><input id="cwage" inputmode="numeric" value="${S.cWage||ask}" autocomplete="off"><button class="b" data-a="contract" data-id="${p.id}">Offer this deal</button>`;
+  if (p.years<=1) html += `<button class="b ${p.letGo?'on':''}" data-a="letgo" data-id="${p.id}">${p.letGo? 'Leaving in the summer (tap to keep him)' : 'Let him go when his deal ends'}</button><p class="dim">If you do neither, your assistant re-signs him at about 10% over his ask, provided he is happy enough to stay.</p>`;
+  const weeksLeft = Math.max(0, (p.years-1)*E.CFG.WEEKS + (E.CFG.WEEKS - st.week)); const payoff = Math.round(p.wage*weeksLeft*E.CFG.RELEASE_PAYOFF/500)*500;
+  html += `<button class="b ${S.confirmRelease===p.id?'on':''}" data-a="release" data-id="${p.id}">${S.confirmRelease===p.id? 'Really release him?' : `Release now (pay off ${money(payoff)})`}</button>`;
+  return html;
+}
+function reservePage(p){
+  const st = S.state, u = user();
+  const wage = Math.max(60, Math.round(E.wageFor(p.skill)*0.7/5)*5);
+  return { main: `<h1>${esc(p.name)}</h1>
+      <div class="kv"><span>Status</span><span>youth team</span></div>
+      <div class="kv"><span>Position</span><span>${p.pos}</span></div>
+      <div class="kv"><span>Skill</span><span>${p.skill}${potTag(p)}</span></div>
+      ${E.canSeePot(st,p)? `<div class="kv"><span>Potential</span><span>${p.pot>p.skill? `could reach ${p.pot}` : 'as good as he gets'}</span></div>` : ''}
+      <div class="kv"><span>Age</span><span>${p.age}</span></div>
+      <div class="kv"><span>Would sign for</span><span>${money(wage)} a week, 3 years</span></div>
+      <p class="dim">Squad ${u.players.length}/20. He develops slowly in the youth team and faster once he is playing.</p>
+      <button class="b" data-a="promote" data-id="${p.id}">Promote to the squad</button>
+      <button class="b ${S.confirmRelease===p.id?'on':''}" data-a="releasereserve" data-id="${p.id}">${S.confirmRelease===p.id? 'Really let him go?' : 'Let him go'}</button>
+      <h2>Rename</h2><input id="pname" maxlength="24" value="${esc(p.name)}" autocomplete="off"><button class="b" data-a="renameplayer" data-id="${p.id}">Change his name</button>`,
+    action: `<button class="b quiet" data-a="back">Back</button>` };
+}
+function freeAgentPage(p){
+  const st = S.state, u = user(); const ask = E.contractAsk(st, p); const fee = Math.max(2000, Math.round(p.value*0.1/500)*500);
+  return { main: `<h1>${esc(p.name)}</h1>
+      <div class="kv"><span>Status</span><span>free agent${p.lastClubName? ', last at '+esc(p.lastClubName) : ''}</span></div>
+      <div class="kv"><span>Position</span><span>${p.pos}</span></div>
+      <div class="kv"><span>Skill</span><span>${p.skill}${potTag(p)}</span></div>
+      ${E.canSeePot(st,p)? `<div class="kv"><span>Potential</span><span>${p.pot>p.skill? `could reach ${p.pot}` : p.age>=30? 'past his best' : 'as good as he gets'}</span></div>` : ''}
+      <div class="kv"><span>Age</span><span>${p.age}</span></div>
+      <div class="kv"><span>Wants</span><span>${money(ask)} a week</span></div>
+      <div class="kv"><span>Signing-on fee</span><span>${money(fee)}</span></div>
+      <h2>Offer terms</h2><p class="dim">No transfer fee. Squad ${u.players.length}/20.</p>${yearsPicker(p)}
+      <div class="grid3">${[Math.round(ask*0.9/5)*5, ask, Math.round(ask*1.1/5)*5].map(a=>`<button class="b" data-a="setcw" data-amt="${a}">${money(a)}</button>`).join('')}</div>
+      <input id="cwage" inputmode="numeric" value="${S.cWage||ask}" autocomplete="off"><button class="b" data-a="signfree" data-id="${p.id}">Sign him</button>`,
+    action: `<button class="b quiet" data-a="back">Back</button>` };
+}
+function ladderOn(){ try{ return localStorage.getItem(LADDER_OPT)!=='off'; }catch(e){ return true; } }
+function trophyLine(t){ if (!t) return ''; const parts = []; const titles = t.titles||{}; for (const d of [1,2,3,4]) if (titles[d]) parts.push(`${titles[d]} D${d} title${titles[d]>1?'s':''}`); if (t.fa) parts.push(`${t.fa} FA Cup${t.fa>1?'s':''}`); if (t.lc) parts.push(`${t.lc} League Cup${t.lc>1?'s':''}`); if (t.ec) parts.push(`${t.ec} European Cup${t.ec>1?'s':''}`); if (t.cwc) parts.push(`${t.cwc} CWC`); if (t.uefa) parts.push(`${t.uefa} UEFA Cup${t.uefa>1?'s':''}`); if (t.promo) parts.push(`${t.promo} promotion${t.promo>1?'s':''}`); return parts.join(', ') || 'no trophies yet'; }
+async function loadLadder(){ if (!LADDER_URL){ S.ladderRows = null; return; } const board = S.tab.board||'career'; const rows = await Ladder.top(board); S.ladderRows = rows; if (Ladder.nick()) S.ladderMe = await Ladder.me(); if (S.screen==='hof') render(); }
+function readAmount(sel){ const i = $(sel||'#amt'); if (!i) return null; const raw = i.value.trim().toLowerCase().replace(/[£,\s]/g,''); let v = raw.endsWith('k')? parseFloat(raw)*1000 : raw.endsWith('m')? parseFloat(raw)*1e6 : parseFloat(raw); if (!isFinite(v) || v<1) return null; return Math.round(v); }
+function jobOfferPanel(){
+  const st = S.state; const c = st.clubs[st.jobOffer]; const cw = E.squadOf(st,c).reduce((s,p)=>s+p.wage,0);
+  return `<h2>Job offer</h2><p><span class="hot">${esc(c.name)}</span> of Division ${c.div} want you as their manager. They have ${money(c.balance)} in the bank, a ${E.fmt(c.capacity)} seat ground and a wage bill of ${money(cw)} a week.${st.jobOfferExpires? ` Decide by week ${st.jobOfferExpires}.`:''}</p><div class="grid2"><button class="b" data-a="acceptjob">Take it</button><button class="b" data-a="declinejob">Stay put</button></div>`;
+}
+function resultLines(list){
+  const st = S.state, u = user();
+  return list.map(m=>{ const me = m.h===u.id||m.a===u.id; return `<div class="kv"><span class="wrap ${me?'hot':''}">${esc(st.clubs[m.h].short)} v ${esc(st.clubs[m.a].short)}</span><span class="${me?'hot':''}">${m.gH}-${m.gA}${m.extra?'*':''}${m.agg? ` <span class="dim">(${m.agg.b}-${m.agg.a} agg)</span>`:''}</span></div>`; }).join('') || '<p class="dim">No games.</p>';
+}
+function sleighBogey(st){ return ((st.season*97 + st.week*31) % 173 === 0)? `<div class="kv"><span class="hot">Sleigh Bogey</span><span class="dim">v nobody, abandoned</span></div>` : ''; }
+
+// ---------- helpers ----------
+function ordinal(n){ const s=['th','st','nd','rd'], v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]); }
+function posOrder(p){ return {GK:0,DEF:1,MID:2,FWD:3}[p]; }
+function cupStatus(u,k){ const c = u.cup[k]; if (c.out) return `Out in the ${E.CUP_ROUND_NAMES[c.round].toLowerCase()}`; if (c.round>=6) return 'Winners!'; return `In the ${E.CUP_ROUND_NAMES[c.round].toLowerCase()}`; }
+function cupTie(u,k){ const st=S.state; const t = st.cups[k].ties.find(x=>x.h===u.id||x.a===u.id); if (!t) return 'not involved'; const home = t.h===u.id; const opp = st.clubs[home?t.a:t.h]; return `${esc(opp.name)} ${home?'(home)':'(away)'}`; }
+function cupSummary(k){ const st=S.state, u=user(); const cup = st.cups[k]; const alive = cup.alive.map(id=>st.clubs[id].short); let s = cupStatus(u,k)+'. '; if (st.cupWinners[k]!==null && st.cupWinners[k]!==undefined) s += `${esc(st.clubs[st.cupWinners[k]].name)} won it.`; else if (alive.length<=8) s += `Still in: ${alive.map(esc).join(', ')}.`; else s += `${alive.length} clubs left.`; if (!u.cup[k].out && cup.ties.length) s += ` Next: ${cupTie(u,k)}.`; return s; }
+function selectionSummary(){ const st=S.state,u=user(); const cnt = ids => (ids||[]).filter(id=>st.players[id]&&st.players[id].club===u.id&&st.players[id].injury===0).length; const lg = cnt(st.userSel); let s = lg>=11? `${u.formation}, XI set` : lg>0? `${lg} picked, rest auto` : `auto pick (${u.formation})`; if (inEurope(u)){ const eu = cnt(st.euroSel); s += `; Europe: ${eu>=11? 'XI set' : eu>0? eu+' picked' : 'same as league'}`; } return s; }
+
+// ---------- match animation ----------
+// The matchday viewer lives in src/matchday (built into this file); see ARCHITECTURE_MATCHDAY.md.
+
+// ---------- actions ----------
+async function act(a, d){
+  const st = S.state;
+  switch(a){
+    case 'setup': go('setup'); setTimeout(()=>{ const i=document.querySelector('.mgrname'); if(i) i.focus(); }, 50); break;
+    case 'setupcount': S.setupNames = Array.from(document.querySelectorAll('.mgrname')).map(i=>i.value); S.setupCount = +d.n; if (S.setupCount>1) S.setupMode = 'classic'; render(); break;
+    case 'mode': S.setupNames = Array.from(document.querySelectorAll('.mgrname')).map(i=>i.value); S.setupMode = d.m; render(); break;
+    case 'start': {
+      const names = Array.from(document.querySelectorAll('.mgrname')).map((i,k)=>i.value.trim() || (S.setupCount>1? 'Manager '+(k+1) : 'The Gaffer'));
+      const mode = names.length>1? 'classic' : (S.setupMode||'classic');
+      S.state = E.newGame({ managers: names, mode });
+      Track.send('game_started', { number_of_managers: names.length, mode });
+      S.hasSave = true; await save(); startTurn(0); break; }
+    case 'continue': startTurn(st.cur); break;
+    case 'taketurn': if (S.md && S.md.passing) Matchday.ui.afterPass(); else arriveAtTurn(); break;
+    case 'ready': await endTurn(); break;
+    case 'nextround': { if (S.pendingReview){ S.pendingReview=false; S.from='afterseason'; go('standings'); } else startTurn(firstActive()); } break;
+    case 'standings': S.from = S.screen; go('standings'); break;
+    case 'retire': if (!multi()) break; if (!S.confirmRetire){ S.confirmRetire = true; render(); toast('Tap again to leave the game to the others.'); setTimeout(()=>{ S.confirmRetire=false; if (S.screen==='home') render(); }, 4000); } else { S.confirmRetire=false; E.retireManager(st, st.cur); await save(); toast('Off into the sunset.'); startTurn(firstActive()); } break;
+    case 'quit': if (multi()) { toast('Only the last manager standing can abandon the game.'); break; } if (!S.confirmQuit){ S.confirmQuit = true; render(); toast('Tap again to confirm.'); setTimeout(()=>{ S.confirmQuit=false; if (S.screen==='home') render(); }, 4000); } else { S.confirmQuit=false; await Store.del(SAVE_KEY); S.state=null; S.hasSave=false; go('title'); } break;
+    case 'toggle': {
+      const id = +d.id; const p = st.players[id]; if (!p) break;
+      const ids = sel(); const k = ids.indexOf(id);
+      if (k>=0) ids.splice(k,1); else if (p.injury>0) { toast(p.name+' is injured.'); break; } else ids.push(id);
+      if (d.back) go('player'); else render(); break; }
+    case 'formation': if (S.xiMode==='euro') user().euroFormation = d.f; else user().formation = d.f; render(); break;
+    case 'autopick': { const xi = E.autoSelect(st, user(), S.xiMode==='euro'? (user().euroFormation||user().formation) : user().formation); const ids = xi.map(x=>x.p.id); if (S.xiMode==='euro') st.euroSel = ids; else st.userSel = ids; render(); toast('Best available XI picked.'); break; }
+    case 'clearpick': if (S.xiMode==='euro') st.euroSel = []; else st.userSel = []; render(); break;
+    case 'player': S.pid = +d.id; S.from = S.screen==='player'? S.from : S.screen; S.cYears = null; S.cWage = null; go('player'); break;
+    case 'back': if (S.from==='afterseason'){ S.from=null; startTurn(firstActive()); } else if (S.from==='title'){ go('title'); } else go(S.from||'squad'); break;
+    case 'setamt': { const i = $('#amt'); if (i) i.value = d.amt; break; }
+    case 'setcw': { const i = $('#cwage'); if (i) i.value = d.amt; break; }
+    case 'list': { const p = st.players[+d.id]; const amt = readAmount(); if (amt===null){ toast('Enter a price.'); break; } E.listPlayer(st, p.id, amt); await save(); render(); toast(p.name+' is up for sale.'); break; }
+    case 'unlist': E.unlistPlayer(st, +d.id); render(); break;
+    case 'bid': { const amt = readAmount(); if (amt===null){ toast('Enter an amount.'); break; } const rival = E.managerOf(st, st.players[+d.id].club); const err = E.bidForPlayer(st, +d.id, amt); if (err) toast(err); else { toast(rival? `Bid sent to ${rival.managerName}.` : 'Deal done.'); await save(); go(S.from||'transfers'); } break; }
+    case 'buy': { const err = E.buyFromList(st, +d.id); if (err) toast(err); else { toast('Signed.'); await save(); if (d.back) go('transfers'); else render(); } break; }
+    case 'accept': { const err = E.acceptOffer(st, +d.i); if (err) toast(err); else { toast('Sold.'); await save(); render(); } break; }
+    case 'reject': E.rejectOffer(st, +d.i); render(); break;
+    case 'ttab': S.tab.transfers = d.t; render(); break;
+    case 'cyears': S.cWage = readAmount('#cwage'); S.cYears = +d.y; render(); break;
+    case 'academy': { const err = E.upgradeAcademy(st); if (err) toast(err); else { toast('Builders booked.'); await save(); render(); } break; }
+    case 'promote': { const err = E.promoteReserve(st, +d.id); if (err) toast(err); else { toast('Promoted.'); await save(); if (S.screen==='player') go(S.from||'club'); else render(); } break; }
+    case 'releasereserve': { if (S.confirmRelease!==+d.id){ S.confirmRelease = +d.id; render(); toast('Tap again to let him go.'); setTimeout(()=>{ S.confirmRelease=null; if (S.screen==='player') render(); }, 4000); break; } S.confirmRelease=null; const err = E.releaseReserve(st, +d.id); if (err) toast(err); else { toast('Gone.'); await save(); go(S.from||'club'); } break; }
+    case 'contract': { const yrs = S.cYears || E.wantsYears(st.players[+d.id]); const wage = readAmount('#cwage'); if (wage===null){ toast('Enter a wage.'); break; } const r = E.offerContract(st, +d.id, wage, yrs); toast(r.msg); if (r.ok){ S.cYears = null; S.cWage = null; await save(); } else S.cWage = wage; render(); break; }
+    case 'letgo': { const p = st.players[+d.id]; E.letGo(st, p.id, !p.letGo); await save(); render(); toast(p.letGo? `${p.name} will leave when his deal ends.` : `${p.name} is back in your plans.`); break; }
+    case 'release': { if (!S.confirmRelease || S.confirmRelease!==+d.id){ S.confirmRelease = +d.id; render(); toast('Tap again to release him.'); setTimeout(()=>{ S.confirmRelease=null; if (S.screen==='player') render(); }, 4000); break; } S.confirmRelease=null; const err = E.releasePlayer(st, +d.id); if (err) toast(err); else { toast('Released.'); await save(); go(S.from||'squad'); } break; }
+    case 'signfree': { const yrs = S.cYears || E.wantsYears(st.players[+d.id]); const wage = readAmount('#cwage'); if (wage===null){ toast('Enter a wage.'); break; } const r = E.signFreeAgent(st, +d.id, wage, yrs); toast(r.msg); if (r.ok){ S.cYears = null; await save(); go('transfers'); } else render(); break; }
+    case 'scoutdiv': S.tab.scout = {div:+d.d}; render(); break;
+    case 'ximode': S.xiMode = d.m; render(); break;
+    case 'brief': { const b = S.tab.brief; b[d.k] = (d.k==='pos'||d.k==='age')? d.v : +d.v; render(); break; }
+    case 'scoutgo': { const b = S.tab.brief; const band = AGE_BANDS[b.age]||{}; S.tab.report = E.scoutSearch(st, { pos: b.pos, ageMin: band.min, ageMax: band.max, minSkill: b.skill, maxValue: b.value }); await save(); render(); break; }
+    case 'scoutclub': S.tab.scout.club = +d.c; render(); break;
+    case 'scoutback': S.tab.scout.club = null; render(); break;
+    case 'tdiv': S.tab.table = +d.d; render(); break;
+    case 'ctab': S.tab.club = d.t; render(); break;
+    case 'rndiv': S.tab.rename = {div:+d.d, club:null}; render(); break;
+    case 'rnclub': S.tab.rename.club = d.c===''? null : +d.c; render(); break;
+    case 'renameother': { const err = E.renameAnyClub(st, +d.c, $('#oname').value, $('#oshort').value); if (err) toast(err); else { toast('Done.'); S.tab.rename.club = null; await save(); render(); } break; }
+    case 'renameclub': { const err = E.renameClub(st, $('#clubname').value, $('#clubshort').value); if (err) toast(err); else { toast('Done.'); await save(); render(); } break; }
+    case 'renameplayer': { const err = E.renamePlayer(st, +d.id, $('#pname').value); if (err) toast(err); else { toast('Done.'); await save(); render(); } break; }
+    case 'preseason': if (st.season===1) Track.once(st, 'pre', 'preseason_opened', { number_of_managers: st.managers.length }); go('preseason'); break;
+    case 'fixtures': S.from = S.screen; go('fixtures'); break;
+    case 'saves': S.from = S.screen==='title'? 'title' : S.screen; S.slots = await listSlots(); S.slotName = null; go('saves'); break;
+    case 'help': S.from = S.screen==='title'? 'title' : S.screen; go('help'); break;
+    case 'hof': S.from = S.screen==='title'? 'title' : S.screen; S.ladderRows = undefined; go('hof'); loadLadder(); break;
+    case 'whatsnew': S.from = S.screen==='title'? 'title' : S.screen; markSeen(); go('whatsnew'); break;
+    case 'hoftab': S.tab.hof = d.t; render(); if (d.t==='ladder') loadLadder(); break;
+    case 'board': S.tab.board = d.b; S.ladderRows = undefined; render(); loadLadder(); break;
+    case 'setnick': { const v = Ladder.setNick($('#nick').value); if (!v){ toast('Give yourself a name.'); break; } toast(`You are ${v}.`); if (st) await Ladder.submit(st); S.ladderRows = undefined; Ladder.cache = {}; render(); loadLadder(); break; }
+    case 'joinladder': { const v = Ladder.setNick($('#nick').value); if (!v){ toast('Give yourself a name.'); break; } S.nickPrompt = false; toast(`You are ${v}.`); await Ladder.submit(st); render(); break; }
+    case 'skipladder': S.nickPrompt = false; try{ localStorage.setItem('sm91-nick-skipped', '1'); }catch(e){} render(); break;
+    case 'ladderopt': try{ localStorage.setItem(LADDER_OPT, ladderOn()? 'off' : 'on'); }catch(e){} render(); break;
+    case 'records': S.from = S.screen; go('records'); break;
+    case 'analytics': try{ localStorage.setItem('sm91-analytics', analyticsOn()? 'off' : 'on'); }catch(e){} render(); break;
+    case 'pingtest': S.pingResult = 'Sending...'; render(); S.pingResult = await Track.test(); render(); break;
+    case 'title': S.slots = await listSlots(); S.slotCount = S.slots.length; go('title'); break;
+    case 'saveslot': { const name = ($('#slotname')&&$('#slotname').value.trim()) || `Season ${st.season} week ${st.week}`; S.slots = await saveSlot(name); S.slotCount = S.slots.length; toast('Saved.'); render(); break; }
+    case 'loadslot': { const err = await loadSlot(+d.i); if (err){ toast(err); break; } toast('Loaded.'); startTurn(S.state.cur); break; }
+    case 'delslot': { if (S.confirmDel!==+d.i){ S.confirmDel = +d.i; render(); setTimeout(()=>{ if (S.confirmDel===+d.i){ S.confirmDel=null; if (S.screen==='saves') render(); } }, 4000); break; } S.confirmDel=null; await deleteSlot(+d.i); S.slots = await listSlots(); S.slotCount = S.slots.length; render(); break; }
+    case 'results': S.from = (S.screen==='weekdone'||S.screen==='weekmulti')? S.screen : 'home'; go('results'); break;
+    case 'rdiv': S.tab.results = +d.d; render(); break;
+    case 'resign': if (!S.confirmResign){ S.confirmResign = true; render(); toast('Tap again to hand in your notice.'); setTimeout(()=>{ S.confirmResign=false; if (S.screen==='home') render(); }, 4000); } else { S.confirmResign=false; E.resign(st); await save(); go('sacked'); } break;
+    case 'takesack': { const err = E.takeSackOffer(st); if (err) toast(err); else { st.userSel = []; await save(); if (mgr().pendingReview) go('review'); else go('home'); } } break;
+    case 'walkaway': {
+      if (multi()){ E.retireManager(st, st.cur); if (E.activeManagers(st).length){ await save(); toast('Off into the sunset.'); startTurn(firstActive()); break; } }
+      await Store.del(SAVE_KEY); S.state=null; S.hasSave=false; go('title'); break; }
+    case 'home': go('home'); break;
+    case 'sponsor': { const err = E.chooseSponsor(st, +d.i); if (err) toast(err); else { await save(); render(); } break; }
+    case 'tickets': { const err = E.setSeasonTickets(st, +d.m); if (err) toast(err); else { await save(); render(); } break; }
+    case 'loan': { const err = E.takeLoan(st, +d.amt); if (err) toast(err); else { toast('Money in.'); await save(); render(); } break; }
+    case 'repay': { const err = E.repayLoan(st); if (err) toast(err); else { toast('Loan cleared.'); await save(); render(); } break; }
+    case 'training': E.setTraining(st, d.t); render(); break;
+    case 'staff': E.setStaff(st, d.r, +d.t); await save(); render(); break;
+    case 'ticket': { const err = E.setTicketPrice(st, parseFloat(d.p)); if (err) toast(err); else { await save(); render(); } break; }
+    case 'safety': { const err = E.improveSafety(st, +d.p); if (err) toast(err); else { toast('Work done.'); await save(); render(); } break; }
+    case 'build': { const err = E.startBuild(st, +d.n); if (err) toast(err); else { toast('Builders booked.'); await save(); render(); } break; }
+    case 'play': await playWeek(); break;
+    case 'continue-week':
+      if (st.gameOver){ S.pendingReview=false; go('sacked'); } else if (mgr().pendingReview){ S.pendingReview=false; go('review'); } else go('home');
+      break;
+    case 'acceptjob': E.acceptJob(st); st.userSel = []; await save(); render(); toast('New club, new problems.'); break;
+    case 'declinejob': E.declineJob(st); await save(); render(); break;
+    case 'newseason': st.userSel = (st.userSel||[]).filter(id=>st.players[id]&&st.players[id].club===st.userClub); mgr().pendingReview = false; await save(); go('home'); break;
+    default: if (a.startsWith('md-')) await Matchday.ui.act(a, d);
+  }
+}
+
+function inMatchday(){ return !!(S.md && (S.screen==='matchpick' || S.screen==='matchview' || S.screen==='matchresult')); }
+function firstActive(){ const st = S.state; const i = st.managers.findIndex(m=>!m.retired); return i<0? 0 : i; }
+function startTurn(idx){
+  const st = S.state; E.saveCurrent(st); E.setCurrent(st, idx);
+  if (multi()) go('pass'); else arriveAtTurn();
+}
+function arriveAtTurn(){
+  const st = S.state; const m = mgr();
+  if (st.gameOver) go('sacked');
+  else if (m.pendingReview) go('review');
+  else go('home');
+}
+async function endTurn(){
+  const st = S.state; const m = mgr(); m.ready = true; E.saveCurrent(st); await save();
+  const next = st.managers.findIndex(x=>!x.retired && !x.ready);
+  if (next>=0) startTurn(next); else await playWeek();
+}
+async function playWeek(){
+  const st = S.state, u = user();
+  const before = st.season;
+  const week = st.week; const wk = st.schedule[week-1];
+  if (!multi() && E.buildXI(st, u, sel(), u.formation).length<11) toast('Fewer than 11 fit players. Playing short.');
+  if (before===1 && week===1) Track.once(st, 'kick', 'first_match_kicked_off', { number_of_managers: st.managers.length, set_preseason: !(st.preseason && st.preseason.pending) });
+  const results = E.advanceWeek(st);
+  S.pendingReview = st.season>before;
+  if (st.season>before){ Ladder.record(st); let skipped = false; try{ skipped = !!localStorage.getItem('sm91-nick-skipped'); }catch(e){} if (Ladder.on()){ if (Ladder.nick()) Ladder.submit(st); else if (!skipped) S.nickPrompt = true; } }
+  const played = st.season>before? E.CFG.WEEKS : week;
+  if (before===1 && played===1) Track.once(st, 'w1', 'week_1_completed', { number_of_managers: st.managers.length });
+  if (before===1 && played===5) Track.once(st, 'w5', 'week_5_completed', { number_of_managers: st.managers.length });
+  if (st.season>before) Track.once(st, 's'+before, 'season_completed', { season: before, number_of_managers: st.managers.length, division: user().div });
+  if (st.season===2 && before===1) Track.once(st, 's2start', 'season_2_started', { number_of_managers: st.managers.length, division: user().div });
+  S.results = { results, userMatch: null, week, type: wk.type, cup: wk.cup };
+  await save();
+  // the week is resolved and saved; what follows is presentation only (Watch / Instant per match)
+  Matchday.ui.startWeek();
+}
+
+// ---------- matchday viewer ----------
+Matchday.ui.install({ S, SCREENS, E, go, render, esc, $, toast, user, mgr, multi, euroComp, Track });
+
+// ---------- wiring ----------
+let busy = false;
+document.addEventListener('click', async e => {
+  const f = e.target.closest('[data-track]'); if (f){ Track.send(f.dataset.track, { screen: S.screen }); return; }
+  const n = e.target.closest('[data-nav]'); if (n){ if (S.anim || busy || inMatchday()) return; go(n.dataset.nav); return; }
+  const t = e.target.closest('[data-a]'); if (!t) return;
+  if (S.anim && t.dataset.a!=='skipanim') return;
+  if (busy) return;
+  busy = true;
+  try { await act(t.dataset.a, t.dataset); } catch(err){ console.error(err); } finally { busy = false; }
+});
+document.addEventListener('keydown', e => { if (e.key==='Enter' && S.screen==='setup' && (S.setupCount||1)===1) act('start',{}); });
+
+window.__sm91 = { S, E, render, go };
+if ('serviceWorker' in navigator && /^https?:/.test(location.protocol) && document.querySelector('link[rel="manifest"]')){
+  navigator.serviceWorker.register('sw.js').then(reg => {
+    const announce = () => { const bar = document.getElementById('updatebar'); if (bar) bar.style.display = 'block'; };
+    if (reg.waiting && navigator.serviceWorker.controller) announce();
+    reg.addEventListener('updatefound', () => { const nw = reg.installing; if (!nw) return; nw.addEventListener('statechange', () => { if (nw.state==='installed' && navigator.serviceWorker.controller) announce(); }); });
+    setInterval(() => reg.update().catch(()=>{}), 60*60*1000);
+  }).catch(()=>{});
+  document.getElementById('updatebar').addEventListener('click', () => { if (S.anim) return; location.reload(); });
+}
+(async function init(){
+  const saved = await load();
+  if (saved){ S.state = saved; S.hasSave = true; }
+  S.slots = await listSlots(); S.slotCount = S.slots.length;
+  go('title');
+})();
+})();
+</script>
+</body>
+</html>
