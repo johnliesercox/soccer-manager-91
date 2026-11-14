@@ -1,6 +1,8 @@
 const { boot } = require('./harness.js');
 (async()=>{
   const H = boot(); await H.start(['John']);
+  // a fixed seed: the flow depends on which youths the academy produces, so the run must be repeatable
+  { const A = H.app(); const fresh = A.E.newGame({ seed: 19910502, userClub: A.S.state.userClub }); fresh.managers[0].managerName = 'John'; A.S.state = fresh; A.go('home'); await H.sleep(120); }
   const st = H.app().S.state, E = H.app().E, u = st.clubs[st.userClub]; u.balance = 800000;
   await H.click('[data-nav="club"]'); await H.click('[data-a="ctab"][data-t="youth"]'); console.log('youth tab:', H.text().slice(0,120));
   await H.click('[data-a="academy"]', 80); console.log('upgrade:', H.toast(), '|', (H.text().match(/Builders in[^.]+\./)||[''])[0]);

@@ -52,6 +52,11 @@
       else beep(2200, t, 0.45, 0.12); },
     goal(){ load(); if (!enabled) return; const c = ac(); if (!c) return; if (crowdGain){ const t = c.currentTime; crowdGain.gain.cancelScheduledValues(t); crowdGain.gain.setTargetAtTime(0.5, t, 0.08); crowdGain.gain.setTargetAtTime(0.09, t+1.8, 0.9); } },
     chance(){ load(); if (!enabled || !crowdGain) return; const t = ctx.currentTime; crowdGain.gain.cancelScheduledValues(t); crowdGain.gain.setTargetAtTime(0.22, t, 0.1); crowdGain.gain.setTargetAtTime(0.09, t+0.6, 0.5); },
+    // the woodwork: a short dull knock, then the crowd's gasp
+    woodwork(){ load(); if (!enabled) return; const c = ac(); if (!c) return; const t = c.currentTime;
+      const o = c.createOscillator(), g = c.createGain(); o.type = 'triangle'; o.frequency.setValueAtTime(180, t); o.frequency.exponentialRampToValueAtTime(70, t+0.12);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.25, t+0.01); g.gain.exponentialRampToValueAtTime(0.0001, t+0.18); o.connect(g); g.connect(c.destination); o.start(t); o.stop(t+0.25);
+      if (crowdGain){ crowdGain.gain.cancelScheduledValues(t); crowdGain.gain.setTargetAtTime(0.3, t+0.05, 0.08); crowdGain.gain.setTargetAtTime(0.09, t+0.9, 0.6); } },
   };
   MD.audio = A;
 })(typeof window!=='undefined'? window : globalThis);

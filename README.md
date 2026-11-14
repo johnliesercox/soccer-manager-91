@@ -13,11 +13,12 @@ Live at https://johnliesercox.github.io/soccer-manager-91/
 | `worker/` | The optional Cloudflare Worker for the shared ladder (see `worker/README.md`). |
 | `engine.js` | The game engine: clubs, players, the season, the match simulation. Also loads in Node for the tests. |
 | `ui.html` | The screens and styles, with two slots (`/*ENGINE*/` and `/*MATCHDAY*/`) that the build fills in. |
-| `src/matchday/` | The animated match viewer: capture, timeline, behaviour, trajectories, interactions, scene, playback, sprites, audio, the viewer UI and the three renderers. |
+| `src/matchday/` | The animated match viewer: capture, timeline, behaviour, trajectories, interactions, scene, playback, sprites, audio, the viewer UI and the renderers (Pixels, Markers, Board and the isometric view in progress). |
+| `tools/iso-art.js`, `tools/iso_paint.py`, `tools/floyo/`, `assets/matchday/isometric/` | The isometric art: the generator and its sprite sheets, the painted override sheets and stadium textures made through Floyo (`tools/floyo/README.md` is the reproducible process), and `tools/iso_pack.py`, which keeps the sheets as lossless palette PNGs; `build.py` inlines them (`ISO_STYLES=B` by default). See `ART-PIPELINE.md`. |
 | `build.py` | Inlines `engine.js` and the matchday modules into `ui.html` and writes `index.html` (and `soccer-manager-91.html`, a copy without the app links that opens straight from disk). |
 | `test-*.js`, `harness.js`, `sim.js` | The automated tests and the headless harness they use. |
 | `legacy/` | Old engine snapshots that the migration tests load. |
-| `ARCHITECTURE_MATCHDAY.md` | How the match viewer fits together and the contract for the next renderer (isometric or 3D). |
+| `ARCHITECTURE_MATCHDAY.md`, `PHASE-3-ARCHITECTURE.md`, `PHASE-3-QA-REPORT.md`, `ART-PIPELINE.md` | How the match viewer fits together, the isometric renderer, its QA matrix, and the art pipeline. |
 
 ## Rebuilding after a change
 
@@ -32,9 +33,16 @@ node test-matchday.js
 node test-playback.js
 node test-matchday-ui.js
 node test-phase25.js
+node test-isometric.js
+node test-highlights.js
+node test-contracts.js
+node test-hof.js
+node test-youth.js
 node test-equivalence.js
 node test-regression.js
 ```
+
+To re-render the generated isometric art (about six minutes for both styles at three scales): `node tools/iso-art.js --style both --spr 24,16,12`, then `python3 tools/iso_pack.py assets/matchday/isometric/B`. The painted sheets and textures are converted from the Floyo outputs with `tools/iso_paint.py` (see `tools/floyo/README.md`); re-rendering the generator does not touch them.
 
 Each prints a final "PASSED" or "errors: none" line.
 

@@ -119,6 +119,7 @@
   function sideOf(dX, fallback){ if (Math.abs(dX)<1e-6) return fallback==='left'? 'left' : 'right'; return dX>0? 'right' : 'left'; }
   const STRIDE_M = 0.85;   // metres per run frame
 
+  const textW = (c, t) => { const m = c.measureText && c.measureText(t); return (m && m.width) || t.length * 7; };   // tolerant of stub contexts
   function drawFrame(ctx, w, h, scene, info){
     const st = info.state; const lay = info.lay || layoutFor(w, h);
     const dt = info.dtReal===undefined? 1/60 : info.dtReal;
@@ -144,30 +145,33 @@
       let facing = a.facing;
       if (pl.facingAngle!==null && pl.facingAngle!==undefined){ const d = screenDir(lay, pl.x, pl.y, pl.facingAngle); facing = facingFrom(d.dX, d.dY, a.facing, pl.movement==='idle'? 0.6 : 0.25); }
       const runFrame = Math.floor(a.dist/STRIDE_M)%4;
-      let pose = 'idle', frame = 0;
+      let pose = 'idle', frame = 0, lift = 0;
       const mv = pl.movement || (pl.hasBall? 'jog' : 'idle');
       if (mv==='walk'){ pose = 'run'; frame = Math.floor(a.dist/(STRIDE_M*1.6))%4; }
       else if (mv!=='idle'){ pose = 'run'; frame = runFrame; }
       const ph = pl.actionPhase||0;
       switch (pl.action){
-        case 'pass': case 'shoot':
+        case 'pass': case 'shoot': case 'volley':
           if (ph < 0.3){ if (mv==='idle') pose = 'idle'; }                 // plant the feet
-          else if (ph < 0.82) pose = pl.action==='shoot'? 'shoot' : 'kick';   // contact window
+          else if (ph < 0.82) pose = pl.action==='pass'? 'kick' : 'shoot';   // contact window
           break;
+        case 'header': pose = 'receive'; frame = 0; lift = Math.round(Math.max(0, Math.sin(Math.PI*Math.min(1, ph)))*6*s); break;   // a jump, apex at the contact
         case 'receive': if (ph < 0.85) pose = 'receive'; break;
         case 'set': pose = 'set'; break;
-        case 'dive': pose = 'dive'; break;
-        case 'tackle': pose = 'slide'; break;
-        case 'block': pose = 'block'; break;
+        case 'catch': pose = ph < 0.4? 'set' : 'block'; break;
+        case 'getup': pose = ph < 0.5? 'set' : 'idle'; break;
+        case 'dive': pose = 'dive'; break;   // a parry is a dive here too
+        case 'tackle': pose = (pl.actionDetail && pl.actionDetail.slide===false)? 'receive' : 'slide'; break;
+        case 'block': pose = (pl.actionDetail && pl.actionDetail.slide)? 'slide' : 'block'; break;
         case 'celebrate': pose = 'celebrate'; frame = Math.floor(now/300)%2; facing = 'down'; break;
-        case 'booked': pose = 'booked'; facing = 'down'; break;
+        case 'booked': case 'dismay': pose = 'booked'; facing = 'down'; break;
         default: break;
       }
       if (pl.aim && (pose==='dive' || pose==='slide')){ const ap = lay.proj(pl.aim.x, pl.aim.y), v0 = lay.proj(pl.x, pl.y); facing = sideOf(ap.X - v0.X, a.facing); }
       a.facing = facing;
       const kit = pl.teamId===home.id? home.kit : away.kit;
       const gk = pl.role==='GK'? { primary: kit.secondary, secondary: kit.primary } : kit;
-      items.push({ kind:'player', pl, pos, sprite: SP.get(gk, SP.variantFor(pl.id), facing, pose, frame), y: pos.Y, facing });
+      items.push({ kind:'player', pl, pos: lift? { X: pos.X, Y: pos.Y - lift } : pos, shadowPos: pos, sprite: SP.get(gk, SP.variantFor(pl.id), facing, pose, frame), y: pos.Y, facing });
     }
     // referee
     if (scene.ref){
@@ -189,8 +193,9 @@
     const b = scene.ball; const controlled = b.state? b.state==='controlled' : !!b.carrierId;
     for (const it of items){
       // shadow, and a restrained ring under the player on the ball
-      ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(it.pos.X - 4*s, it.pos.Y - 1*s, 8*s, 2*s);
-      if (it.kind==='player' && it.pl.hasBall && info.possessionRing!==false){ ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = s; ctx.beginPath(); ctx.ellipse(it.pos.X, it.pos.Y, 9*s, 4*s, 0, 0, Math.PI*2); ctx.stroke(); }
+      const gp = it.shadowPos || it.pos;
+      ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(gp.X - 4*s, gp.Y - 1*s, 8*s, 2*s);
+      if (it.kind==='player' && it.pl.hasBall && info.possessionRing!==false){ ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = s; ctx.beginPath(); ctx.ellipse(gp.X, gp.Y, 9*s, 4*s, 0, 0, Math.PI*2); ctx.stroke(); }
       ctx.drawImage(it.sprite, 0, 0, SP.W, SP.H, it.pos.X - FX, it.pos.Y - FY, SW, SH);
     }
     // ball: at the carrier's feet (a touch ahead of him) when controlled, lifted by its height in flight
@@ -204,7 +209,7 @@
     // tags: the player on the ball, and the selected player
     const font = px => `700 ${Math.round(px)}px "Courier New",Courier,monospace`;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    const tag = (X, Y, text, bg) => { const fs = Math.max(10, 7*s); ctx.font = font(fs); const tw = ctx.measureText(text).width + 8; const th = fs + 4; ctx.fillStyle = bg||'rgba(0,0,0,0.75)'; ctx.fillRect(Math.round(X - tw/2), Math.round(Y - th - 2), Math.round(tw), th); ctx.fillStyle = '#FFFFFF'; ctx.fillText(text, X, Y - th/2 - 1); };
+    const tag = (X, Y, text, bg) => { const fs = Math.max(10, 7*s); ctx.font = font(fs); const tw = textW(ctx, text) + 8; const th = fs + 4; ctx.fillStyle = bg||'rgba(0,0,0,0.75)'; ctx.fillRect(Math.round(X - tw/2), Math.round(Y - th - 2), Math.round(tw), th); ctx.fillStyle = '#FFFFFF'; ctx.fillText(text, X, Y - th/2 - 1); };
     const sel = info.selected && info.selected.until > now? scene.players.find(x=>x.id===info.selected.id) : null;
     if (sel && !sel.sentOff){ const p = cam.toScreen(sel.x, sel.y); tag(p.X, p.Y - FY, sel.name+' '+sel.shirtNo, 'rgba(230,110,0,0.9)'); ctx.strokeStyle = '#FFD200'; ctx.lineWidth = s; ctx.strokeRect(p.X - FX, p.Y - FY, SW, SH); }
     // goal flash: a beat after the ball crosses the line, and in the half of the view away from the goal
@@ -221,7 +226,7 @@
       ctx.restore();
     }
     if (info.sinceCut!==undefined && info.sinceCut < 0.3){ ctx.save(); ctx.globalAlpha = 1 - info.sinceCut/0.3; ctx.fillStyle = '#000'; ctx.fillRect(0,0,w,h); ctx.restore(); }
-    if (info.fastForward){ ctx.save(); ctx.globalAlpha = 0.9; ctx.font = font(12); const label = '\u25B6\u25B6 NEXT HIGHLIGHT'; const bw = ctx.measureText(label).width + 16, bh = 20; ctx.fillStyle = '#111'; ctx.fillRect(Math.round(w/2 - bw/2), 6, Math.round(bw), bh); ctx.fillStyle = '#FFD200'; ctx.fillText(label, w/2, 6+bh/2+1); ctx.restore(); }
+    if (info.fastForward){ ctx.save(); ctx.globalAlpha = 0.9; ctx.font = font(12); const label = '\u25B6\u25B6 NEXT HIGHLIGHT'; const bw = textW(ctx, label) + 16, bh = 20; ctx.fillStyle = '#111'; ctx.fillRect(Math.round(w/2 - bw/2), 6, Math.round(bw), bh); ctx.fillStyle = '#FFD200'; ctx.fillText(label, w/2, 6+bh/2+1); ctx.restore(); }
     return cam;
   }
 
@@ -229,7 +234,7 @@
   function create(options){
     const opts = Object.assign({}, options||{});
     let container = null, canvas = null, ctx = null, teams = null, lay = null, world = null, ro = null, lastW = 0, lastH = 0, seed = 1, lastCam = null, lastTs = 0;
-    let cameraMode = opts.camera || (function(){ try { return root.localStorage.getItem(CAM_KEY) || 'follow'; } catch(e){ return 'follow'; } })();
+    let cameraMode = opts.camera || (function(){ try { const m = root.localStorage.getItem(CAM_KEY); return m==='whole'? 'whole' : 'follow'; } catch(e){ return 'follow'; } })();
     const state = { anim: {}, camX: undefined, camY: undefined };
     let selected = null, lastScene = null;
     function onTap(e){

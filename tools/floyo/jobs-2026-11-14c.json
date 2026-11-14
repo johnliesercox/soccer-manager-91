@@ -1,0 +1,314 @@
+[
+ {
+  "stem": "header-0_header-1",
+  "kind": "figure",
+  "frames": [
+   "header:0",
+   "header:1"
+  ],
+  "gk": false,
+  "hair": 0,
+  "wide": false
+ },
+ {
+  "stem": "header-2_volley-0",
+  "kind": "figure",
+  "frames": [
+   "header:2",
+   "volley:0"
+  ],
+  "gk": false,
+  "hair": 0,
+  "wide": false
+ },
+ {
+  "stem": "volley-1_volley-2",
+  "kind": "figure",
+  "frames": [
+   "volley:1",
+   "volley:2"
+  ],
+  "gk": false,
+  "hair": 0,
+  "wide": false
+ },
+ {
+  "stem": "poke-0_getup-0",
+  "kind": "figure",
+  "frames": [
+   "poke:0",
+   "getup:0"
+  ],
+  "gk": false,
+  "hair": 0,
+  "wide": false
+ },
+ {
+  "stem": "getup-1_dismay-0",
+  "kind": "figure",
+  "frames": [
+   "getup:1",
+   "dismay:0"
+  ],
+  "gk": false,
+  "hair": 0,
+  "wide": false
+ },
+ {
+  "stem": "kneeslide-0_kneeslide-1",
+  "kind": "figure",
+  "frames": [
+   "kneeslide:0",
+   "kneeslide:1"
+  ],
+  "gk": false,
+  "hair": 0,
+  "wide": false
+ },
+ {
+  "stem": "runcheer-0_runcheer-1",
+  "kind": "figure",
+  "frames": [
+   "runcheer:0",
+   "runcheer:1"
+  ],
+  "gk": false,
+  "hair": 0,
+  "wide": false
+ },
+ {
+  "stem": "runcheer-2_runcheer-3",
+  "kind": "figure",
+  "frames": [
+   "runcheer:2",
+   "runcheer:3"
+  ],
+  "gk": false,
+  "hair": 0,
+  "wide": false
+ },
+ {
+  "stem": "hug-0_hug-1",
+  "kind": "figure",
+  "frames": [
+   "hug:0",
+   "hug:1"
+  ],
+  "gk": false,
+  "hair": 0,
+  "wide": false
+ },
+ {
+  "stem": "kneel-0_appeal-0",
+  "kind": "figure",
+  "frames": [
+   "kneel:0",
+   "appeal:0"
+  ],
+  "gk": false,
+  "hair": 0,
+  "wide": false
+ },
+ {
+  "stem": "header-0_header-1-h1",
+  "kind": "figure",
+  "frames": [
+   "header:0",
+   "header:1"
+  ],
+  "gk": false,
+  "hair": 1,
+  "wide": false
+ },
+ {
+  "stem": "header-2_volley-0-h1",
+  "kind": "figure",
+  "frames": [
+   "header:2",
+   "volley:0"
+  ],
+  "gk": false,
+  "hair": 1,
+  "wide": false
+ },
+ {
+  "stem": "volley-1_volley-2-h1",
+  "kind": "figure",
+  "frames": [
+   "volley:1",
+   "volley:2"
+  ],
+  "gk": false,
+  "hair": 1,
+  "wide": false
+ },
+ {
+  "stem": "poke-0_getup-0-h1",
+  "kind": "figure",
+  "frames": [
+   "poke:0",
+   "getup:0"
+  ],
+  "gk": false,
+  "hair": 1,
+  "wide": false
+ },
+ {
+  "stem": "getup-1_dismay-0-h1",
+  "kind": "figure",
+  "frames": [
+   "getup:1",
+   "dismay:0"
+  ],
+  "gk": false,
+  "hair": 1,
+  "wide": false
+ },
+ {
+  "stem": "kneeslide-0_kneeslide-1-h1",
+  "kind": "figure",
+  "frames": [
+   "kneeslide:0",
+   "kneeslide:1"
+  ],
+  "gk": false,
+  "hair": 1,
+  "wide": false
+ },
+ {
+  "stem": "runcheer-0_runcheer-1-h1",
+  "kind": "figure",
+  "frames": [
+   "runcheer:0",
+   "runcheer:1"
+  ],
+  "gk": false,
+  "hair": 1,
+  "wide": false
+ },
+ {
+  "stem": "runcheer-2_runcheer-3-h1",
+  "kind": "figure",
+  "frames": [
+   "runcheer:2",
+   "runcheer:3"
+  ],
+  "gk": false,
+  "hair": 1,
+  "wide": false
+ },
+ {
+  "stem": "hug-0_hug-1-h1",
+  "kind": "figure",
+  "frames": [
+   "hug:0",
+   "hug:1"
+  ],
+  "gk": false,
+  "hair": 1,
+  "wide": false
+ },
+ {
+  "stem": "kneel-0_appeal-0-h1",
+  "kind": "figure",
+  "frames": [
+   "kneel:0",
+   "appeal:0"
+  ],
+  "gk": false,
+  "hair": 1,
+  "wide": false
+ },
+ {
+  "stem": "catch-0_catch-1-gk",
+  "kind": "figure",
+  "frames": [
+   "catch:0",
+   "catch:1"
+  ],
+  "gk": true,
+  "hair": 0,
+  "wide": false
+ },
+ {
+  "stem": "parry-0-gk",
+  "kind": "figure",
+  "frames": [
+   "parry:0"
+  ],
+  "gk": true,
+  "hair": 0,
+  "wide": true
+ },
+ {
+  "stem": "parry-1-gk",
+  "kind": "figure",
+  "frames": [
+   "parry:1"
+  ],
+  "gk": true,
+  "hair": 0,
+  "wide": true
+ },
+ {
+  "stem": "getup-0_getup-1-gk",
+  "kind": "figure",
+  "frames": [
+   "getup:0",
+   "getup:1"
+  ],
+  "gk": true,
+  "hair": 0,
+  "wide": false
+ },
+ {
+  "stem": "dismay-0_appeal-0-gk",
+  "kind": "figure",
+  "frames": [
+   "dismay:0",
+   "appeal:0"
+  ],
+  "gk": true,
+  "hair": 0,
+  "wide": false
+ },
+ {
+  "stem": "dive-0-gk-s6",
+  "input": "dive-0-gk",
+  "kind": "figure",
+  "frames": [
+   "dive:0"
+  ],
+  "gk": true,
+  "hair": 0,
+  "wide": true,
+  "seed": 19910506,
+  "extra": "In every cell the whole body is horizontal and stretched out full length in mid-air, the head at one end and the boots at the other, never standing; some cells show the same flying body from behind, still horizontal."
+ },
+ {
+  "stem": "dive-1-gk-s6",
+  "input": "dive-1-gk",
+  "kind": "figure",
+  "frames": [
+   "dive:1"
+  ],
+  "gk": true,
+  "hair": 0,
+  "wide": true,
+  "seed": 19910506,
+  "extra": "In every cell the whole body is horizontal and stretched out full length in mid-air, the head at one end and the boots at the other, never standing; some cells show the same flying body from behind, still horizontal."
+ },
+ {
+  "stem": "dive-2-gk-s6",
+  "input": "dive-2-gk",
+  "kind": "figure",
+  "frames": [
+   "dive:2"
+  ],
+  "gk": true,
+  "hair": 0,
+  "wide": true,
+  "seed": 19910506,
+  "extra": "In every cell the whole body is horizontal and stretched out full length in mid-air, the head at one end and the boots at the other, never standing; some cells show the same flying body from behind, still horizontal."
+ }
+]

@@ -1,0 +1,98 @@
+[
+ {
+  "stem": "piece-right-b-24",
+  "kind": "piece",
+  "piece": "right",
+  "input": "piece-right-b-24"
+ },
+ {
+  "stem": "piece-right-b-24-s2",
+  "kind": "piece",
+  "piece": "right",
+  "input": "piece-right-b-24",
+  "seed": 19910503
+ },
+ {
+  "stem": "piece-near-b-24",
+  "kind": "piece",
+  "piece": "near",
+  "input": "piece-near-b-24"
+ },
+ {
+  "stem": "piece-near-b-24-s2",
+  "kind": "piece",
+  "piece": "near",
+  "input": "piece-near-b-24",
+  "seed": 19910503
+ },
+ {
+  "stem": "piece-dugout-b-24",
+  "kind": "piece",
+  "piece": "dugout",
+  "input": "piece-dugout-b-24"
+ },
+ {
+  "stem": "piece-dugout-b-24-s2",
+  "kind": "piece",
+  "piece": "dugout",
+  "input": "piece-dugout-b-24",
+  "seed": 19910503
+ },
+ {
+  "stem": "piece-near-b-24-s3",
+  "kind": "piece",
+  "piece": "near",
+  "input": "piece-near-b-24",
+  "seed": 19910504,
+  "prompt": "Isometric pixel art of one section of a long low open football terrace seen from behind and above at a 2:1 isometric angle, retro 16-bit video game style, matching the given layout exactly: ten shallow stepped rows packed with hundreds of small standing fans seen from the back, many rows deep, colourful winter coats, scarves and bobble hats, crush barriers, a low wall at the front. Bright flat colours, limited palette, crisp outlines, plain flat light grey background outside the terrace, no text, no logos, no players, no pitch."
+ },
+ {
+  "stem": "piece-near-b-24-s4",
+  "kind": "piece",
+  "piece": "near",
+  "input": "piece-near-b-24",
+  "seed": 19910505,
+  "prompt": "Isometric pixel art of one section of a long low open football terrace seen from behind and above at a 2:1 isometric angle, retro 16-bit video game style, matching the given layout exactly: ten shallow stepped rows packed with hundreds of small standing fans seen from the back, many rows deep, colourful winter coats, scarves and bobble hats, crush barriers, a low wall at the front. Bright flat colours, limited palette, crisp outlines, plain flat light grey background outside the terrace, no text, no logos, no players, no pitch."
+ },
+ {
+  "stem": "piece-near-b-24-canny",
+  "kind": "piece",
+  "piece": "near",
+  "input": "piece-near-b-24",
+  "seed": 19910502,
+  "prompt": "Isometric pixel art of one section of a long low open football terrace seen from behind and above at a 2:1 isometric angle, retro 16-bit video game style, matching the given layout exactly: ten shallow stepped rows packed with hundreds of small standing fans seen from the back, many rows deep, colourful winter coats, scarves and bobble hats, crush barriers, a low wall at the front. Bright flat colours, limited palette, crisp outlines, plain flat light grey background outside the terrace, no text, no logos, no players, no pitch.",
+  "preprocessor": "CannyEdgePreprocessor"
+ },
+ {
+  "stem": "piece-left-24-s3",
+  "kind": "piece",
+  "piece": "left",
+  "input": "piece-left-24",
+  "seed": 19910504,
+  "prompt": "Isometric pixel art of one section of a packed football stadium end terrace seen from above at a 2:1 isometric angle, retro 16-bit video game style, matching the given layout exactly: stepped pale grey concrete rows packed with hundreds of small standing fans facing the pitch, many rows deep, colourful winter coats, scarves and bobble hats, crush barriers across the rows, a low front wall. Bright flat colours, limited palette, crisp outlines, plain flat light grey background outside the terrace, no text, no logos, no players, no pitch."
+ },
+ {
+  "stem": "piece-left-24-s4",
+  "kind": "piece",
+  "piece": "left",
+  "input": "piece-left-24",
+  "seed": 19910505,
+  "prompt": "Isometric pixel art of one section of a packed football stadium end terrace seen from above at a 2:1 isometric angle, retro 16-bit video game style, matching the given layout exactly: stepped pale grey concrete rows packed with hundreds of small standing fans facing the pitch, many rows deep, colourful winter coats, scarves and bobble hats, crush barriers across the rows, a low front wall. Bright flat colours, limited palette, crisp outlines, plain flat light grey background outside the terrace, no text, no logos, no players, no pitch."
+ },
+ {
+  "stem": "piece-right-b-24-s3",
+  "kind": "piece",
+  "piece": "right",
+  "input": "piece-right-b-24",
+  "seed": 19910504,
+  "prompt": "Isometric pixel art of one section of a long low open football terrace seen from behind and above at a 2:1 isometric angle, retro 16-bit video game style, matching the given layout exactly: ten shallow stepped rows packed with hundreds of small standing fans seen from the back, many rows deep, colourful winter coats, scarves and bobble hats, crush barriers, a low wall at the front. Bright flat colours, limited palette, crisp outlines, plain flat light grey background outside the terrace, no text, no logos, no players, no pitch."
+ },
+ {
+  "stem": "piece-right-b-24-s4",
+  "kind": "piece",
+  "piece": "right",
+  "input": "piece-right-b-24",
+  "seed": 19910505,
+  "prompt": "Isometric pixel art of one section of a long low open football terrace seen from behind and above at a 2:1 isometric angle, retro 16-bit video game style, matching the given layout exactly: ten shallow stepped rows packed with hundreds of small standing fans seen from the back, many rows deep, colourful winter coats, scarves and bobble hats, crush barriers, a low wall at the front. Bright flat colours, limited palette, crisp outlines, plain flat light grey background outside the terrace, no text, no logos, no players, no pitch."
+ }
+]

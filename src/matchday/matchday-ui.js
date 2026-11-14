@@ -16,8 +16,14 @@
   const VIEW_KEY = 'sm91-matchday-view';
   let C = null;   // context from the shell
 
-  const VIEW_ORDER = ['pixelart', 'canvas2d', 'wireframe'];
-  const getView = () => { try { const v = root.localStorage.getItem(VIEW_KEY); return (v && MD.renderers[v])? v : 'pixelart'; } catch(e){ return 'pixelart'; } };
+  // the Isometric view (Phase 3 art direction) is the default; the others stay a tap away on the View button. Views that
+  // need art the build does not ship (Iso A when only style B is inlined) are left out of the cycle.
+  const DEFAULT_VIEW = 'isometric';
+  const VIEW_ORDER = ['isometric', 'pixelart', 'isometric-a', 'isometric-proc', 'canvas2d', 'wireframe'];
+  // views in the cycle: style A only when its assets are in the build, the generated-figure isometric (a Milestone 2 debug view) only with ?dev
+  const dev = () => { try { return /[?&]dev\b/.test(root.location.search||''); } catch(e){ return false; } };
+  const shipped = id => id==='isometric-proc'? dev() : id!=='isometric-a' || !MD.isoAssetData || Object.keys(MD.isoAssetData).some(k => k.indexOf('A/')===0);
+  const getView = () => { try { const v = root.localStorage.getItem(VIEW_KEY); return (v && MD.renderers[v] && shipped(v))? v : DEFAULT_VIEW; } catch(e){ return DEFAULT_VIEW; } };
   const setView = v => { try { root.localStorage.setItem(VIEW_KEY, v); } catch(e){} };
   const reducedMotion = () => !!(root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
@@ -119,8 +125,8 @@
         if (v.renderer) v.renderer.render(s, { fastForward: state.fastForward, speed: state.speed, reducedMotion: v.reduced, sinceCut: state.sinceCut });
         board(scene.getSceneAt(sec), s, state.fastForward);                                     // the clock and score (the clock races during a fast-forward)
       },
+      onLine: (l) => { if (comm) comm.textContent = l.text; },
       onEvent: (e) => {
-        if (e.text && comm){ comm.textContent = e.text; }
         const s = scene.getSceneAt(e.matchSecond);
         const line = lineFor(e, s.score);
         if (line && log){ log.insertAdjacentHTML('beforeend', `<div class="${line.cls}">${line.html}</div>`); log.scrollTop = log.scrollHeight; }
@@ -128,7 +134,8 @@
         else if (e.type===EV.KICK_OFF || e.type===EV.SECOND_HALF || e.type===EV.ET_START) MD.audio.whistle('start');
         else if (e.type===EV.HALF_TIME || e.type===EV.ET_HALF || e.type===EV.ET_END) MD.audio.whistle('half');
         else if (e.type===EV.FULL_TIME) MD.audio.whistle('end');
-        else if (e.type===EV.SHOT_SAVED || e.type===EV.SHOT_WIDE) MD.audio.chance();
+        else if (e.type===EV.SHOT_POST) MD.audio.woodwork();
+        else if (e.type===EV.SHOT_SAVED || e.type===EV.SHOT_WIDE || e.type===EV.SHOT_BLOCKED) MD.audio.chance();
       },
       onState: (state) => { const b = C.$('#md-play'); if (b) b.textContent = state.playing? 'Pause' : (state.ended? 'Ended' : 'Play'); for (const x of [1,2,4]){ const sb = C.$('#md-speed-'+x); if (sb) sb.classList.toggle('on', state.speed===x); } },
       onEnd: () => { v.done = true; MD.audio.stop(); const act = C.$('#act'); if (act) act.innerHTML = `<button class="b" data-a="md-fulltime">Full time</button>`; },
@@ -144,10 +151,10 @@
     const def = MD.renderers[id] || MD.renderers.pixelart;
     v.renderer = def.create({ onSelect: pl => { const comm = C.$('#md-comm'); if (comm) comm.textContent = pl.name+', '+({GK:'goalkeeper',DEF:'defender',MID:'midfielder',FWD:'forward'}[pl.role]||pl.role)+', number '+pl.shirtNo+'.'; } });
     v.renderer.mount(stage, v.pres);
-    const cb = C.$('#md-camera'); if (cb){ const has = typeof v.renderer.setCamera==='function'; cb.style.display = has? '' : 'none'; if (has) cb.textContent = 'Camera: '+(v.renderer.getCamera()==='follow'? 'follow' : 'whole'); }
+    const cb = C.$('#md-camera'); if (cb){ const has = typeof v.renderer.setCamera==='function'; cb.style.display = has? '' : 'none'; if (has) cb.textContent = 'Camera: '+v.renderer.getCamera(); }
     const state = v.playback? v.playback.state() : { matchSecond:0, sceneSecond:0, fastForward:false, speed:1 };
     if (v.scene) v.renderer.render(v.scene.getSceneAt(state.sceneSecond===undefined? state.matchSecond : state.sceneSecond), { fastForward: state.fastForward, speed: state.speed, reducedMotion: v.reduced });
-    const vb = C.$('#md-view'); if (vb) vb.textContent = 'View: '+def.name;
+    const vb = C.$('#md-view'); if (vb) vb.textContent = 'View: '+((root.innerWidth||1000) < 400 && def.short? def.short : def.name);
   }
   function closeViewer(){
     const S = C.S; const v = S.md && S.md.viewer; if (!v) return;
@@ -179,9 +186,9 @@
         return { main: `<div class="md-wrap"><div class="md-board"><span class="t ${usH?'hot':''}">${esc(p.teams.home.short)}</span><span class="s" id="md-score" aria-live="polite">0 - 0</span><span class="t a ${!usH?'hot':''}">${esc(p.teams.away.short)}</span></div>
           <div class="md-clock" id="md-clock">00:00  Kick-off</div>
           <div class="md-stage" id="md-stage"></div>
+          <div class="md-controls2"><button class="b quiet" data-a="md-camera" id="md-camera">Camera</button><button class="b quiet" data-a="md-view" id="md-view">View</button><button class="b quiet" data-a="md-sound" id="md-sound" aria-pressed="${sound}">Sound: ${sound? 'on' : 'off'}</button></div>
           <div class="md-comm" id="md-comm" aria-live="polite" role="status">${esc(compLabel(S.md.queue[0].m, S.results.week))}${p.official.attendance? ' Attendance '+E.fmt(p.official.attendance)+'.' : ''}</div>
-          <div class="md-log" id="md-log" aria-label="Match events"></div>
-          <div class="md-controls2"><button class="b quiet" data-a="md-camera" id="md-camera">Camera</button><button class="b quiet" data-a="md-view" id="md-view">View</button><button class="b quiet" data-a="md-sound" id="md-sound" aria-pressed="${sound}">Sound: ${sound? 'on' : 'off'}</button></div></div>`,
+          <div class="md-log" id="md-log" aria-label="Match events"></div></div>`,
           action: `<div class="md-controls"><button class="b" data-a="md-play" id="md-play" aria-label="Play or pause">Pause</button><button class="b quiet on" data-a="md-speed" data-s="1" id="md-speed-1" aria-label="Normal speed">1x</button><button class="b quiet" data-a="md-speed" data-s="2" id="md-speed-2" aria-label="Double speed">2x</button><button class="b quiet" data-a="md-speed" data-s="4" id="md-speed-4" aria-label="Four times speed">4x</button><button class="b quiet" data-a="md-skip">Skip</button></div>` };
       },
       matchresult(){
@@ -218,8 +225,8 @@
       case 'md-speed': if (v && v.playback) v.playback.setSpeed(+d.s); break;
       case 'md-skip': if (v && v.playback && !v.done) v.playback.skip(); break;
       case 'md-sound': { MD.audio.setEnabled(!MD.audio.enabled); const b = C.$('#md-sound'); if (b){ b.textContent = 'Sound: '+(MD.audio.enabled? 'on' : 'off'); b.setAttribute('aria-pressed', String(MD.audio.enabled)); } if (MD.audio.enabled && v && !v.done) MD.audio.start(); break; }
-      case 'md-view': { const ids = VIEW_ORDER.filter(k=>MD.renderers[k]).concat(Object.keys(MD.renderers).filter(k=>k!=='common' && !VIEW_ORDER.includes(k))); const cur = getView(); const next = ids[(ids.indexOf(cur)+1)%ids.length]; setView(next); mountRenderer(next); break; }
-      case 'md-camera': { if (v && v.renderer && v.renderer.setCamera){ const mode = v.renderer.setCamera(v.renderer.getCamera()==='follow'? 'whole' : 'follow'); const cb = C.$('#md-camera'); if (cb) cb.textContent = 'Camera: '+(mode==='follow'? 'follow' : 'whole'); } break; }
+      case 'md-view': { const ids = VIEW_ORDER.filter(k=>MD.renderers[k] && shipped(k)).concat(Object.keys(MD.renderers).filter(k=>k!=='common' && !VIEW_ORDER.includes(k))); const cur = getView(); const next = ids[(ids.indexOf(cur)+1)%ids.length]; setView(next); mountRenderer(next); break; }
+      case 'md-camera': { if (v && v.renderer && v.renderer.setCamera){ const modes = v.renderer.cameraModes || ['follow', 'whole']; const cur = v.renderer.getCamera(); const mode = v.renderer.setCamera(modes[(modes.indexOf(cur)+1) % modes.length]); const cb = C.$('#md-camera'); if (cb) cb.textContent = 'Camera: '+mode; } break; }
     }
   }
   function onKey(e){

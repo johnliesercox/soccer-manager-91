@@ -24,7 +24,16 @@
     ET_START:'ET_START', ET_HALF:'ET_HALF', ET_END:'ET_END', PENALTIES:'PENALTIES', SHOOTOUT_RESULT:'SHOOTOUT_RESULT',
     GOAL:'GOAL', CARD:'CARD', SENT_OFF:'SENT_OFF',
     PASS:'PASS', RUN:'RUN', TACKLE:'TACKLE', SHOT_SAVED:'SHOT_SAVED', SHOT_WIDE:'SHOT_WIDE', SHOT_BLOCKED:'SHOT_BLOCKED', CORNER:'CORNER', CLEARANCE:'CLEARANCE', FOUL:'FOUL', GOAL_KICK:'GOAL_KICK', DEFLECTION:'DEFLECTION',
+    CROSS:'CROSS', SHOT_POST:'SHOT_POST', INTERCEPTION:'INTERCEPTION',
   };
+  // Illustrative detail carried on events (all optional, all presentation only; none of it changes a result):
+  //   technique: 'kick' | 'first-time' | 'volley' | 'header'   how a pass, cross, shot, goal or clearance is struck
+  //   from.z / to.z: height on the 0..1 channel (about three metres) where the ball leaves or is met
+  //   SHOT_SAVED.save: 'catch' | 'parry'      SHOT_WIDE.miss: 'wide' | 'over'      SHOT_POST.woodwork: 'post' | 'bar'
+  //   SHOT_BLOCKED.slide, TACKLE.slide: a sliding block or tackle;  SHOT_BLOCKED.line: a goal-line clearance by blockerId
+  //   CLEARANCE with from/to/duration: the ball is cleared in flight (headed when technique is 'header')
+  //   chanceId: events that belong to one chance share it (the highlight picker frames the whole sequence)
+  const TECHNIQUES = ['kick', 'first-time', 'volley', 'header'];
   const OFFICIAL_TYPES = new Set([EVENT.KICK_OFF, EVENT.HALF_TIME, EVENT.SECOND_HALF, EVENT.FULL_TIME, EVENT.ET_START, EVENT.ET_HALF, EVENT.ET_END, EVENT.PENALTIES, EVENT.SHOOTOUT_RESULT, EVENT.GOAL, EVENT.CARD, EVENT.SENT_OFF]);
 
   // Periods in match seconds. Extra time is 2 x 15 minutes.
@@ -82,7 +91,8 @@
         if (!OFFICIAL_TYPES.has(e.type) && e.provenance!=='illustrative') err('event '+e.id+' type '+e.type+' must be illustrative');
         if (e.teamId!==undefined && e.teamId!==null && !teamIds.has(e.teamId)) err('event '+e.id+' unknown team');
         if (e.playerId!==undefined && e.playerId!==null && !playerIds.has(e.playerId)) err('event '+e.id+' unknown player');
-        for (const k of ['from','to','at']) if (e[k] && !(inUnit(e[k].x) && inUnit(e[k].y))) err('event '+e.id+' '+k+' not in 0..1');
+        for (const k of ['from','to','at']) if (e[k] && !(inUnit(e[k].x) && inUnit(e[k].y) && (e[k].z===undefined || inUnit(e[k].z)))) err('event '+e.id+' '+k+' not in 0..1');
+        if (e.technique!==undefined && !TECHNIQUES.includes(e.technique)) err('event '+e.id+' bad technique '+e.technique);
         const maxSec = (p.official && p.official.extra)? PERIODS.extraTime.end : PERIODS.regulation.end;
         if (e.type!==EVENT.SHOOTOUT_RESULT && e.type!==EVENT.PENALTIES && e.matchSecond > maxSec) err('event '+e.id+' beyond the final whistle');
       }
@@ -147,7 +157,7 @@
     return { x: c(x), y: c(0.5 + (anchor.y-0.5)*width + (ballY-0.5)*sway) };
   }
 
-  MD.SCHEMA_VERSION = SCHEMA_VERSION; MD.EVENT = EVENT; MD.OFFICIAL_TYPES = OFFICIAL_TYPES; MD.PERIODS = PERIODS;
+  MD.SCHEMA_VERSION = SCHEMA_VERSION; MD.EVENT = EVENT; MD.OFFICIAL_TYPES = OFFICIAL_TYPES; MD.PERIODS = PERIODS; MD.TECHNIQUES = TECHNIQUES;
   MD.validate = validate; MD.hashString = hashString; MD.seededRandom = seededRandom;
   MD.formationAnchors = formationAnchors; MD.shapePos = shapePos; MD.FORMATION_TEMPLATES = TEMPLATES;
 })(typeof window!=='undefined'? window : globalThis);

@@ -1,0 +1,254 @@
+[
+ {
+  "stem": "header-0_header-1",
+  "name": "SM91 header-0_header-1",
+  "input": "#inputs/soccer-manager/floyo-batch-4-uploads/sm91-header-0_header-1.png",
+  "output_prefix": "sm91-header-0_header-1",
+  "preprocessor": "none",
+  "seed": 19910502,
+  "prompt": "Retro 16-bit video game sprite sheet of a footballer, 16 views of the same character arranged in a grid of four rows of four on a plain flat light grey background. Same character in every cell, heading an imaginary ball: crouching to jump, then leaping with the head thrown forward and the legs tucked, then landing, no ball in the picture, each cell seen from a different angle in an isometric three-quarter view from above, in the style of classic 1990s console football games. Stylised chunky proportions, slightly large round head, short dark brown hair, light skin, small simple face. Kit: bright red short-sleeved shirt with white collar and cuffs, royal blue shorts, yellow socks, black boots. Chunky pixel art with a limited palette, crisp black outlines, flat colours with simple shading, no anti-aliasing blur, no gradients, no ground shadow, no text, no logos, no background objects."
+ },
+ {
+  "stem": "header-2_volley-0",
+  "name": "SM91 header-2_volley-0",
+  "input": "#inputs/soccer-manager/floyo-batch-4-uploads/sm91-header-2_volley-0.png",
+  "output_prefix": "sm91-header-2_volley-0",
+  "preprocessor": "none",
+  "seed": 19910502,
+  "prompt": "Retro 16-bit video game sprite sheet of a footballer, 16 views of the same character arranged in a grid of four rows of four on a plain flat light grey background. Same character in every cell, the top two rows heading an imaginary ball: crouching to jump, then leaping with the head thrown forward and the legs tucked, then landing, no ball in the picture, the bottom two rows striking a volley with the kicking leg swung high off the ground and the body leaning back, no ball in the picture, each cell seen from a different angle in an isometric three-quarter view from above, in the style of classic 1990s console football games. Stylised chunky proportions, slightly large round head, short dark brown hair, light skin, small simple face. Kit: bright red short-sleeved shirt with white collar and cuffs, royal blue shorts, yellow socks, black boots. Chunky pixel art with a limited palette, crisp black outlines, flat colours with simple shading, no anti-aliasing blur, no gradients, no ground shadow, no text, no logos, no background objects."
+ },
+ {
+  "stem": "volley-1_volley-2",
+  "name": "SM91 volley-1_volley-2",
+  "input": "#inputs/soccer-manager/floyo-batch-4-uploads/sm91-volley-1_volley-2.png",
+  "output_prefix": "sm91-volley-1_volley-2",
+  "preprocessor": "none",
+  "seed": 19910502,
+  "prompt": "Retro 16-bit video game sprite sheet of a footballer, 16 views of the same character arranged in a grid of four rows of four on a plain flat light grey background. Same character in every cell, striking a volley with the kicking leg swung high off the ground and the body leaning back, no ball in the picture, each cell seen from a different angle in an isometric three-quarter view from above, in the style of classic 1990s console football games. Stylised chunky proportions, slightly large round head, short dark brown hair, light skin, small simple face. Kit: bright red short-sleeved shirt with white collar and cuffs, royal blue shorts, yellow socks, black boots. Chunky pixel art with a limited palette, crisp black outlines, flat colours with simple shading, no anti-aliasing blur, no gradients, no ground shadow, no text, no logos, no background objects."
+ },
+ {
+  "stem": "poke-0_getup-0",
+  "name": "SM91 poke-0_getup-0",
+  "input": "#inputs/soccer-manager/floyo-batch-4-uploads/sm91-poke-0_getup-0.png",
+  "output_prefix": "sm91-poke-0_getup-0",
+  "preprocessor": "none",
+  "seed": 19910502,
+  "prompt": "Retro 16-bit video game sprite sheet of a footballer, 16 views of the same character arranged in a grid of four rows of four on a plain flat light grey background. Same character in every cell, the top two rows making a standing tackle, one leg stretched out low along the ground, the body low and leaning forward, the bottom two rows getting up off the ground: on hands and knees, then rising on one knee, each cell seen from a different angle in an isometric three-quarter view from above, in the style of classic 1990s console football games. Stylised chunky proportions, slightly large round head, short dark brown hair, light skin, small simple face. Kit: bright red short-sleeved shirt with white collar and cuffs, royal blue shorts, yellow socks, black boots. Chunky pixel art with a limited palette, crisp black outlines, flat colours with simple shading, no anti-aliasing blur, no gradients, no ground shadow, no text, no logos, no background objects."
+ },
+ {
+  "stem": "getup-1_dismay-0",
+  "name": "SM91 getup-1_dismay-0",
+  "input": "#inputs/soccer-manager/floyo-batch-4-uploads/sm91-getup-1_dismay-0.png",
+  "output_prefix": "sm91-getup-1_dismay-0",
+  "preprocessor": "none",
+  "seed": 19910502,
+  "prompt": "Retro 16-bit video game sprite sheet of a footballer, 16 views of the same character arranged in a grid of four rows of four on a plain flat light grey background. Same character in every cell, the top two rows getting up off the ground: on hands and knees, then rising on one knee, the bottom two rows in despair with both hands clasped on top of the head and the head bowed, each cell seen from a different angle in an isometric three-quarter view from above, in the style of classic 1990s console football games. Stylised chunky proportions, slightly large round head, short dark brown hair, light skin, small simple face. Kit: bright red short-sleeved shirt with white collar and cuffs, royal blue shorts, yellow socks, black boots. Chunky pixel art with a limited palette, crisp black outlines, flat colours with simple shading, no anti-aliasing blur, no gradients, no ground shadow, no text, no logos, no background objects."
+ },
+ {
+  "stem": "kneeslide-0_kneeslide-1",
+  "name": "SM91 kneeslide-0_kneeslide-1",
+  "input": "#inputs/soccer-manager/floyo-batch-4-uploads/sm91-kneeslide-0_kneeslide-1.png",
+  "output_prefix": "sm91-kneeslide-0_kneeslide-1",
+  "preprocessor": "none",
+  "seed": 19910502,
+  "prompt": "Retro 16-bit video game sprite sheet of a footballer, 16 views of the same character arranged in a grid of four rows of four on a plain flat light grey background. Same character in every cell, celebrating a goal by sliding along the grass on both knees with the chest up and both arms spread wide, each cell seen from a different angle in an isometric three-quarter view from above, in the style of classic 1990s console football games. Stylised chunky proportions, slightly large round head, short dark brown hair, light skin, small simple face. Kit: bright red short-sleeved shirt with white collar and cuffs, royal blue shorts, yellow socks, black boots. Chunky pixel art with a limited palette, crisp black outlines, flat colours with simple shading, no anti-aliasing blur, no gradients, no ground shadow, no text, no logos, no background objects."
+ },
+ {
+  "stem": "runcheer-0_runcheer-1",
+  "name": "SM91 runcheer-0_runcheer-1",
+  "input": "#inputs/soccer-manager/floyo-batch-4-uploads/sm91-runcheer-0_runcheer-1.png",
+  "output_prefix": "sm91-runcheer-0_runcheer-1",
+  "preprocessor": "none",
+  "seed": 19910502,
+  "prompt": "Retro 16-bit video game sprite sheet of a footballer, 16 views of the same character arranged in a grid of four rows of four on a plain flat light grey background. Same character in every cell, running in celebration with both arms held straight up, each cell seen from a different angle in an isometric three-quarter view from above, in the style of classic 1990s console football games. Stylised chunky proportions, slightly large round head, short dark brown hair, light skin, small simple face. Kit: bright red short-sleeved shirt with white collar and cuffs, royal blue shorts, yellow socks, black boots. Chunky pixel art with a limited palette, crisp black outlines, flat colours with simple shading, no anti-aliasing blur, no gradients, no ground shadow, no text, no logos, no background objects."
+ },
+ {
+  "stem": "runcheer-2_runcheer-3",
+  "name": "SM91 runcheer-2_runcheer-3",
+  "input": "#inputs/soccer-manager/floyo-batch-4-uploads/sm91-runcheer-2_runcheer-3.png",
+  "output_prefix": "sm91-runcheer-2_runcheer-3",
+  "preprocessor": "none",
+  "seed": 19910502,
+  "prompt": "Retro 16-bit video game sprite sheet of a footballer, 16 views of the same character arranged in a grid of four rows of four on a plain flat light grey background. Same character in every cell, running in celebration with both arms held straight up, each cell seen from a different angle in an isometric three-quarter view from above, in the style of classic 1990s console football games. Stylised chunky proportions, slightly large round head, short dark brown hair, light skin, small simple face. Kit: bright red short-sleeved shirt with white collar and cuffs, royal blue shorts, yellow socks, black boots. Chunky pixel art with a limited palette, crisp black outlines, flat colours with simple shading, no anti-aliasing blur, no gradients, no ground shadow, no text, no logos, no background objects."
+ },
+ {
+  "stem": "hug-0_hug-1",
+  "name": "SM91 hug-0_hug-1",
+  "input": "#inputs/soccer-manager/floyo-batch-4-uploads/sm91-hug-0_hug-1.png",
+  "output_prefix": "sm91-hug-0_hug-1",
+  "preprocessor": "none",
+  "seed": 19910502,
+  "prompt": "Retro 16-bit video game sprite sheet of a footballer, 16 views of the same character arranged in a grid of four rows of four on a plain flat light grey background. Same character in every cell, celebrating with both arms held out forward to embrace a teammate, then hopping into the hug, each cell seen from a different angle in an isometric three-quarter view from above, in the style of classic 1990s console football games. Stylised chunky proportions, slightly large round head, short dark brown hair, light skin, small simple face. Kit: bright red short-sleeved shirt with white collar and cuffs, royal blue shorts, yellow socks, black boots. Chunky pixel art with a limited palette, crisp black outlines, flat colours with simple shading, no anti-aliasing blur, no gradients, no ground shadow, no text, no logos, no background objects."
+ },
+ {
+  "stem": "kneel-0_appeal-0",
+  "name": "SM91 kneel-0_appeal-0",
+  "input": "#inputs/soccer-manager/floyo-batch-4-uploads/sm91-kneel-0_appeal-0.png",
+  "output_prefix": "sm91-kneel-0_appeal-0",
+  "preprocessor": "none",
+  "seed": 19910502,
+  "prompt": "Retro 16-bit video game sprite sheet of a footballer, 16 views of the same character arranged in a grid of four rows of four on a plain flat light grey background. Same character in every cell, the top two rows slumped down on both knees, sitting back on the heels with the head bowed and the hands on the thighs, the bottom two rows appealing with both arms spread wide and the palms turned up, the head tilted back, each cell seen from a different angle in an isometric three-quarter view from above, in the style of classic 1990s console football games. Stylised chunky proportions, slightly large round head, short dark brown hair, light skin, small simple face. Kit: bright red short-sleeved shirt with white collar and cuffs, royal blue shorts, yellow socks, black boots. Chunky pixel art with a limited palette, crisp black outlines, flat colours with simple shading, no anti-aliasing blur, no gradients, no ground shadow, no text, no logos, no background objects."
+ },
+ {
+  "stem": "header-0_header-1-h1",
+  "name": "SM91 header-0_header-1-h1",
+  "input": "#inputs/soccer-manager/floyo-batch-4-uploads/sm91-header-0_header-1-h1.png",
+  "output_prefix": "sm91-header-0_header-1-h1",
+  "preprocessor": "none",
+  "seed": 19910502,
+  "prompt": "Retro 16-bit video game sprite sheet of a footballer, 16 views of the same character arranged in a grid of four rows of four on a plain flat light grey background. Same character in every cell, heading an imaginary ball: crouching to jump, then leaping with the head thrown forward and the legs tucked, then landing, no ball in the picture, each cell seen from a different angle in an isometric three-quarter view from above, in the style of classic 1990s console football games. Stylised chunky proportions, slightly large round head, very short cropped dark hair, almost shaved at the sides, light skin, small simple face. Kit: bright red short-sleeved shirt with white collar and cuffs, royal blue shorts, yellow socks, black boots. Chunky pixel art with a limited palette, crisp black outlines, flat colours with simple shading, no anti-aliasing blur, no gradients, no ground shadow, no text, no logos, no background objects."
+ },
+ {
+  "stem": "header-2_volley-0-h1",
+  "name": "SM91 header-2_volley-0-h1",
+  "input": "#inputs/soccer-manager/floyo-batch-4-uploads/sm91-header-2_volley-0-h1.png",
+  "output_prefix": "sm91-header-2_volley-0-h1",
+  "preprocessor": "none",
+  "seed": 19910502,
+  "prompt": "Retro 16-bit video game sprite sheet of a footballer, 16 views of the same character arranged in a grid of four rows of four on a plain flat light grey background. Same character in every cell, the top two rows heading an imaginary ball: crouching to jump, then leaping with the head thrown forward and the legs tucked, then landing, no ball in the picture, the bottom two rows striking a volley with the kicking leg swung high off the ground and the body leaning back, no ball in the picture, each cell seen from a different angle in an isometric three-quarter view from above, in the style of classic 1990s console football games. Stylised chunky proportions, slightly large round head, very short cropped dark hair, almost shaved at the sides, light skin, small simple face. Kit: bright red short-sleeved shirt with white collar and cuffs, royal blue shorts, yellow socks, black boots. Chunky pixel art with a limited palette, crisp black outlines, flat colours with simple shading, no anti-aliasing blur, no gradients, no ground shadow, no text, no logos, no background objects."
+ },
+ {
+  "stem": "volley-1_volley-2-h1",
+  "name": "SM91 volley-1_volley-2-h1",
+  "input": "#inputs/soccer-manager/floyo-batch-4-uploads/sm91-volley-1_volley-2-h1.png",
+  "output_prefix": "sm91-volley-1_volley-2-h1",
+  "preprocessor": "none",
+  "seed": 19910502,
+  "prompt": "Retro 16-bit video game sprite sheet of a footballer, 16 views of the same character arranged in a grid of four rows of four on a plain flat light grey background. Same character in every cell, striking a volley with the kicking leg swung high off the ground and the body leaning back, no ball in the picture, each cell seen from a different angle in an isometric three-quarter view from above, in the style of classic 1990s console football games. Stylised chunky proportions, slightly large round head, very short cropped dark hair, almost shaved at the sides, light skin, small simple face. Kit: bright red short-sleeved shirt with white collar and cuffs, royal blue shorts, yellow socks, black boots. Chunky pixel art with a limited palette, crisp black outlines, flat colours with simple shading, no anti-aliasing blur, no gradients, no ground shadow, no text, no logos, no background objects."
+ },
+ {
+  "stem": "poke-0_getup-0-h1",
+  "name": "SM91 poke-0_getup-0-h1",
+  "input": "#inputs/soccer-manager/floyo-batch-4-uploads/sm91-poke-0_getup-0-h1.png",
+  "output_prefix": "sm91-poke-0_getup-0-h1",
+  "preprocessor": "none",
+  "seed": 19910502,
+  "prompt": "Retro 16-bit video game sprite sheet of a footballer, 16 views of the same character arranged in a grid of four rows of four on a plain flat light grey background. Same character in every cell, the top two rows making a standing tackle, one leg stretched out low along the ground, the body low and leaning forward, the bottom two rows getting up off the ground: on hands and knees, then rising on one knee, each cell seen from a different angle in an isometric three-quarter view from above, in the style of classic 1990s console football games. Stylised chunky proportions, slightly large round head, very short cropped dark hair, almost shaved at the sides, light skin, small simple face. Kit: bright red short-sleeved shirt with white collar and cuffs, royal blue shorts, yellow socks, black boots. Chunky pixel art with a limited palette, crisp black outlines, flat colours with simple shading, no anti-aliasing blur, no gradients, no ground shadow, no text, no logos, no background objects."
+ },
+ {
+  "stem": "getup-1_dismay-0-h1",
+  "name": "SM91 getup-1_dismay-0-h1",
+  "input": "#inputs/soccer-manager/floyo-batch-4-uploads/sm91-getup-1_dismay-0-h1.png",
+  "output_prefix": "sm91-getup-1_dismay-0-h1",
+  "preprocessor": "none",
+  "seed": 19910502,
+  "prompt": "Retro 16-bit video game sprite sheet of a footballer, 16 views of the same character arranged in a grid of four rows of four on a plain flat light grey background. Same character in every cell, the top two rows getting up off the ground: on hands and knees, then rising on one knee, the bottom two rows in despair with both hands clasped on top of the head and the head bowed, each cell seen from a different angle in an isometric three-quarter view from above, in the style of classic 1990s console football games. Stylised chunky proportions, slightly large round head, very short cropped dark hair, almost shaved at the sides, light skin, small simple face. Kit: bright red short-sleeved shirt with white collar and cuffs, royal blue shorts, yellow socks, black boots. Chunky pixel art with a limited palette, crisp black outlines, flat colours with simple shading, no anti-aliasing blur, no gradients, no ground shadow, no text, no logos, no background objects."
+ },
+ {
+  "stem": "kneeslide-0_kneeslide-1-h1",
+  "name": "SM91 kneeslide-0_kneeslide-1-h1",
+  "input": "#inputs/soccer-manager/floyo-batch-4-uploads/sm91-kneeslide-0_kneeslide-1-h1.png",
+  "output_prefix": "sm91-kneeslide-0_kneeslide-1-h1",
+  "preprocessor": "none",
+  "seed": 19910502,
+  "prompt": "Retro 16-bit video game sprite sheet of a footballer, 16 views of the same character arranged in a grid of four rows of four on a plain flat light grey background. Same character in every cell, celebrating a goal by sliding along the grass on both knees with the chest up and both arms spread wide, each cell seen from a different angle in an isometric three-quarter view from above, in the style of classic 1990s console football games. Stylised chunky proportions, slightly large round head, very short cropped dark hair, almost shaved at the sides, light skin, small simple face. Kit: bright red short-sleeved shirt with white collar and cuffs, royal blue shorts, yellow socks, black boots. Chunky pixel art with a limited palette, crisp black outlines, flat colours with simple shading, no anti-aliasing blur, no gradients, no ground shadow, no text, no logos, no background objects."
+ },
+ {
+  "stem": "runcheer-0_runcheer-1-h1",
+  "name": "SM91 runcheer-0_runcheer-1-h1",
+  "input": "#inputs/soccer-manager/floyo-batch-4-uploads/sm91-runcheer-0_runcheer-1-h1.png",
+  "output_prefix": "sm91-runcheer-0_runcheer-1-h1",
+  "preprocessor": "none",
+  "seed": 19910502,
+  "prompt": "Retro 16-bit video game sprite sheet of a footballer, 16 views of the same character arranged in a grid of four rows of four on a plain flat light grey background. Same character in every cell, running in celebration with both arms held straight up, each cell seen from a different angle in an isometric three-quarter view from above, in the style of classic 1990s console football games. Stylised chunky proportions, slightly large round head, very short cropped dark hair, almost shaved at the sides, light skin, small simple face. Kit: bright red short-sleeved shirt with white collar and cuffs, royal blue shorts, yellow socks, black boots. Chunky pixel art with a limited palette, crisp black outlines, flat colours with simple shading, no anti-aliasing blur, no gradients, no ground shadow, no text, no logos, no background objects."
+ },
+ {
+  "stem": "runcheer-2_runcheer-3-h1",
+  "name": "SM91 runcheer-2_runcheer-3-h1",
+  "input": "#inputs/soccer-manager/floyo-batch-4-uploads/sm91-runcheer-2_runcheer-3-h1.png",
+  "output_prefix": "sm91-runcheer-2_runcheer-3-h1",
+  "preprocessor": "none",
+  "seed": 19910502,
+  "prompt": "Retro 16-bit video game sprite sheet of a footballer, 16 views of the same character arranged in a grid of four rows of four on a plain flat light grey background. Same character in every cell, running in celebration with both arms held straight up, each cell seen from a different angle in an isometric three-quarter view from above, in the style of classic 1990s console football games. Stylised chunky proportions, slightly large round head, very short cropped dark hair, almost shaved at the sides, light skin, small simple face. Kit: bright red short-sleeved shirt with white collar and cuffs, royal blue shorts, yellow socks, black boots. Chunky pixel art with a limited palette, crisp black outlines, flat colours with simple shading, no anti-aliasing blur, no gradients, no ground shadow, no text, no logos, no background objects."
+ },
+ {
+  "stem": "hug-0_hug-1-h1",
+  "name": "SM91 hug-0_hug-1-h1",
+  "input": "#inputs/soccer-manager/floyo-batch-4-uploads/sm91-hug-0_hug-1-h1.png",
+  "output_prefix": "sm91-hug-0_hug-1-h1",
+  "preprocessor": "none",
+  "seed": 19910502,
+  "prompt": "Retro 16-bit video game sprite sheet of a footballer, 16 views of the same character arranged in a grid of four rows of four on a plain flat light grey background. Same character in every cell, celebrating with both arms held out forward to embrace a teammate, then hopping into the hug, each cell seen from a different angle in an isometric three-quarter view from above, in the style of classic 1990s console football games. Stylised chunky proportions, slightly large round head, very short cropped dark hair, almost shaved at the sides, light skin, small simple face. Kit: bright red short-sleeved shirt with white collar and cuffs, royal blue shorts, yellow socks, black boots. Chunky pixel art with a limited palette, crisp black outlines, flat colours with simple shading, no anti-aliasing blur, no gradients, no ground shadow, no text, no logos, no background objects."
+ },
+ {
+  "stem": "kneel-0_appeal-0-h1",
+  "name": "SM91 kneel-0_appeal-0-h1",
+  "input": "#inputs/soccer-manager/floyo-batch-4-uploads/sm91-kneel-0_appeal-0-h1.png",
+  "output_prefix": "sm91-kneel-0_appeal-0-h1",
+  "preprocessor": "none",
+  "seed": 19910502,
+  "prompt": "Retro 16-bit video game sprite sheet of a footballer, 16 views of the same character arranged in a grid of four rows of four on a plain flat light grey background. Same character in every cell, the top two rows slumped down on both knees, sitting back on the heels with the head bowed and the hands on the thighs, the bottom two rows appealing with both arms spread wide and the palms turned up, the head tilted back, each cell seen from a different angle in an isometric three-quarter view from above, in the style of classic 1990s console football games. Stylised chunky proportions, slightly large round head, very short cropped dark hair, almost shaved at the sides, light skin, small simple face. Kit: bright red short-sleeved shirt with white collar and cuffs, royal blue shorts, yellow socks, black boots. Chunky pixel art with a limited palette, crisp black outlines, flat colours with simple shading, no anti-aliasing blur, no gradients, no ground shadow, no text, no logos, no background objects."
+ },
+ {
+  "stem": "catch-0_catch-1-gk",
+  "name": "SM91 catch-0_catch-1-gk",
+  "input": "#inputs/soccer-manager/floyo-batch-4-uploads/sm91-catch-0_catch-1-gk.png",
+  "output_prefix": "sm91-catch-0_catch-1-gk",
+  "preprocessor": "none",
+  "seed": 19910502,
+  "prompt": "Retro 16-bit video game sprite sheet of a goalkeeper, 16 views of the same character arranged in a grid of four rows of four on a plain flat light grey background. Same character in every cell, a goalkeeper catching: both arms raised forward to gather an imaginary ball, then clutching it to the chest, no ball in the picture, wearing white goalkeeper gloves, each cell seen from a different angle in an isometric three-quarter view from above, in the style of classic 1990s console football games. Stylised chunky proportions, slightly large round head, short dark brown hair, light skin, small simple face. Kit: bright red short-sleeved shirt with white collar and cuffs, royal blue shorts, yellow socks, black boots. Chunky pixel art with a limited palette, crisp black outlines, flat colours with simple shading, no anti-aliasing blur, no gradients, no ground shadow, no text, no logos, no background objects."
+ },
+ {
+  "stem": "parry-0-gk",
+  "name": "SM91 parry-0-gk",
+  "input": "#inputs/soccer-manager/floyo-batch-4-uploads/sm91-parry-0-gk.png",
+  "output_prefix": "sm91-parry-0-gk",
+  "preprocessor": "none",
+  "seed": 19910502,
+  "prompt": "Retro 16-bit video game sprite sheet of a goalkeeper, 8 views of the same character arranged in a grid of four rows of two on a plain flat light grey background. Same character in every cell, a goalkeeper diving to one side with one arm stretched up high to push an imaginary ball away, then down on the ground, no ball in the picture, wearing white goalkeeper gloves, each cell seen from a different angle in an isometric three-quarter view from above, in the style of classic 1990s console football games. Stylised chunky proportions, slightly large round head, short dark brown hair, light skin, small simple face. Kit: bright red short-sleeved shirt with white collar and cuffs, royal blue shorts, yellow socks, black boots. Chunky pixel art with a limited palette, crisp black outlines, flat colours with simple shading, no anti-aliasing blur, no gradients, no ground shadow, no text, no logos, no background objects."
+ },
+ {
+  "stem": "parry-1-gk",
+  "name": "SM91 parry-1-gk",
+  "input": "#inputs/soccer-manager/floyo-batch-4-uploads/sm91-parry-1-gk.png",
+  "output_prefix": "sm91-parry-1-gk",
+  "preprocessor": "none",
+  "seed": 19910502,
+  "prompt": "Retro 16-bit video game sprite sheet of a goalkeeper, 8 views of the same character arranged in a grid of four rows of two on a plain flat light grey background. Same character in every cell, a goalkeeper diving to one side with one arm stretched up high to push an imaginary ball away, then down on the ground, no ball in the picture, wearing white goalkeeper gloves, each cell seen from a different angle in an isometric three-quarter view from above, in the style of classic 1990s console football games. Stylised chunky proportions, slightly large round head, short dark brown hair, light skin, small simple face. Kit: bright red short-sleeved shirt with white collar and cuffs, royal blue shorts, yellow socks, black boots. Chunky pixel art with a limited palette, crisp black outlines, flat colours with simple shading, no anti-aliasing blur, no gradients, no ground shadow, no text, no logos, no background objects."
+ },
+ {
+  "stem": "getup-0_getup-1-gk",
+  "name": "SM91 getup-0_getup-1-gk",
+  "input": "#inputs/soccer-manager/floyo-batch-4-uploads/sm91-getup-0_getup-1-gk.png",
+  "output_prefix": "sm91-getup-0_getup-1-gk",
+  "preprocessor": "none",
+  "seed": 19910502,
+  "prompt": "Retro 16-bit video game sprite sheet of a goalkeeper, 16 views of the same character arranged in a grid of four rows of four on a plain flat light grey background. Same character in every cell, getting up off the ground: on hands and knees, then rising on one knee, wearing white goalkeeper gloves, each cell seen from a different angle in an isometric three-quarter view from above, in the style of classic 1990s console football games. Stylised chunky proportions, slightly large round head, short dark brown hair, light skin, small simple face. Kit: bright red short-sleeved shirt with white collar and cuffs, royal blue shorts, yellow socks, black boots. Chunky pixel art with a limited palette, crisp black outlines, flat colours with simple shading, no anti-aliasing blur, no gradients, no ground shadow, no text, no logos, no background objects."
+ },
+ {
+  "stem": "dismay-0_appeal-0-gk",
+  "name": "SM91 dismay-0_appeal-0-gk",
+  "input": "#inputs/soccer-manager/floyo-batch-4-uploads/sm91-dismay-0_appeal-0-gk.png",
+  "output_prefix": "sm91-dismay-0_appeal-0-gk",
+  "preprocessor": "none",
+  "seed": 19910502,
+  "prompt": "Retro 16-bit video game sprite sheet of a goalkeeper, 16 views of the same character arranged in a grid of four rows of four on a plain flat light grey background. Same character in every cell, the top two rows in despair with both hands clasped on top of the head and the head bowed, the bottom two rows appealing with both arms spread wide and the palms turned up, the head tilted back, wearing white goalkeeper gloves, each cell seen from a different angle in an isometric three-quarter view from above, in the style of classic 1990s console football games. Stylised chunky proportions, slightly large round head, short dark brown hair, light skin, small simple face. Kit: bright red short-sleeved shirt with white collar and cuffs, royal blue shorts, yellow socks, black boots. Chunky pixel art with a limited palette, crisp black outlines, flat colours with simple shading, no anti-aliasing blur, no gradients, no ground shadow, no text, no logos, no background objects."
+ },
+ {
+  "stem": "dive-0-gk-s6",
+  "name": "SM91 dive-0-gk-s6",
+  "input": "#inputs/soccer-manager/floyo-batch-4-uploads/sm91-dive-0-gk.png",
+  "output_prefix": "sm91-dive-0-gk-s6",
+  "preprocessor": "none",
+  "seed": 19910506,
+  "prompt": "Retro 16-bit video game sprite sheet of a goalkeeper, 8 views of the same character arranged in a grid of four rows of two on a plain flat light grey background. Same character in every cell, a goalkeeper diving full length to one side with the arms stretched out, wearing white goalkeeper gloves, each cell seen from a different angle in an isometric three-quarter view from above, in the style of classic 1990s console football games. Stylised chunky proportions, slightly large round head, short dark brown hair, light skin, small simple face. In every cell the whole body is horizontal and stretched out full length in mid-air, the head at one end and the boots at the other, never standing; some cells show the same flying body from behind, still horizontal. Kit: bright red short-sleeved shirt with white collar and cuffs, royal blue shorts, yellow socks, black boots. Chunky pixel art with a limited palette, crisp black outlines, flat colours with simple shading, no anti-aliasing blur, no gradients, no ground shadow, no text, no logos, no background objects."
+ },
+ {
+  "stem": "dive-1-gk-s6",
+  "name": "SM91 dive-1-gk-s6",
+  "input": "#inputs/soccer-manager/floyo-batch-4-uploads/sm91-dive-1-gk.png",
+  "output_prefix": "sm91-dive-1-gk-s6",
+  "preprocessor": "none",
+  "seed": 19910506,
+  "prompt": "Retro 16-bit video game sprite sheet of a goalkeeper, 8 views of the same character arranged in a grid of four rows of two on a plain flat light grey background. Same character in every cell, a goalkeeper diving full length to one side with the arms stretched out, wearing white goalkeeper gloves, each cell seen from a different angle in an isometric three-quarter view from above, in the style of classic 1990s console football games. Stylised chunky proportions, slightly large round head, short dark brown hair, light skin, small simple face. In every cell the whole body is horizontal and stretched out full length in mid-air, the head at one end and the boots at the other, never standing; some cells show the same flying body from behind, still horizontal. Kit: bright red short-sleeved shirt with white collar and cuffs, royal blue shorts, yellow socks, black boots. Chunky pixel art with a limited palette, crisp black outlines, flat colours with simple shading, no anti-aliasing blur, no gradients, no ground shadow, no text, no logos, no background objects."
+ },
+ {
+  "stem": "dive-2-gk-s6",
+  "name": "SM91 dive-2-gk-s6",
+  "input": "#inputs/soccer-manager/floyo-batch-4-uploads/sm91-dive-2-gk.png",
+  "output_prefix": "sm91-dive-2-gk-s6",
+  "preprocessor": "none",
+  "seed": 19910506,
+  "prompt": "Retro 16-bit video game sprite sheet of a goalkeeper, 8 views of the same character arranged in a grid of four rows of two on a plain flat light grey background. Same character in every cell, a goalkeeper diving full length to one side with the arms stretched out, wearing white goalkeeper gloves, each cell seen from a different angle in an isometric three-quarter view from above, in the style of classic 1990s console football games. Stylised chunky proportions, slightly large round head, short dark brown hair, light skin, small simple face. In every cell the whole body is horizontal and stretched out full length in mid-air, the head at one end and the boots at the other, never standing; some cells show the same flying body from behind, still horizontal. Kit: bright red short-sleeved shirt with white collar and cuffs, royal blue shorts, yellow socks, black boots. Chunky pixel art with a limited palette, crisp black outlines, flat colours with simple shading, no anti-aliasing blur, no gradients, no ground shadow, no text, no logos, no background objects."
+ }
+]

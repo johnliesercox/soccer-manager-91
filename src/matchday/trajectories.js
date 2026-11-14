@@ -18,7 +18,7 @@
   const DT = 0.25;               // planning tick (match seconds)
   const ACCEL = 6.5;             // m/s^2, also the braking limit
   const SEPARATION = 1.4;        // metres; actors closer than this are nudged apart
-  const SEP_MAX = 0.18;          // metres per tick an actor can be nudged (keeps speeds honest)
+  const SEP_MAX = 0.15;          // metres per tick an actor can be nudged (keeps speeds honest)
   const TURN_RATE = 9.0;         // radians per second a facing may turn
   const FACE_SPEED = 1.2;        // m/s above which movement sets the facing
   const PX = B.PX, PY = B.PY;
@@ -27,7 +27,7 @@
   function build(ctx){
     const players = ctx.players, n = players.length;
     const end = ctx.end;
-    const ticks = Math.floor(end/DT) + 2;
+    const ticks = Math.floor(end/DT) + 12;   // a few ticks past the final whistle, so everyone brakes rather than freezes
     const X = new Float32Array(ticks*n), Y = new Float32Array(ticks*n), F = new Float32Array(ticks*n);
     const RX = new Float32Array(ticks), RY = new Float32Array(ticks), RF = new Float32Array(ticks);
     const role = new Uint8Array(ticks*n);
@@ -58,16 +58,16 @@
     // steer a velocity towards a target within a band, with acceleration and braking limits
     let nvx = 0, nvy = 0;
     function steer(x, y, cvx, cvy, tx, ty, band){
-      const dxm = (tx - x)*PX, dym = (ty - y)*PY; const d = Math.hypot(dxm, dym);
+      const dxm = (tx - x)*PX, dym = (ty - y)*PY; const d = Math.sqrt((dxm)*(dxm) + (dym)*(dym));
       let sx = 0, sy = 0;
       if (band > 0 && d > 0.05){
         const arrive = Math.min(band, Math.sqrt(2*ACCEL*d)*0.9, d/DT);   // brake to arrive, never overshoot
         sx = dxm/d*arrive; sy = dym/d*arrive;
       }
-      let ax = sx - cvx, ay = sy - cvy; const a = Math.hypot(ax, ay); const amax = ACCEL*DT;
+      let ax = sx - cvx, ay = sy - cvy; const a = Math.sqrt((ax)*(ax) + (ay)*(ay)); const amax = ACCEL*DT;
       if (a > amax){ ax *= amax/a; ay *= amax/a; }
       nvx = cvx + ax; nvy = cvy + ay;
-      const sp = Math.hypot(nvx, nvy); if (sp > maxSpeed) maxSpeed = sp; if (a/DT > maxAccel) maxAccel = a/DT;
+      const sp = Math.sqrt((nvx)*(nvx) + (nvy)*(nvy)); if (sp > maxSpeed) maxSpeed = sp; if (a/DT > maxAccel) maxAccel = a/DT;
     }
     // turn a facing towards a heading at a limited rate
     function turn(cur, target){
@@ -81,21 +81,26 @@
     // him elsewhere. At the launch tick the arrival point is pulled towards him so that he can
     // meet the ball (at most REAIM metres from the original spot), and the keys of his following
     // run with the ball (dribble, next pass) shift by the same amount so the chain stays short.
-    // Shots and goals are never moved: the shooter carries the ball to the official spot.
-    const REAIM = 7;
-    let nextLaunch = 0; const launches = ctx.keys.filter(k=>k.kind==='launch' && !k.shot && !k.parry);
+    // Shots and goals are never moved (the shooter carries the ball to the official spot), except a strike
+    // played first time from the arriving ball, which must start where that ball lands.
+    const REAIM = 7, REAIM_CLEAR = 22, REAIM_REBOUND = 14;
+    let nextLaunch = 0; const launches = ctx.keys.filter(k=>k.kind==='launch' && !k.shot && (!k.parry || (ctx.keys[k.idx+1] && ctx.keys[k.idx+1].carrier)));
     function reaim(k, t){
       const a = ctx.keys[k.idx+1]; if (!a || a.kind!=='arrive' || !a.carrier) return;
       const i = ctx.index[a.carrier]; if (i===undefined || !onAt(i, t)) return;
-      const flight = Math.max(0.3, a.t - k.t) + 0.4;
-      const dx = (a.x - px[i])*PX, dy = (a.y - py[i])*PY; const d = Math.hypot(dx, dy);
+      // a ball met first time (a header, a volley, a first-time shot) cannot wait for him: no grace then
+      const after = ctx.keys[a.idx+1]; const struckNow = !!(after && after.kind==='launch' && after.carrier===a.carrier && after.t - a.t < 0.6);
+      const flight = Math.max(0.3, a.t - k.t) + (struckNow? 0.05 : 0.4);
+      const dx = (a.x + (a.sox||0) - px[i])*PX, dy = (a.y + (a.soy||0) - py[i])*PY; const d = Math.sqrt((dx)*(dx) + (dy)*(dy));
       const reach = B.BAND.SPRINT*0.95*flight;
       if (d <= reach) return;
-      // move the arrival point along the line towards the receiver, by at most REAIM metres
-      const move = Math.min(REAIM, d - reach); const ux = dx/d, uy = dy/d;
+      // move the arrival point along the line towards the receiver, by at most REAIM metres (a clearance is a
+      // hoof towards a team-mate rather than a pass to a spot, so it may land a good deal nearer him)
+      const move = Math.min(k.clearance? REAIM_CLEAR : k.parry? REAIM_REBOUND : REAIM, d - reach); const ux = dx/d, uy = dy/d;
       const nx = Math.max(0.01, Math.min(0.99, a.x - ux*move/PX)), ny = Math.max(0.01, Math.min(0.99, a.y - uy*move/PY));
       const ddx = nx - a.x, ddy = ny - a.y; a.x = nx; a.y = ny;
-      for (let j=a.idx+1; j<ctx.keys.length; j++){ const kk = ctx.keys[j]; if (kk.carrier!==a.carrier || kk.kind==='restart' || kk.cut || kk.shot) break; if (kk.kind!=='hold' && kk.kind!=='launch') break; kk.x = Math.max(0.01, Math.min(0.99, kk.x + ddx)); kk.y = Math.max(0.01, Math.min(0.99, kk.y + ddy)); }
+      // (a first-time strike moves with its arrival so the ball stays continuous; a shot after a carry does not)
+      for (let j=a.idx+1; j<ctx.keys.length; j++){ const kk = ctx.keys[j]; if (kk.carrier!==a.carrier || kk.kind==='restart' || kk.cut) break; if (kk.shot && kk.t - a.t > 0.6 && kk.technique!=='first-time') break; if (kk.kind!=='hold' && kk.kind!=='launch') break; kk.x = Math.max(0.01, Math.min(0.99, kk.x + ddx)); kk.y = Math.max(0.01, Math.min(0.99, kk.y + ddy)); if (kk.shot) break; }
     }
 
     placeAll(0);
@@ -108,6 +113,7 @@
       while (nextLaunch < launches.length && launches[nextLaunch].t <= t + DT){ reaim(launches[nextLaunch], t); nextLaunch++; }
       for (let i=0;i<n;i++){ pos[i].x = px[i]; pos[i].y = py[i]; }
       out = B.plan(ctx, t, pos, mem, out);
+      if (t >= end){ for (let i=0;i<n;i++) out[i].band = 0; out.ref.band = 0; }   // the whistle has gone: pull up
       for (let i=0;i<n;i++){
         const tg = out[i];
         if (tg.role==='off'){
@@ -118,7 +124,7 @@
         role[k*n+i] = B.ROLE_CODE[tg.role]||0;
       }
       // separation: nudge pairs apart a little (never more than SEP_MAX per tick), carrier stays put
-      const ball = ctx.ballAt(t);
+      const ball = out.ball || ctx.ballAt(t);
       const bx = SEPARATION/PX, by = SEPARATION/PY;
       for (let i=0;i<n;i++){
         if (!onAt(i, t)) continue;
@@ -126,7 +132,7 @@
         for (let j=i+1;j<n;j++){
           if (px[j]-xi > bx || xi-px[j] > bx || py[j]-yi > by || yi-py[j] > by) continue;   // far apart: the common case
           if (!onAt(j, t)) continue;
-          const dxm = (px[j]-xi)*PX, dym = (py[j]-yi)*PY; const d = Math.hypot(dxm, dym);
+          const dxm = (px[j]-xi)*PX, dym = (py[j]-yi)*PY; const d = Math.sqrt((dxm)*(dxm) + (dym)*(dym));
           if (d >= SEPARATION || d < 1e-6) continue;
           const push = Math.min(SEP_MAX, (SEPARATION - d)*0.5); const ux = dxm/d, uy = dym/d;
           const iFixed = ball.carrier===players[i].id, jFixed = ball.carrier===players[j].id;
@@ -137,9 +143,9 @@
         if (onAt(i, t)) py[i] = Math.max(0.003, Math.min(0.997, py[i]));
       }
       // facing: follows the direction of travel when moving, holds when still
-      for (let i=0;i<n;i++){ const sp = Math.hypot(vx[i], vy[i]); if (sp > FACE_SPEED) face[i] = turn(face[i], Math.atan2(vy[i], vx[i])); }
+      for (let i=0;i<n;i++){ const sp = Math.sqrt((vx[i])*(vx[i]) + (vy[i])*(vy[i])); if (sp > FACE_SPEED) face[i] = turn(face[i], Math.atan2(vy[i], vx[i])); }
       // referee
-      { const r = out.ref; steer(rpx, rpy, rvx, rvy, r.x, r.y, r.band); rvx = nvx; rvy = nvy; rpx += rvx*DT/PX; rpy += rvy*DT/PY; rpx = Math.max(0.01, Math.min(0.99, rpx)); rpy = Math.max(0.01, Math.min(0.99, rpy)); if (Math.hypot(rvx, rvy) > FACE_SPEED) rface = turn(rface, Math.atan2(rvy, rvx)); }
+      { const r = out.ref; steer(rpx, rpy, rvx, rvy, r.x, r.y, r.band); rvx = nvx; rvy = nvy; rpx += rvx*DT/PX; rpy += rvy*DT/PY; rpx = Math.max(0.01, Math.min(0.99, rpx)); rpy = Math.max(0.01, Math.min(0.99, rpy)); if (Math.sqrt((rvx)*(rvx) + (rvy)*(rvy)) > FACE_SPEED) rface = turn(rface, Math.atan2(rvy, rvx)); }
       for (let i=0;i<n;i++){ X[k*n+i] = px[i]; Y[k*n+i] = py[i]; F[k*n+i] = face[i]; }
       RX[k] = rpx; RY[k] = rpy; RF[k] = rface;
     }
@@ -158,7 +164,7 @@
         const o = outP[i];
         if (cutBetween){ o.x = x0; o.y = y0; o.vx = 0; o.vy = 0; o.facing = F[base0+i]; }
         else { o.x = x0 + (x1-x0)*u; o.y = y0 + (y1-y0)*u; o.vx = (x1-x0)/DT; o.vy = (y1-y0)/DT; o.facing = lerpAngle(F[base0+i], F[base1+i], u); }
-        o.speed = Math.hypot(o.vx*PX, o.vy*PY);
+        o.speed = Math.sqrt((o.vx*PX)*(o.vx*PX) + (o.vy*PY)*(o.vy*PY));
         o.role = B.ROLES[role[base0+i]]||'shape';
       }
       if (cutBetween){ ref.x = RX[k]; ref.y = RY[k]; ref.vx = ref.vy = 0; ref.facing = RF[k]; }

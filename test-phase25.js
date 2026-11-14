@@ -44,7 +44,7 @@ for (const { p } of samples){
       for (const pl of s.players){ if (pl.sentOff) continue;
         ok(pl.x>=0 && pl.x<=1 && pl.y>=0 && pl.y<=1, 'on pitch '+id);
         ok(['idle','walk','jog','run','sprint'].includes(pl.movement), 'movement band '+pl.movement);
-        ok(['none','pass','shoot','receive','tackle','block','dive','set','celebrate','booked'].includes(pl.action), 'action '+pl.action);
+        ok(['none','pass','shoot','volley','header','receive','catch','tackle','block','dive','set','getup','celebrate','booked','dismay'].includes(pl.action), 'action '+pl.action);
         ok(pl.actionPhase>=0 && pl.actionPhase<=1.0001, 'action phase in range');
         if (prev && !cut){ const q = prev.players.find(x=>x.id===pl.id); if (q && !q.sentOff){ const v = dm(pl, q)/DT; worstV = Math.max(worstV, v); vNow[pl.id] = v; if (prevV && prevV[pl.id]!==undefined) worstA = Math.max(worstA, Math.abs(v - prevV[pl.id])/DT); } }
       }
@@ -57,7 +57,7 @@ for (const { p } of samples){
       if (s.ball.state==='controlled'){ ok(owners.length===1 && s.ball.carrierId===owners[0].id, 'controlled ball has its owner '+id); if (owners[0]) ok(dm(owners[0], s.ball) < 4.0, 'controlled ball at the feet ('+dm(owners[0], s.ball).toFixed(1)+'m) '+id+' t='+t); }
       else ok(owners.length===0 && !s.ball.carrierId, 'a ball that is not controlled has no owner '+id+' t='+t);
       if (s.ball.state==='travelling') ok(s.ball.inFlight, 'travelling means in flight');
-      ok(isFinite(s.cameraInterest.x) && s.cameraInterest.x>=-0.05 && s.cameraInterest.x<=1.05 && s.cameraInterest.y>=0 && s.cameraInterest.y<=1 && ['openPlay','attack','setPiece','goal'].includes(s.cameraInterest.kind), 'camera interest sane');
+      ok(isFinite(s.cameraInterest.x) && s.cameraInterest.x>=-0.05 && s.cameraInterest.x<=1.05 && s.cameraInterest.y>=0 && s.cameraInterest.y<=1 && ['openPlay','attack','setPiece','goal','celebration'].includes(s.cameraInterest.kind), 'camera interest sane');
       prev = s; prevV = vNow;
     }
     ok(worstV <= B.BAND.SPRINT*1.12, `no player faster than a sprint (${worstV.toFixed(1)} m/s) ${id}`);
@@ -81,7 +81,7 @@ for (const { p } of samples){
     for (const k of sc.keyframes.filter(k=>k.kind==='launch' && k.carrier && !k.parry).slice(0, 400)){
       const before = sc.getSceneAt(k.t - 0.02); const pl = before.players.find(x=>x.id===k.carrier);
       ok(pl && dm(pl, before.ball) < 4.0, 'ball at the kicker before contact '+id);
-      ok(pl && (pl.action==='pass' || pl.action==='shoot'), 'kicker shows a pass/shoot action ('+(pl&&pl.action)+') '+id);
+      ok(pl && ['pass','shoot','volley','header'].includes(pl.action), 'kicker shows a striking action ('+(pl&&pl.action)+') '+id);
       const after = sc.getSceneAt(k.t + 0.1); ok(after.ball.state==='travelling' && !after.ball.carrierId, 'ball travelling after contact '+id);
     }
     for (const g of p.events.filter(e=>e.type==='GOAL')){

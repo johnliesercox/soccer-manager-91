@@ -1,0 +1,180 @@
+[
+ {
+  "stem": "run-2",
+  "kind": "figure",
+  "frames": [
+   "run:2"
+  ],
+  "gk": false,
+  "hair": 0,
+  "wide": false
+ },
+ {
+  "stem": "idle-0_set-0",
+  "kind": "figure",
+  "frames": [
+   "idle:0",
+   "set:0"
+  ],
+  "gk": false,
+  "hair": 0,
+  "wide": false
+ },
+ {
+  "stem": "walk-0_walk-1",
+  "kind": "figure",
+  "frames": [
+   "walk:0",
+   "walk:1"
+  ],
+  "gk": false,
+  "hair": 0,
+  "wide": false
+ },
+ {
+  "stem": "walk-2_walk-3",
+  "kind": "figure",
+  "frames": [
+   "walk:2",
+   "walk:3"
+  ],
+  "gk": false,
+  "hair": 0,
+  "wide": false
+ },
+ {
+  "stem": "run-0_run-1",
+  "kind": "figure",
+  "frames": [
+   "run:0",
+   "run:1"
+  ],
+  "gk": false,
+  "hair": 0,
+  "wide": false
+ },
+ {
+  "stem": "run-3_run-4",
+  "kind": "figure",
+  "frames": [
+   "run:3",
+   "run:4"
+  ],
+  "gk": false,
+  "hair": 0,
+  "wide": false
+ },
+ {
+  "stem": "run-5_receive-0",
+  "kind": "figure",
+  "frames": [
+   "run:5",
+   "receive:0"
+  ],
+  "gk": false,
+  "hair": 0,
+  "wide": false
+ },
+ {
+  "stem": "kick-0_kick-1",
+  "kind": "figure",
+  "frames": [
+   "kick:0",
+   "kick:1"
+  ],
+  "gk": false,
+  "hair": 0,
+  "wide": false
+ },
+ {
+  "stem": "kick-2_kick-3",
+  "kind": "figure",
+  "frames": [
+   "kick:2",
+   "kick:3"
+  ],
+  "gk": false,
+  "hair": 0,
+  "wide": false
+ },
+ {
+  "stem": "shoot-0_shoot-1",
+  "kind": "figure",
+  "frames": [
+   "shoot:0",
+   "shoot:1"
+  ],
+  "gk": false,
+  "hair": 0,
+  "wide": false
+ },
+ {
+  "stem": "shoot-2_shoot-3",
+  "kind": "figure",
+  "frames": [
+   "shoot:2",
+   "shoot:3"
+  ],
+  "gk": false,
+  "hair": 0,
+  "wide": false
+ },
+ {
+  "stem": "celebrate-0_celebrate-1",
+  "kind": "figure",
+  "frames": [
+   "celebrate:0",
+   "celebrate:1"
+  ],
+  "gk": false,
+  "hair": 0,
+  "wide": false
+ },
+ {
+  "stem": "dive-0-gk",
+  "kind": "figure",
+  "frames": [
+   "dive:0"
+  ],
+  "gk": true,
+  "hair": 0,
+  "wide": true
+ },
+ {
+  "stem": "dive-1-gk",
+  "kind": "figure",
+  "frames": [
+   "dive:1"
+  ],
+  "gk": true,
+  "hair": 0,
+  "wide": true
+ },
+ {
+  "stem": "dive-2-gk",
+  "kind": "figure",
+  "frames": [
+   "dive:2"
+  ],
+  "gk": true,
+  "hair": 0,
+  "wide": true
+ },
+ {
+  "stem": "block-0_set-0-gk",
+  "kind": "figure",
+  "frames": [
+   "block:0",
+   "set:0"
+  ],
+  "gk": true,
+  "hair": 0,
+  "wide": false
+ },
+ {
+  "stem": "stand-depth",
+  "kind": "piece",
+  "piece": "far",
+  "input": "stand-far-24"
+ }
+]

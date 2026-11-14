@@ -209,3 +209,7 @@ What an isometric (or 3D) renderer can rely on. Nothing here depends on the pixe
 7. **Renderer swap proof.** `canvas2d.js`, `wireframe.js` and `pixelart.js` all draw the same scenes; `test-playback.js` and `test-phase25.js` render them headlessly. A new `renderers/isometric.js` implementing `create/mount/render/resize/dispose` and `drawFrame(ctx, w, h, scene, info)` registers itself as `Matchday.renderers.isometric` and appears in the View toggle after it is added to `build.py`.
 * There is no replay after the result: no snapshot is kept in the save (by decision), so the viewer exists only between `advanceWeek` and the result card.
 * The retro pixel density draws at 1 canvas pixel per CSS pixel, which is deliberately chunky on high-DPI screens; set `pixelDensity: 'sharp'` in `mountRenderer` for crisp output.
+
+## Phase 3 (in progress): the isometric view
+
+`renderers/isometric.js` is a fourth renderer behind the View button, built on `iso-projection.js` (a pure 2:1 dimetric projection in metres), `iso-sprites.js`, `iso-pitch.js`, `iso-stadium.js`, `iso-camera.js` and `iso-actors.js`. It draws the same `getSceneAt` frames as the others and changes nothing above the renderer contract. `PHASE-3-ARCHITECTURE.md` documents it; `test-isometric.js` tests it.

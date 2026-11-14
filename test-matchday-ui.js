@@ -22,14 +22,22 @@ let fails = 0; const ok = (c, msg) => { if (!c){ fails++; console.log('FAIL', ms
     await H.click('[data-a="md-play"]', 40); ok(!v.playback.state().playing, 'pause works');
     await H.click('[data-a="md-play"]', 40); ok(v.playback.state().playing, 'resume works');
     await H.click('[data-a="md-speed"][data-s="4"]', 40); ok(v.playback.state().speed===4, 'speed 4x');
-    ok(S.md.viewer.renderer.id==='pixelart', 'pixel art is the default view ('+S.md.viewer.renderer.id+')');
-    ok(H.d.querySelector('#md-camera').textContent.includes('follow'), 'camera button shows follow mode');
-    await H.click('[data-a="md-camera"]', 40); ok(S.md.viewer.renderer.getCamera()==='whole' && H.d.querySelector('#md-camera').textContent.includes('whole'), 'camera toggles to whole pitch');
-    await H.click('[data-a="md-camera"]', 40); ok(S.md.viewer.renderer.getCamera()==='follow', 'camera toggles back');
-    await H.click('[data-a="md-view"]', 60); ok(S.md.viewer.renderer.id==='canvas2d', 'renderer swapped to '+S.md.viewer.renderer.id);
+    ok(S.md.viewer.renderer.id==='isometric', 'the Isometric view is the default ('+S.md.viewer.renderer.id+')');
+    ok(H.d.querySelector('#md-camera').textContent.includes('close') && S.md.viewer.renderer.getCamera()==='close', 'the close camera is the default');
+    await H.click('[data-a="md-camera"]', 40); ok(S.md.viewer.renderer.getCamera()==='whole' && H.d.querySelector('#md-camera').textContent.includes('whole'), 'isometric camera steps to whole pitch');
+    await H.click('[data-a="md-camera"]', 40); ok(S.md.viewer.renderer.getCamera()==='follow', 'isometric camera steps to follow');
+    await H.click('[data-a="md-camera"]', 40); ok(S.md.viewer.renderer.getCamera()==='close', 'isometric camera cycles back to close');
+    await H.click('[data-a="md-view"]', 60); ok(S.md.viewer.renderer.id==='pixelart', 'renderer swapped to '+S.md.viewer.renderer.id);
+    ok(H.d.querySelector('#md-view').textContent.includes('Pixels') && H.d.querySelector('#md-camera').style.display!=='none', 'pixel view labelled, with a camera button');
+    ok(H.d.querySelector('#md-camera').textContent.includes('follow'), 'pixel camera button shows follow mode');
+    await H.click('[data-a="md-camera"]', 40); ok(S.md.viewer.renderer.getCamera()==='whole' && H.d.querySelector('#md-camera').textContent.includes('whole'), 'pixel camera toggles to whole pitch');
+    await H.click('[data-a="md-camera"]', 40); ok(S.md.viewer.renderer.getCamera()==='follow', 'pixel camera toggles back');
+    const shipsA = !!(H.w.Matchday.isoAssetData && Object.keys(H.w.Matchday.isoAssetData).some(k => k.indexOf('A/')===0));
+    if (shipsA){ await H.click('[data-a="md-view"]', 60); ok(S.md.viewer.renderer.id==='isometric-a', 'renderer swapped on to '+S.md.viewer.renderer.id); }
+    await H.click('[data-a="md-view"]', 60); ok(S.md.viewer.renderer.id==='canvas2d', 'renderer swapped on to '+S.md.viewer.renderer.id+(shipsA? '' : ' (Iso A left out: the build ships style B only; the generated-figure isometric is a ?dev view)'));
     ok(H.d.querySelector('#md-camera').style.display==='none', 'camera button hidden for a renderer without a camera');
     await H.click('[data-a="md-view"]', 60); ok(S.md.viewer.renderer.id==='wireframe', 'renderer swapped on to '+S.md.viewer.renderer.id);
-    await H.click('[data-a="md-view"]', 60); ok(S.md.viewer.renderer.id==='pixelart', 'renderer cycles back to pixel art');
+    await H.click('[data-a="md-view"]', 60); ok(S.md.viewer.renderer.id==='isometric', 'renderer cycles back to Isometric');
     await H.click('[data-a="md-sound"]', 40); ok(H.d.querySelector('#md-sound').textContent.includes('on'), 'sound toggled on');
     await H.click('[data-a="md-sound"]', 40); ok(H.d.querySelector('#md-sound').textContent.includes('off'), 'sound toggled off');
     await H.sleep(300);

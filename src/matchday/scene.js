@@ -28,7 +28,11 @@
   const POSSESSION_EASE = 2.5;        // seconds for a shape to switch between attacking and defending
   const lerp = (a,b,t) => a + (b-a)*t;
   const smooth = t => t<0? 0 : t>1? 1 : t*t*(3-2*t);
-  const ANIM_ALIAS = { pass:'kick', shoot:'shoot', dive:'dive', tackle:'slide', block:'block', receive:'receive', set:'set', celebrate:'celebrate', booked:'booked' };
+  // what a renderer needs to know about an action beyond its name and phase: the ball height it meets, whether a
+  // tackle or block is a slide or a goal-line clearance, what a reaction is about, whether a keeper was beaten
+  const DETAIL_KEYS = ['z','slide','line','kind','beaten','firstTime','intercept','parry','variant'];
+  function cueDetail(c){ let d = null; for (const k of DETAIL_KEYS) if (c[k]!==undefined){ (d||(d={}))[k] = c[k]; } return d; }
+  const ANIM_ALIAS = { pass:'kick', shoot:'shoot', volley:'volley', header:'header', dive:'dive', catch:'catch', getup:'getup', tackle:'slide', block:'block', receive:'receive', set:'set', celebrate:'celebrate', booked:'booked', dismay:'dismay' };
   const movementOf = s => s < 0.5? 'idle' : s < 2.4? 'walk' : s < 4.8? 'jog' : s < 7.2? 'run' : 'sprint';
 
   function lastIndex(arr, t, get){ // last i with get(arr[i]) <= t, binary search
@@ -74,25 +78,40 @@
     const anyOf = (teamId, role) => { const f = players.find(x=>x.teamId===teamId && x.role===role && on(x)) || players.find(x=>x.teamId===teamId && on(x)); return f? f.id : null; };
 
     // ---- ball keyframes: {t, x, y, carrier, team, kind, ...} ----
+    // A launch key may carry z0 (height the ball leaves from), arc (how high the flight rises: 1 = a lofted pass,
+    // 0.35 = a driven shot, 1.3 = a cross), technique and shot/parry/cross flags; an arrive key z1 (height it is
+    // met at: a header, a volley, a save, the crossbar) and save/catch/out/block/post flags.
     const keys = [];
     const key = (t, pos, carrier, team, kind, extra) => { const k = { t, x: pos.x, y: pos.y, carrier: (carrier && !offSoFar.has(carrier))? carrier : null, team: team||null, kind: kind||'hold' }; if (extra) Object.assign(k, extra); keys.push(k); return k; };
     const centre = { x:0.5, y:0.5 };
     const cornerKeys = [], goalKeys = [];
-    for (const e of p.events){
+    const z = pt => (pt && pt.z)? pt.z : 0;
+    const flight = (e, extraLaunch, extraArrive, arriveCarrier, arriveTeam, arriveKind) => {
       const d = e.duration||0;
+      key(e.matchSecond-d, e.from, e.playerId, e.teamId, 'launch', Object.assign({ eventId: e.id, z0: z(e.from), technique: e.technique||'kick' }, extraLaunch||{}));
+      return key(e.matchSecond, e.to, arriveCarrier===undefined? null : arriveCarrier, arriveTeam||e.teamId, arriveKind||'arrive', Object.assign({ eventId: e.id, z1: z(e.to) }, extraArrive||{}));
+    };
+    for (const e of p.events){
       switch (e.type){
         case EV.SENT_OFF: offSoFar.add(e.playerId); break;
         case EV.KICK_OFF: case EV.SECOND_HALF: case EV.ET_START: key(e.matchSecond, centre, e.playerId||kicker(e.teamId), e.teamId, 'restart', e.type!==EV.KICK_OFF? { cut:true } : null); break;
-        case EV.PASS: case EV.RUN: key(e.matchSecond-d, e.from, e.playerId, e.teamId, 'launch', { eventId: e.id }); key(e.matchSecond, e.to, e.type===EV.RUN? e.playerId : e.toPlayerId, e.teamId, 'arrive', { eventId: e.id }); break;
-        case EV.DEFLECTION: key(e.matchSecond-d, e.from, e.playerId, e.teamId, 'launch', { parry:true, eventId: e.id }); key(e.matchSecond, e.to, null, e.teamId, 'arrive', { out:true, eventId: e.id }); break;
-        case EV.SHOT_SAVED: key(e.matchSecond-d, e.from, e.playerId, e.teamId, 'launch', { shot:true, eventId: e.id }); key(e.matchSecond, e.to, e.keeperId||null, e.teamId, 'arrive', { save:true, eventId: e.id }); break;
-        case EV.SHOT_WIDE: key(e.matchSecond-d, e.from, e.playerId, e.teamId, 'launch', { shot:true, eventId: e.id }); key(e.matchSecond, e.to, null, e.teamId, 'arrive', { out:true, eventId: e.id }); break;
-        case EV.SHOT_BLOCKED: key(e.matchSecond-d, e.from, e.playerId, e.teamId, 'launch', { shot:true, eventId: e.id }); key(e.matchSecond, e.to, e.blockerId||null, e.blockerId? other(e.teamId) : e.teamId, e.blockerId? 'hold' : 'arrive', { block: !!e.blockerId, eventId: e.id }); break;
-        case EV.GOAL: if (e.from && e.to){ key(e.matchSecond-d, e.from, e.playerId, e.teamId, 'launch', { shot:true, eventId: e.id }); goalKeys.push(key(e.matchSecond, e.to, null, e.teamId, 'goal', { scorer: e.playerId||null, eventId: e.id })); } break;
+        case EV.PASS: case EV.RUN: flight(e, { arc: 1 }, {}, e.type===EV.RUN? e.playerId : e.toPlayerId, e.teamId); break;
+        case EV.CROSS: flight(e, { arc: 1.3, cross: true }, { aerial: true, catch: !!e.catch }, e.toPlayerId, e.toTeamId||e.teamId); break;
+        case EV.INTERCEPTION: flight(e, { arc: 0.9 }, { intercept: true }, e.toPlayerId, other(e.teamId)); break;
+        case EV.DEFLECTION: {
+          // a rebound falls to whoever plays it next (a follow-up shot, a hacked clearance) within a couple of seconds
+          let taker = null;
+          if (e.rebound){ const nx = p.events.find(x=>x.matchSecond > e.matchSecond && x.from && x.playerId && x.matchSecond - (x.duration||0) <= e.matchSecond + 2.5 && x.matchSecond - (x.duration||0) >= e.matchSecond - 0.01); if (nx) taker = nx.playerId; }
+          flight(e, { arc: e.rebound? 0.5 : 0.25, parry: true }, { out: !e.rebound, rebound: !!e.rebound }, taker, e.teamId); break; }
+        case EV.SHOT_SAVED: flight(e, { arc: 0.35, shot: true }, { save: true, catch: e.save==='catch', parried: e.save==='parry' }, e.keeperId||null, e.teamId); break;
+        case EV.SHOT_WIDE: flight(e, { arc: e.miss==='over'? 0.6 : 0.35, shot: true }, { out: true, miss: e.miss||'wide' }, null, e.teamId); break;
+        case EV.SHOT_POST: flight(e, { arc: 0.35, shot: true }, { post: true, woodwork: e.woodwork||'post', keeper: e.keeperId||null }, null, e.teamId); break;
+        case EV.SHOT_BLOCKED: flight(e, { arc: 0.3, shot: true }, { block: !!e.blockerId, slide: !!e.slide, line: !!e.line, keeper: e.keeperId||null }, e.blockerId||null, e.blockerId? other(e.teamId) : e.teamId, e.blockerId? 'hold' : 'arrive'); break;
+        case EV.GOAL: if (e.from && e.to){ goalKeys.push(flight(e, { arc: 0.35, shot: true }, { scorer: e.playerId||null }, null, e.teamId, 'goal')); } break;
         case EV.CORNER: cornerKeys.push(key(e.matchSecond, e.at, e.playerId||anyOf(e.teamId,'MID'), e.teamId, 'restart', { corner:true, eventId: e.id })); break;
         case EV.GOAL_KICK: key(e.matchSecond, e.at, e.playerId||gkOf[e.teamId]||null, e.teamId, 'restart', { eventId: e.id }); break;
-        case EV.TACKLE: key(e.matchSecond, e.at, e.playerId, e.teamId, 'hold', { tackle:true, eventId: e.id }); break;
-        case EV.CLEARANCE: key(e.matchSecond, e.at, e.playerId, e.teamId, 'hold', { eventId: e.id }); break;
+        case EV.TACKLE: key(e.matchSecond, e.at, e.playerId, e.teamId, 'hold', { tackle:true, slide: !!e.slide, eventId: e.id }); break;
+        case EV.CLEARANCE: if (e.from && e.to) flight(e, { arc: 0.9, clearance: true }, { loose: true }, e.toPlayerId||null, e.teamId); else key(e.matchSecond, e.at, e.playerId, e.teamId, 'hold', { eventId: e.id }); break;
         case EV.FOUL: key(e.matchSecond, e.at, null, e.teamId, 'hold', { eventId: e.id }); break;
         default: break;
       }
@@ -100,6 +119,15 @@
     keys.forEach((k,i)=>{ k.i = i; });
     keys.sort((a,b)=>a.t-b.t || a.i-b.i);
     keys.forEach((k,i)=>{ k.idx = i; delete k.i; });
+    // a man cannot carry the ball further than his legs allow between taking it and striking it: a kick straight after
+    // a restart is taken from the spot, a quick pass from where he collected it
+    for (let i=1;i<keys.length;i++){
+      const k = keys[i], pk = keys[i-1];
+      if (k.kind!=='launch' || !k.carrier || pk.carrier!==k.carrier || !(pk.kind==='restart' || pk.kind==='hold' || pk.kind==='arrive')) continue;
+      const dt = Math.max(0, k.t - pk.t); const dx = (k.x - pk.x)*105, dy = (k.y - pk.y)*68; const d = Math.sqrt(dx*dx + dy*dy); const allow = Math.min(7*dt, 2*dt*dt) + 0.3;   // from a standing start
+      if (d > allow){ const u = allow/d; k.x = pk.x + (k.x - pk.x)*u; k.y = pk.y + (k.y - pk.y)*u; }
+    }
+    MD.interactions.standOffsets(keys);
     const cutTimes = keys.filter(k=>k.cut).map(k=>k.t);
     const cutFloor = t => { let f = 0; for (const c of cutTimes){ if (c<=t) f = c; else break; } return f; };
     // possession changes with the eased value each blend starts from, so a quick turnover never jumps
@@ -127,8 +155,16 @@
       const markers = teamOf(def).filter(x=>x.role!=='GK' && x.role!=='FWD' && !offAt(x.id, t)).slice(0,8);
       markers.forEach((pl,i)=>{ const ax = 0.075 + jitter(p.matchId+'d', i)*0.05, y = 0.33 + i*0.05 + jitter(p.matchId+'dy', i)*0.04; targets[pl.id] = toAbs(def, t, ax, y); band[pl.id] = B.BAND.RUN; });
       if (gkOf[def]){ targets[gkOf[def]] = toAbs(def, t, 0.025, 0.5 + (near? -0.03 : 0.03)); band[gkOf[def]] = B.BAND.JOG; }
-      windows.push({ from: t - 7, to: kickAt + 0.4, targets, band, anim: {}, kind:'corner' });
+      // whoever meets the corner (an attacker, a defender heading clear, the keeper claiming) waits where it will land
+      const met = keys[ck.idx+2];
+      if (kick && met && met.kind==='arrive' && met.carrier){ targets[met.carrier] = { x: met.x, y: met.y }; band[met.carrier] = B.BAND.RUN; }
+      // nobody takes up a corner position while the ball is still in play: the window opens at the last touch
+      let j = ck.idx - 1; while (j > 0 && !keys[j].carrier) j--;
+      const deadAt = keys[j].t;
+      windows.push({ from: Math.max(t - 7, deadAt + 0.3), to: kickAt + 0.4, targets, band, anim: {}, kind:'corner' });
     }
+    // ---- goal celebrations: four styles, chosen per goal from the seed, bigger for a goal that matters ----
+    const goalEvents = p.events.filter(e=>e.type===EV.GOAL);
     for (const gk of goalKeys){
       const restart = keys.slice(gk.idx+1).find(k=>k.kind==='restart');
       const to = restart? restart.t - 0.5 : gk.t + 4.5;
@@ -136,17 +172,53 @@
       const team = gk.team, t = gk.t;
       const scorer = gk.scorer && byId[gk.scorer]? byId[gk.scorer] : null;
       const targets = {}, band = {}, anim = {};
+      // how much it matters: an equaliser or a lead taken, late in the game, by a side that was behind
+      const tally = tt => { let h=0, a=0; for (const g of goalEvents){ if (g.matchSecond<=tt){ if (g.teamId===H) h++; else a++; } } return { home:h, away:a }; };
+      const before = tally(t - 0.5), after = tally(t + 0.5);
+      const forH = team===H; const lead = (after.home - after.away)*(forH? 1 : -1), leadBefore = (before.home - before.away)*(forH? 1 : -1);
+      const swing = (leadBefore < 0 && lead >= 0) || (leadBefore===0 && lead > 0);
+      const late = t > P.regulation.end - 15*60 || t > P.regulation.end;
+      const big = swing && late? 2 : (swing || late)? 1 : 0;
+      const ge = goalEvents.find(e=>e.id===gk.eventId) || {}; const seed = MD.hashString(p.matchId+':'+(ge.id||t));
+      const style = seed % 4;                                    // 0 arms aloft, 1 run to the crowd, 2 knee slide, 3 group hug
+      const span = to - t;
       if (scorer){
         const shot = keys[gk.idx-1]; const sx = shot? shot.x : gk.x, sy = shot? shot.y : gk.y;
-        const dir = dirAt(team, t); const sideY = sy < 0.5? 0.16 : 0.84;
-        const tx = Math.max(0.05, Math.min(0.95, sx - dir*0.2));
-        targets[scorer.id] = { x: tx, y: sideY }; band[scorer.id] = B.BAND.SPRINT; anim[scorer.id] = 'celebrate';
+        const dir = dirAt(team, t); const sideY = sy < 0.5? 0.14 : 0.86;
+        const crowd = { x: Math.max(0.06, Math.min(0.94, sx - dir*0.12)), y: sideY };            // towards the touchline, a little back from the goal
+        const huddle = { x: Math.max(0.08, Math.min(0.92, sx - dir*0.16)), y: Math.max(0.2, Math.min(0.8, sy + (sy < 0.5? 0.12 : -0.12))) };
         const mates = teamOf(team).filter(x=>x.id!==scorer.id && x.role!=='GK' && !offAt(x.id, t))
-          .map(x=>({ x, d: Math.hypot(anchorsAt(t)[x.id].x - anchorsAt(t)[scorer.id].x, anchorsAt(t)[x.id].y - anchorsAt(t)[scorer.id].y) })).sort((a,b)=>a.d-b.d).slice(0,3).map(o=>o.x);
-        mates.forEach((pl,i)=>{ targets[pl.id] = { x: Math.max(0.05, Math.min(0.95, tx + dir*0.035*(i+1))), y: sideY + (sideY<0.5? 1 : -1)*(0.035 + 0.03*i) }; band[pl.id] = B.BAND.RUN; anim[pl.id] = 'celebrate'; });
+          .map(x=>({ x, d: Math.hypot(anchorsAt(t)[x.id].x - anchorsAt(t)[scorer.id].x, anchorsAt(t)[x.id].y - anchorsAt(t)[scorer.id].y) })).sort((a,b)=>a.d-b.d).slice(0, 3 + big).map(o=>o.x);
+        const ring = (c, i, n, r) => ({ x: Math.max(0.03, Math.min(0.97, c.x + r*Math.cos(i/n*Math.PI*2)*0.65)), y: Math.max(0.03, Math.min(0.97, c.y + r*Math.sin(i/n*Math.PI*2))) });
+        if (style===1){
+          // runs to the supporters with both arms up, the others chasing him; everybody up at the end
+          targets[scorer.id] = crowd; band[scorer.id] = B.BAND.SPRINT;
+          anim[scorer.id] = [{ from: 0.4, to: 4.2, action: 'celebrate', extra: { variant: 1 } }, { from: 4.2, to: span, action: 'celebrate', extra: { variant: 0 } }];
+          mates.forEach((pl,i)=>{ targets[pl.id] = ring(crowd, i, mates.length, 0.03); band[pl.id] = B.BAND.SPRINT; anim[pl.id] = [{ from: 0.8, to: 4.6, action: 'celebrate', extra: { variant: 1 } }, { from: 4.6, to: span, action: 'celebrate', extra: { variant: 3 } }]; });
+        } else if (style===2){
+          // a short run and the knee slide towards the crowd, the others arriving to pile in
+          const slideAt = { x: Math.max(0.06, Math.min(0.94, sx - dir*0.08)), y: sy < 0.5? 0.22 : 0.78 };
+          targets[scorer.id] = slideAt; band[scorer.id] = B.BAND.SPRINT;
+          anim[scorer.id] = [{ from: 0.4, to: 5.0, action: 'celebrate', extra: { variant: 2 }, aim: crowd }, { from: 5.0, to: span, action: 'celebrate', extra: { variant: 3 } }];
+          mates.forEach((pl,i)=>{ targets[pl.id] = ring(slideAt, i, mates.length, 0.028); band[pl.id] = B.BAND.SPRINT; anim[pl.id] = [{ from: 0.8, to: 4.5, action: 'celebrate', extra: { variant: 1 } }, { from: 4.5, to: span, action: 'celebrate', extra: { variant: 3 } }]; });
+        } else if (style===3){
+          // turns and meets his teammates: a huddle
+          targets[scorer.id] = huddle; band[scorer.id] = B.BAND.RUN;
+          anim[scorer.id] = [{ from: 0.4, to: 2.6, action: 'celebrate', extra: { variant: 1 } }, { from: 2.6, to: span, action: 'celebrate', extra: { variant: 3 } }];
+          mates.forEach((pl,i)=>{ targets[pl.id] = ring(huddle, i, mates.length, 0.024); band[pl.id] = B.BAND.SPRINT; anim[pl.id] = [{ from: 0.6, to: 3.0, action: 'celebrate', extra: { variant: 1 } }, { from: 3.0, to: span, action: 'celebrate', extra: { variant: 3 } }]; });
+        } else {
+          // arms aloft where he stands (a few steps on), the others come to him
+          const spot = { x: Math.max(0.06, Math.min(0.94, sx - dir*0.06)), y: Math.max(0.1, Math.min(0.9, sy + (sy < 0.5? 0.05 : -0.05))) };
+          targets[scorer.id] = spot; band[scorer.id] = B.BAND.RUN;
+          anim[scorer.id] = [{ from: 0.4, to: span, action: 'celebrate', extra: { variant: 0 } }];
+          mates.forEach((pl,i)=>{ targets[pl.id] = ring(spot, i, mates.length, 0.026); band[pl.id] = B.BAND.SPRINT; anim[pl.id] = [{ from: 0.8, to: 3.4, action: 'celebrate', extra: { variant: 1 } }, { from: 3.4, to: span, action: 'celebrate', extra: { variant: 3 } }]; });
+        }
       }
-      const beaten = gkOf[other(team)]; if (beaten){ targets[beaten] = { x: gk.x, y: gk.y }; band[beaten] = B.BAND.JOG; }
-      windows.push({ from: t, to, targets, band, anim, kind:'celebration' });
+      // the beaten side: the keeper fetches the ball and shows it; the nearest defender turns away with his hands on his head
+      const beaten = gkOf[other(team)]; if (beaten){ targets[beaten] = { x: gk.x, y: gk.y }; band[beaten] = B.BAND.JOG; anim[beaten] = [{ from: 1.2, to: Math.min(span, 5.5), action: 'dismay', extra: { variant: seed % 2? 1 : 0 } }]; }
+      const defs = teamOf(other(team)).filter(x=>x.role!=='GK' && !offAt(x.id, t)).map(x=>({ x, d: Math.hypot((anchorsAt(t)[x.id].x - gk.x), (anchorsAt(t)[x.id].y - gk.y)) })).sort((a,b)=>a.d-b.d).slice(0, 1 + (big? 1 : 0)).map(o=>o.x);
+      defs.forEach((pl,i)=>{ anim[pl.id] = [{ from: 0.8, to: Math.min(span, 4.5), action: 'dismay', extra: { variant: (seed + i + 1) % 3 } }]; });
+      windows.push({ from: t, to, targets, band, anim, kind:'celebration', teamId: team, style, big, focusId: scorer? scorer.id : null });
     }
     windows.sort((a,b)=>a.from-b.from);
     const windowAt = t => { const i = lastIndex(windows, t, w=>w.from); const w = i>=0? windows[i] : null; return (w && t<=w.to)? w : null; };
@@ -155,7 +227,10 @@
     const offTimeOf = id => offTime[id]===undefined? null : offTime[id];
     const offTimeIdx = players.map(pl=>offTimeOf(pl.id));
     const offAtIdx = (i, t) => offTimeIdx[i]!==null && t >= offTimeIdx[i];
-    const ctx = { p, events: p.events, players, index, byId, H, A, other, gkOf, keys, carries, windows, windowAt, cutTimes, cutFloor, end, anchorsAt, roleAt, offAt, offAtIdx, offTimeOf, offSpot, dirAt, attackAt, lastIndex };
+    // bookings: the referee walks to the offender and shows the card beside him; the offender stands and takes it
+    const cards = p.events.filter(e=>e.type===EV.CARD && e.playerId!==null && e.playerId!==undefined && index[e.playerId]!==undefined).map(e=>({ from: e.matchSecond - 4.5, to: e.matchSecond + 2.7, playerId: e.playerId }));
+    const cardAt = t => { const i = lastIndex(cards, t, c=>c.from); const c = i>=0? cards[i] : null; return (c && t<=c.to)? c : null; };
+    const ctx = { p, events: p.events, players, index, byId, H, A, other, gkOf, keys, carries, windows, windowAt, cardAt, cutTimes, cutFloor, end, anchorsAt, roleAt, offAt, offAtIdx, offTimeOf, offSpot, dirAt, attackAt, lastIndex };
     ctx.ballAt = t => MD.interactions.ballAt(ctx, t);
     const traj = MD.trajectories.build(ctx);
     MD.interactions.controlTimes(ctx, traj);
@@ -217,18 +292,20 @@
       const lastGoal = goals.filter(g=>g.matchSecond<=t).pop();
       const flash = (lastGoal && t - lastGoal.matchSecond < 2.5)? { type:'goal', teamId: lastGoal.teamId, age: t - lastGoal.matchSecond } : null;
       const win = windowAt(t);
+      // the crowd's moment: the celebration window (or the goal flash before it), for the scoring side
+      const crowd = (win && win.kind==='celebration')? { teamId: win.teamId, age: t - win.from, intensity: 1 + 0.5*(win.big||0) } : (flash? { teamId: flash.teamId, age: flash.age, intensity: 1 } : null);
       const out = players.map((pl, i)=>{
         const q = s.players[i];
         let x = q.x, y = q.y;
         const off = offAt(pl.id, t);
         if (off){ const sp = offSpot(pl.id); if (Math.hypot(x-sp.x, y-sp.y) < 0.002){ x = sp.x; y = sp.y; } }
-        let action = 'none', actionPhase = 0, aim = null;
+        let action = 'none', actionPhase = 0, aim = null, actionDetail = null;
         const cl = cues[pl.id]; const ci = lastIndex(cl, t, c=>c.from);
-        if (ci>=0 && t<=cl[ci].to){ const c = cl[ci]; action = c.action; actionPhase = (t - c.from)/Math.max(0.01, c.to - c.from); if (c.aimX!==undefined) aim = { x: c.aimX, y: c.aimY }; }
+        if (ci>=0 && t<=cl[ci].to){ const c = cl[ci]; action = c.action; actionPhase = (t - c.from)/Math.max(0.01, c.to - c.from); if (c.aimX!==undefined) aim = { x: c.aimX, y: c.aimY }; actionDetail = cueDetail(c); }
         const speed = q.speed; const movement = off? 'idle' : movementOf(speed);
         let facingAngle = q.facing;
         if (aim && action!=='celebrate' && action!=='booked'){ const d = Math.hypot((aim.y - y)*B.PY, (aim.x - x)*B.PX); if (d > 0.3) facingAngle = Math.atan2((aim.y - y)*B.PY, (aim.x - x)*B.PX); }
-        return { id: pl.id, teamId: pl.teamId, name: pl.name, shirtNo: pl.shirtNo, role: roleAt(i, t), x, y, vx: q.vx, vy: q.vy, speedMs: speed, movement, facingAngle, action, actionPhase, anim: ANIM_ALIAS[action]||'idle', aim, intent: q.role, hasBall: ball.carrier===pl.id, sentOff: off };
+        return { id: pl.id, teamId: pl.teamId, name: pl.name, shirtNo: pl.shirtNo, role: roleAt(i, t), x, y, vx: q.vx, vy: q.vy, speedMs: speed, movement, facingAngle, action, actionPhase, actionDetail, anim: ANIM_ALIAS[action]||'idle', aim, intent: q.role, hasBall: ball.carrier===pl.id, sentOff: off };
       });
       const si = lastIndex(signals, t, s=>s.from); const sig = (si>=0 && t<=signals[si].to)? signals[si].signal : null;
       const r = s.ref;
@@ -237,8 +314,8 @@
         t, phase, phaseLabel: PHASE_LABEL[phase]||phase, clock: clockAt(t), score: scoreAt(t),
         possession: ball.team, attackDir: { [H]: dirAt(H, t), [A]: dirAt(A, t) }, attack: { [H]: attackAt(H, t), [A]: attackAt(A, t) }, formations,
         ball: { x: ball.x, y: ball.y, z: ball.z, inFlight: ball.inFlight, carrierId: ball.carrier, state: ball.state, actionId: ball.from? (ball.from.eventId||null) : null },
-        players: out, ref, setPiece: win? win.kind : null,
-        cameraInterest: MD.interactions.cameraInterest(ctx, ball, t, win, flash),
+        players: out, ref, setPiece: win? win.kind : null, crowd,
+        cameraInterest: MD.interactions.cameraInterest(ctx, ball, t, win, flash, (win && win.focusId && win.targets[win.focusId])? Object.assign({ id: win.focusId }, win.targets[win.focusId]) : null),
         flash, live: phase==='firstHalf'||phase==='secondHalf'||phase==='extraTime1'||phase==='extraTime2',
       };
     }

@@ -1,0 +1,462 @@
+[
+ {
+  "stem": "receive-0_receive-1",
+  "kind": "figure",
+  "frames": [
+   "receive:0",
+   "receive:1"
+  ],
+  "gk": false,
+  "hair": 0,
+  "wide": false
+ },
+ {
+  "stem": "run-2_block-0",
+  "kind": "figure",
+  "frames": [
+   "run:2",
+   "block:0"
+  ],
+  "gk": false,
+  "hair": 0,
+  "wide": false
+ },
+ {
+  "stem": "slide-0",
+  "kind": "figure",
+  "frames": [
+   "slide:0"
+  ],
+  "gk": false,
+  "hair": 0,
+  "wide": true
+ },
+ {
+  "stem": "slide-1",
+  "kind": "figure",
+  "frames": [
+   "slide:1"
+  ],
+  "gk": false,
+  "hair": 0,
+  "wide": true
+ },
+ {
+  "stem": "booked-0_whistle-0",
+  "kind": "figure",
+  "frames": [
+   "booked:0",
+   "whistle:0"
+  ],
+  "gk": false,
+  "hair": 0,
+  "wide": false
+ },
+ {
+  "stem": "card-0_point-0",
+  "kind": "figure",
+  "frames": [
+   "card:0",
+   "point:0"
+  ],
+  "gk": false,
+  "hair": 0,
+  "wide": false
+ },
+ {
+  "stem": "idle-0_set-0-h1",
+  "kind": "figure",
+  "frames": [
+   "idle:0",
+   "set:0"
+  ],
+  "gk": false,
+  "hair": 1,
+  "wide": false
+ },
+ {
+  "stem": "walk-0_walk-1-h1",
+  "kind": "figure",
+  "frames": [
+   "walk:0",
+   "walk:1"
+  ],
+  "gk": false,
+  "hair": 1,
+  "wide": false
+ },
+ {
+  "stem": "walk-2_walk-3-h1",
+  "kind": "figure",
+  "frames": [
+   "walk:2",
+   "walk:3"
+  ],
+  "gk": false,
+  "hair": 1,
+  "wide": false
+ },
+ {
+  "stem": "run-0_run-1-h1",
+  "kind": "figure",
+  "frames": [
+   "run:0",
+   "run:1"
+  ],
+  "gk": false,
+  "hair": 1,
+  "wide": false
+ },
+ {
+  "stem": "run-2_run-3-h1",
+  "kind": "figure",
+  "frames": [
+   "run:2",
+   "run:3"
+  ],
+  "gk": false,
+  "hair": 1,
+  "wide": false
+ },
+ {
+  "stem": "run-4_run-5-h1",
+  "kind": "figure",
+  "frames": [
+   "run:4",
+   "run:5"
+  ],
+  "gk": false,
+  "hair": 1,
+  "wide": false
+ },
+ {
+  "stem": "receive-0_receive-1-h1",
+  "kind": "figure",
+  "frames": [
+   "receive:0",
+   "receive:1"
+  ],
+  "gk": false,
+  "hair": 1,
+  "wide": false
+ },
+ {
+  "stem": "kick-0_kick-1-h1",
+  "kind": "figure",
+  "frames": [
+   "kick:0",
+   "kick:1"
+  ],
+  "gk": false,
+  "hair": 1,
+  "wide": false
+ },
+ {
+  "stem": "kick-2_kick-3-h1",
+  "kind": "figure",
+  "frames": [
+   "kick:2",
+   "kick:3"
+  ],
+  "gk": false,
+  "hair": 1,
+  "wide": false
+ },
+ {
+  "stem": "shoot-0_shoot-1-h1",
+  "kind": "figure",
+  "frames": [
+   "shoot:0",
+   "shoot:1"
+  ],
+  "gk": false,
+  "hair": 1,
+  "wide": false
+ },
+ {
+  "stem": "shoot-2_shoot-3-h1",
+  "kind": "figure",
+  "frames": [
+   "shoot:2",
+   "shoot:3"
+  ],
+  "gk": false,
+  "hair": 1,
+  "wide": false
+ },
+ {
+  "stem": "celebrate-0_celebrate-1-h1",
+  "kind": "figure",
+  "frames": [
+   "celebrate:0",
+   "celebrate:1"
+  ],
+  "gk": false,
+  "hair": 1,
+  "wide": false
+ },
+ {
+  "stem": "booked-0_whistle-0-h1",
+  "kind": "figure",
+  "frames": [
+   "booked:0",
+   "whistle:0"
+  ],
+  "gk": false,
+  "hair": 1,
+  "wide": false
+ },
+ {
+  "stem": "card-0_point-0-h1",
+  "kind": "figure",
+  "frames": [
+   "card:0",
+   "point:0"
+  ],
+  "gk": false,
+  "hair": 1,
+  "wide": false
+ },
+ {
+  "stem": "block-0-h1",
+  "kind": "figure",
+  "frames": [
+   "block:0"
+  ],
+  "gk": false,
+  "hair": 1,
+  "wide": false
+ },
+ {
+  "stem": "slide-0-h1",
+  "kind": "figure",
+  "frames": [
+   "slide:0"
+  ],
+  "gk": false,
+  "hair": 1,
+  "wide": true
+ },
+ {
+  "stem": "slide-1-h1",
+  "kind": "figure",
+  "frames": [
+   "slide:1"
+  ],
+  "gk": false,
+  "hair": 1,
+  "wide": true
+ },
+ {
+  "stem": "idle-0_walk-0-gk",
+  "kind": "figure",
+  "frames": [
+   "idle:0",
+   "walk:0"
+  ],
+  "gk": true,
+  "hair": 0,
+  "wide": false
+ },
+ {
+  "stem": "walk-1_walk-2-gk",
+  "kind": "figure",
+  "frames": [
+   "walk:1",
+   "walk:2"
+  ],
+  "gk": true,
+  "hair": 0,
+  "wide": false
+ },
+ {
+  "stem": "walk-3_run-0-gk",
+  "kind": "figure",
+  "frames": [
+   "walk:3",
+   "run:0"
+  ],
+  "gk": true,
+  "hair": 0,
+  "wide": false
+ },
+ {
+  "stem": "run-1_run-2-gk",
+  "kind": "figure",
+  "frames": [
+   "run:1",
+   "run:2"
+  ],
+  "gk": true,
+  "hair": 0,
+  "wide": false
+ },
+ {
+  "stem": "run-3_run-4-gk",
+  "kind": "figure",
+  "frames": [
+   "run:3",
+   "run:4"
+  ],
+  "gk": true,
+  "hair": 0,
+  "wide": false
+ },
+ {
+  "stem": "run-5_receive-0-gk",
+  "kind": "figure",
+  "frames": [
+   "run:5",
+   "receive:0"
+  ],
+  "gk": true,
+  "hair": 0,
+  "wide": false
+ },
+ {
+  "stem": "receive-1_kick-0-gk",
+  "kind": "figure",
+  "frames": [
+   "receive:1",
+   "kick:0"
+  ],
+  "gk": true,
+  "hair": 0,
+  "wide": false
+ },
+ {
+  "stem": "kick-1_kick-2-gk",
+  "kind": "figure",
+  "frames": [
+   "kick:1",
+   "kick:2"
+  ],
+  "gk": true,
+  "hair": 0,
+  "wide": false
+ },
+ {
+  "stem": "kick-3_shoot-0-gk",
+  "kind": "figure",
+  "frames": [
+   "kick:3",
+   "shoot:0"
+  ],
+  "gk": true,
+  "hair": 0,
+  "wide": false
+ },
+ {
+  "stem": "shoot-1_shoot-2-gk",
+  "kind": "figure",
+  "frames": [
+   "shoot:1",
+   "shoot:2"
+  ],
+  "gk": true,
+  "hair": 0,
+  "wide": false
+ },
+ {
+  "stem": "shoot-3_celebrate-0-gk",
+  "kind": "figure",
+  "frames": [
+   "shoot:3",
+   "celebrate:0"
+  ],
+  "gk": true,
+  "hair": 0,
+  "wide": false
+ },
+ {
+  "stem": "celebrate-1_booked-0-gk",
+  "kind": "figure",
+  "frames": [
+   "celebrate:1",
+   "booked:0"
+  ],
+  "gk": true,
+  "hair": 0,
+  "wide": false
+ },
+ {
+  "stem": "slide-0-gk",
+  "kind": "figure",
+  "frames": [
+   "slide:0"
+  ],
+  "gk": true,
+  "hair": 0,
+  "wide": true
+ },
+ {
+  "stem": "slide-1-gk",
+  "kind": "figure",
+  "frames": [
+   "slide:1"
+  ],
+  "gk": true,
+  "hair": 0,
+  "wide": true
+ },
+ {
+  "stem": "piece-near-24",
+  "kind": "piece",
+  "piece": "near"
+ },
+ {
+  "stem": "piece-near-24-s2",
+  "kind": "piece",
+  "piece": "near",
+  "input": "piece-near-24",
+  "seed": 19910503
+ },
+ {
+  "stem": "piece-left-24",
+  "kind": "piece",
+  "piece": "left"
+ },
+ {
+  "stem": "piece-left-24-s2",
+  "kind": "piece",
+  "piece": "left",
+  "input": "piece-left-24",
+  "seed": 19910503
+ },
+ {
+  "stem": "piece-right-24",
+  "kind": "piece",
+  "piece": "right"
+ },
+ {
+  "stem": "piece-right-24-s2",
+  "kind": "piece",
+  "piece": "right",
+  "input": "piece-right-24",
+  "seed": 19910503
+ },
+ {
+  "stem": "piece-boards-24",
+  "kind": "piece",
+  "piece": "boards"
+ },
+ {
+  "stem": "piece-boards-24-s2",
+  "kind": "piece",
+  "piece": "boards",
+  "input": "piece-boards-24",
+  "seed": 19910503
+ },
+ {
+  "stem": "piece-dugout-24",
+  "kind": "piece",
+  "piece": "dugout"
+ },
+ {
+  "stem": "piece-dugout-24-s2",
+  "kind": "piece",
+  "piece": "dugout",
+  "input": "piece-dugout-24",
+  "seed": 19910503
+ }
+]

@@ -36,7 +36,14 @@
     'Porto':['#0056A7','#FFFFFF'],'Napoli':['#12A0D7','#FFFFFF'],'Rangers':['#1B458F','#FFFFFF'],'Celtic':['#16A34A','#FFFFFF'],'Red Star Belgrade':['#E31E24','#FFFFFF'],
   };
   function hashColour(id){ const h = MD.hashString('kit'+id); const hue = h % 360; return ['hsl('+hue+',70%,42%)', '#FFFFFF']; }
-  function kitFor(club){ const k = KITS[club.name]; return k? { primary:k[0], secondary:k[1] } : { primary: hashColour(club.id)[0], secondary: '#FFFFFF' }; }
+  // Shirt patterns for the clubs that wore them in 1991 (presentation only; a plain shirt otherwise).
+  const PATTERNS = {
+    stripes: ['Newcastle United','Sheffield United','Stoke City','Crystal Palace','Brentford','Sheffield Wednesday','Notts County','Grimsby Town','Exeter City','Southampton','Huddersfield Town','Lincoln City','Hartlepool United','Darlington','Scunthorpe United','Brighton & Hove Albion'],
+    hoops: ['Queens Park Rangers','Reading','Doncaster Rovers'],
+    quarters: ['Bristol Rovers'],
+  };
+  const PATTERN_OF = {}; for (const [pat, list] of Object.entries(PATTERNS)) for (const n of list) PATTERN_OF[n] = pat;
+  function kitFor(club){ const k = KITS[club.name]; return k? { primary:k[0], secondary:k[1], pattern: PATTERN_OF[club.name]||'plain' } : { primary: hashColour(club.id)[0], secondary: '#FFFFFF', pattern:'plain' }; }
 
   // Shirt numbers by slot within the XI (presentation only).
   const SHIRTS = { GK:[1], DEF:[2,5,6,3,4], MID:[7,4,8,10,11], FWD:[9,10,11,7] };
@@ -80,8 +87,8 @@
       events: null,   // filled by the timeline builder
     };
     // away kit clash: if the two primaries are close, the away side wears its second colour
-    if (similar(p.teams.home.kit.primary, p.teams.away.kit.primary)) p.teams.away.kit = { primary: p.teams.away.kit.secondary, secondary: p.teams.away.kit.primary, changed: true };
-    if (similar(p.teams.home.kit.primary, p.teams.away.kit.primary)) p.teams.away.kit = { primary: '#FFD200', secondary: '#202020', changed: true };
+    if (similar(p.teams.home.kit.primary, p.teams.away.kit.primary)) p.teams.away.kit = { primary: p.teams.away.kit.secondary, secondary: p.teams.away.kit.primary, pattern:'plain', changed: true };
+    if (similar(p.teams.home.kit.primary, p.teams.away.kit.primary)) p.teams.away.kit = { primary: '#FFD200', secondary: '#202020', pattern:'plain', changed: true };
     return Object.freeze(p);
   }
   function rgb(c){ if (c[0]==='#'){ return [parseInt(c.slice(1,3),16), parseInt(c.slice(3,5),16), parseInt(c.slice(5,7),16)]; } const m = /hsl\((\d+),(\d+)%,(\d+)%\)/.exec(c); if (!m) return [128,128,128]; const h=+m[1]/360, s=+m[2]/100, l=+m[3]/100; const f=(n)=>{ const k=(n+h*12)%12; const a=s*Math.min(l,1-l); return Math.round(255*(l - a*Math.max(-1, Math.min(k-3, 9-k, 1)))); }; return [f(0),f(8),f(4)]; }

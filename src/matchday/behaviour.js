@@ -18,7 +18,7 @@
   const MD = root.Matchday;
   const PX = 105, PY = 68;                       // pitch in metres
   const BAND = { STILL:0, WALK:1.6, JOG:3.6, RUN:6.0, SPRINT:8.0 };   // m/s
-  const dm = (ax, ay, bx, by) => Math.hypot((ax-bx)*PX, (ay-by)*PY);
+  const dm = (ax, ay, bx, by) => { const dx = (ax-bx)*PX, dy = (ay-by)*PY; return Math.sqrt(dx*dx + dy*dy); };   // (Math.hypot is several times slower in V8)
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
   const ROLES = ['shape','carrier','receiver','support','press','cover','line','zone','keeper','set','setPiece','off','ref'];
   const ROLE_CODE = {}; ROLES.forEach((r,i)=>{ ROLE_CODE[r] = i; });
@@ -51,22 +51,28 @@
 
     // the next key at which this player takes the ball: an arrive, hold or restart, or a launch
     // handed to him by someone else (a keeper rolling it out, a loose ball he collects)
+    // (time only moves forward within one planning run, so a pointer per player replaces a binary search per tick)
+    if (!mem.takePtr || mem.takeT===undefined || t < mem.takeT){ mem.takePtr = new Int32Array(n); }
+    mem.takeT = t;
     const nextTake = i => {
       const list = ctx.carries[players[i].id]; if (!list.length) return null;
-      let lo = 0, hi = list.length-1, ans = -1;
-      while (lo<=hi){ const mid = (lo+hi)>>1; if (ctx.keys[list[mid]].t > t){ ans = mid; hi = mid-1; } else lo = mid+1; }
-      if (ans<0) return null;
+      let ans = mem.takePtr[i];
+      while (ans < list.length && ctx.keys[list[ans]].t <= t) ans++;
+      mem.takePtr[i] = ans;
+      if (ans >= list.length) return null;
       const k = ctx.keys[list[ans]];
       if (k.kind==='launch'){ const pk = ctx.keys[k.idx-1]; if (!pk || pk.carrier===k.carrier) return null; }   // already his
       return k;
     };
 
-    // defending side: who presses, who covers (with hysteresis so roles do not flicker)
+    // defending side: who presses, who covers (with hysteresis so roles do not flicker).
+    // Nobody presses a dead ball lying in the net: the beaten keeper fetches it (set-piece window).
     let press = -1, cover = -1, best = 1e9, second = 1e9;
     const distBall = i => dm(pos[i].x, pos[i].y, ball.x, ball.y);
-    for (let i=0;i<n;i++){ const pl = players[i]; if (pl.teamId!==D || ctx.roleAt(i, t)==='GK' || ctx.offAtIdx(i, t)) continue; const d = distBall(i); if (d < best){ second = best; cover = press; best = d; press = i; } else if (d < second){ second = d; cover = i; } }
-    if (mem.press!==undefined && mem.press>=0 && mem.press!==press && players[mem.press].teamId===D && !ctx.offAtIdx(mem.press, t) && distBall(mem.press) < best + 3){ if (cover===mem.press) cover = press; press = mem.press; }
-    if (mem.cover!==undefined && mem.cover>=0 && mem.cover!==cover && mem.cover!==press && players[mem.cover].teamId===D && !ctx.offAtIdx(mem.cover, t) && distBall(mem.cover) < second + 3) cover = mem.cover;
+    const inNet = ball.state==='dead' && (ball.x < 0.005 || ball.x > 0.995);
+    for (let i=0;i<n;i++){ const pl = players[i]; if (inNet || pl.teamId!==D || ctx.roleAt(i, t)==='GK' || ctx.offAtIdx(i, t)) continue; const d = distBall(i); if (d < best){ second = best; cover = press; best = d; press = i; } else if (d < second){ second = d; cover = i; } }
+    if (!inNet && mem.press!==undefined && mem.press>=0 && mem.press!==press && players[mem.press].teamId===D && !ctx.offAtIdx(mem.press, t) && distBall(mem.press) < best + 3){ if (cover===mem.press) cover = press; press = mem.press; }
+    if (!inNet && mem.cover!==undefined && mem.cover>=0 && mem.cover!==cover && mem.cover!==press && players[mem.cover].teamId===D && !ctx.offAtIdx(mem.cover, t) && distBall(mem.cover) < second + 3) cover = mem.cover;
     mem.press = press; mem.cover = cover;
     // attacking side: the two closest outfield teammates (by shape) support the carrier
     let s1 = -1, s2 = -1, d1 = 1e9, d2 = 1e9;
@@ -77,14 +83,22 @@
       let tx, ty, band = BAND.JOG, role = 'shape';
       if (ctx.offAtIdx(i, t)){ const spot = ctx.offSpot(pl.id); tx = spot.x; ty = spot.y; band = BAND.JOG; role = 'off'; }
       else if (win && win.targets[pl.id]){ const tg = win.targets[pl.id]; tx = tg.x; ty = tg.y; band = win.band && win.band[pl.id]? win.band[pl.id] : BAND.RUN; role = 'setPiece'; }
-      else if (ball.carrier===pl.id){ const ahead = ctx.ballAt(t + 0.25); tx = ahead.x; ty = ahead.y; band = BAND.SPRINT; role = 'carrier'; }
+      else if (ball.carrier===pl.id){
+        // he runs with the ball a quarter of a second ahead of him; never past the point he strikes it from, and in the
+        // last half second before the strike he drops behind the ball so that his kicking foot (or head) meets it
+        const k1 = ball.to; const launching = !!(k1 && k1.kind==='launch' && k1.carrier===pl.id);
+        const ahead = ctx.ballAt(launching? Math.min(t + 0.25, k1.t - 0.02) : t + 0.25); tx = ahead.x; ty = ahead.y; band = BAND.SPRINT; role = 'carrier';
+        // in the last second he heads for the spot he strikes from (a fixed target, so he brakes to arrive on it)
+        if (launching && k1.sox!==undefined && k1.t - t < 1.0){ tx = k1.x + k1.sox; ty = k1.y + k1.soy; }
+      }
       else if (ball.state==='loose' && ball.from && ball.from.carrier===pl.id){ tx = ball.x; ty = ball.y; band = BAND.RUN; role = 'receiver'; }   // the loose ball is his to collect
       else {
         const take = nextTake(i);
         if (take && take.t - t < 9){
-          const d = dm(pos[i].x, pos[i].y, take.x, take.y); const need = d/Math.max(0.2, take.t - t);
-          tx = take.x; ty = take.y; band = clamp(need*1.15, BAND.WALK, BAND.SPRINT); role = 'receiver';
-          if (need < BAND.WALK*0.6 && take.t - t > 3){ shapeFor(i); tx = (sx+take.x)/2; ty = (sy+take.y)/2; band = BAND.WALK; }   // no hurry yet
+          const spot = MD.interactions.standOf(take);           // where he stands so that his foot, head or hands meet the ball
+          const d = dm(pos[i].x, pos[i].y, spot.x, spot.y); const need = d/Math.max(0.2, take.t - t);
+          tx = spot.x; ty = spot.y; band = clamp(need*1.15, BAND.WALK, BAND.SPRINT); role = 'receiver';
+          if (need < BAND.WALK*0.6 && take.t - t > 3){ shapeFor(i); tx = (sx+spot.x)/2; ty = (sy+spot.y)/2; band = BAND.WALK; }   // no hurry yet
         } else if (ctx.roleAt(i, t)==='GK'){
           const dir = pl.teamId===H? dirH : dirA; const gx = ownGoalX(i);
           const ballAx = dir===1? ball.x : 1-ball.x;                       // ball depth from this keeper's goal
@@ -93,7 +107,7 @@
           tx = gx + (dir===1? off : -off); ty = clamp(gy, 0.43, 0.57); band = BAND.JOG; role = 'keeper';
           if (next && (next.save || next.kind==='goal') && ball.inFlight){ tx = pos[i].x; ty = pos[i].y; band = BAND.STILL; role = 'set'; }
         } else if (pl.teamId===D){
-          if (i===press && possAge > 0.4){ const d = distBall(i); const u = d>1e-6? 1.6/d : 0; tx = ball.x + (pos[i].x-ball.x)*u; ty = ball.y + (pos[i].y-ball.y)*u; band = d > 14? BAND.RUN : BAND.JOG; role = 'press'; }
+          if (i===press && possAge > 0.4){ const d = distBall(i); const u = d>1e-6? 2.1/d : 0;   /* outside the separation radius, so he is never nudged off the carrier */ tx = ball.x + (pos[i].x-ball.x)*u; ty = ball.y + (pos[i].y-ball.y)*u; band = d > 14? BAND.RUN : BAND.JOG; role = 'press'; }
           else if (i===cover && possAge > 0.4){ const gx = ownGoalX(i); const d = dm(ball.x, ball.y, gx, 0.5); const u = d>1e-6? Math.min(1, 8/d) : 0; tx = ball.x + (gx-ball.x)*u; ty = ball.y + (0.5-ball.y)*u; band = BAND.JOG; role = 'cover'; }
           else { shapeFor(i); tx = sx; ty = sy; band = BAND.JOG; role = pl.role==='DEF'? 'line' : 'zone'; }
         } else {
@@ -113,7 +127,17 @@
     let rx = ball.x - attDir*0.07, ry = ball.y + (0.5 - ball.y)*0.35;
     const dr = dm(rx, ry, ball.x, ball.y); if (dr < 4){ const u = dr>1e-6? 4/dr : 0; rx = ball.x + (rx-ball.x)*u; ry = ball.y + (ry-ball.y)*u; if (dr<1e-6){ rx = ball.x; ry = ball.y + 4/PY; } }
     out.ref.x = clamp(rx, 0.02, 0.98); out.ref.y = clamp(ry, 0.02, 0.98); out.ref.band = BAND.RUN; out.ref.role = 'ref';
-    out.press = press; out.cover = cover; out.possession = P;
+    // a booking: the referee goes to the offender and shows him the card from a metre and a half; the offender stands for it
+    const card = ctx.cardAt? ctx.cardAt(t) : null;
+    if (card){
+      const bi = ctx.index[card.playerId]; const bp = pos[bi];
+      if (bp){
+        const o = out[bi]; o.x = bp.x; o.y = bp.y; o.band = BAND.WALK; o.role = 'set';
+        const side = bp.y < 0.5? 1 : -1;                   // the referee stands on the inside of him, towards the centre
+        out.ref.x = clamp(bp.x + 0.6/PX, 0.02, 0.98); out.ref.y = clamp(bp.y + side*1.4/PY, 0.02, 0.98); out.ref.band = BAND.RUN;
+      }
+    }
+    out.press = press; out.cover = cover; out.possession = P; out.ball = ball;
     return out;
   }
 

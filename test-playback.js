@@ -25,7 +25,7 @@ for (const p of samples){
   const seen = []; let ended = 0, frames = 0, lastSecond = -1, monotonic = true; let lastScore = {home:0, away:0}, scoreBack = false;
   const pb = MD.createPlayback(p, { onEvent: e => seen.push(e), onEnd: () => ended++, onFrame: (s) => { frames++; if (s < lastSecond) monotonic = false; lastSecond = s; const sn = sc.getSceneAt(s); if (sn.score.home<lastScore.home || sn.score.away<lastScore.away) scoreBack = true; lastScore = sn.score; } });
   const map = pb.timeMap();
-  ok(map.realDuration > 50 && map.realDuration < 130, 'real duration '+map.realDuration.toFixed(0)+'s for '+p.matchId);
+  ok(map.realDuration > 50 && map.realDuration < (p.official.extra? 152 : 128), 'real duration '+map.realDuration.toFixed(0)+'s for '+p.matchId);
   ok(map.segs.every((s,i)=>i===0 || s.a===map.segs[i-1].b), 'segments contiguous');
   ok(map.segs[map.segs.length-1].b===map.end, 'segments reach the end');
   // every goal sits inside a highlight window

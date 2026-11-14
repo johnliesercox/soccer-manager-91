@@ -1,0 +1,241 @@
+{
+ "9": {
+  "_meta": {
+   "title": "Save Image"
+  },
+  "inputs": {
+   "images": [
+    "73:43",
+    0
+   ],
+   "filename_prefix": "{{prefix}}"
+  },
+  "class_type": "SaveImage"
+ },
+ "45": {
+  "_meta": {
+   "title": "CLIP Text Encode (Prompt)"
+  },
+  "inputs": {
+   "clip": [
+    "73:39",
+    0
+   ],
+   "text": "{{prompt}}"
+  },
+  "class_type": "CLIPTextEncode"
+ },
+ "58": {
+  "_meta": {
+   "title": "Reference Image for Controlnet"
+  },
+  "inputs": {
+   "image": "{{image}}"
+  },
+  "class_type": "LoadImage"
+ },
+ "73:39": {
+  "_meta": {
+   "title": "Load CLIP"
+  },
+  "inputs": {
+   "type": "lumina2",
+   "device": "default",
+   "clip_name": "qwen_3_4b.safetensors"
+  },
+  "class_type": "CLIPLoader"
+ },
+ "73:40": {
+  "_meta": {
+   "title": "Load VAE"
+  },
+  "inputs": {
+   "vae_name": "ae.safetensors"
+  },
+  "class_type": "VAELoader"
+ },
+ "73:41": {
+  "_meta": {
+   "title": "EmptySD3LatentImage"
+  },
+  "inputs": {
+   "width": [
+    "73:69",
+    0
+   ],
+   "height": [
+    "73:69",
+    1
+   ],
+   "batch_size": 1
+  },
+  "class_type": "EmptySD3LatentImage"
+ },
+ "73:42": {
+  "_meta": {
+   "title": "ConditioningZeroOut"
+  },
+  "inputs": {
+   "conditioning": [
+    "45",
+    0
+   ]
+  },
+  "class_type": "ConditioningZeroOut"
+ },
+ "73:43": {
+  "_meta": {
+   "title": "VAE Decode"
+  },
+  "inputs": {
+   "vae": [
+    "73:40",
+    0
+   ],
+   "samples": [
+    "73:44",
+    0
+   ]
+  },
+  "class_type": "VAEDecode"
+ },
+ "73:44": {
+  "_meta": {
+   "title": "KSampler"
+  },
+  "inputs": {
+   "cfg": 1,
+   "seed": "{{seed}}",
+   "model": [
+    "73:47",
+    0
+   ],
+   "steps": 9,
+   "denoise": 1,
+   "negative": [
+    "73:42",
+    0
+   ],
+   "positive": [
+    "45",
+    0
+   ],
+   "scheduler": "simple",
+   "latent_image": [
+    "73:41",
+    0
+   ],
+   "sampler_name": "res_multistep"
+  },
+  "class_type": "KSampler"
+ },
+ "73:46": {
+  "_meta": {
+   "title": "Load Diffusion Model"
+  },
+  "inputs": {
+   "unet_name": "z_image_turbo_bf16.safetensors",
+   "weight_dtype": "default"
+  },
+  "class_type": "UNETLoader"
+ },
+ "73:47": {
+  "_meta": {
+   "title": "ModelSamplingAuraFlow"
+  },
+  "inputs": {
+   "model": [
+    "73:60",
+    0
+   ],
+   "shift": 3
+  },
+  "class_type": "ModelSamplingAuraFlow"
+ },
+ "73:56": {
+  "_meta": {
+   "title": "Preview Image"
+  },
+  "inputs": {
+   "images": [
+    "73:70",
+    0
+   ]
+  },
+  "class_type": "PreviewImage"
+ },
+ "73:60": {
+  "_meta": {
+   "title": "QwenImageDiffsynthControlnet"
+  },
+  "inputs": {
+   "vae": [
+    "73:40",
+    0
+   ],
+   "image": [
+    "73:70",
+    0
+   ],
+   "model": [
+    "73:46",
+    0
+   ],
+   "strength": 1,
+   "model_patch": [
+    "73:64",
+    0
+   ]
+  },
+  "class_type": "QwenImageDiffsynthControlnet"
+ },
+ "73:62": {
+  "_meta": {
+   "title": "ImageScaleToMaxDimension"
+  },
+  "inputs": {
+   "image": [
+    "58",
+    0
+   ],
+   "largest_size": 1024,
+   "upscale_method": "lanczos"
+  },
+  "class_type": "ImageScaleToMaxDimension"
+ },
+ "73:64": {
+  "_meta": {
+   "title": "ModelPatchLoader"
+  },
+  "inputs": {
+   "name": "Z-Image-Turbo-Fun-Controlnet-Union-2.1.safetensors"
+  },
+  "class_type": "ModelPatchLoader"
+ },
+ "73:69": {
+  "_meta": {
+   "title": "Get Image Size"
+  },
+  "inputs": {
+   "image": [
+    "73:62",
+    0
+   ]
+  },
+  "class_type": "GetImageSize"
+ },
+ "73:70": {
+  "_meta": {
+   "title": "AIO Aux Preprocessor"
+  },
+  "inputs": {
+   "image": [
+    "73:62",
+    0
+   ],
+   "resolution": 1024,
+   "preprocessor": "{{preprocessor}}"
+  },
+  "class_type": "AIO_Preprocessor"
+ }
+}

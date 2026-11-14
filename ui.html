@@ -91,7 +91,7 @@ input{width:100%;font:inherit;padding:12px;background:var(--white);color:var(--b
 .md-board .s{font-size:30px;color:var(--orange);padding:0 10px;white-space:nowrap}
 .md-clock{text-align:center;color:var(--grey);font-size:13px;margin-bottom:6px;white-space:pre}
 .md-stage{height:min(64vh,560px);background:#1E5F2A;box-shadow:inset 2px 2px 0 var(--black),inset -2px -2px 0 var(--white);margin-bottom:6px;overflow:hidden}
-@media (orientation:landscape) and (max-height:500px){.md-stage{height:min(60vh,300px)}}
+@media (orientation:landscape) and (max-height:500px){.md-stage{height:min(52vh,300px)}}
 @media (min-width:600px) and (min-height:501px){.md-stage{height:min(64vh,400px)}}
 @media (min-width:900px) and (min-height:600px){body.md-wide #app{max-width:1240px} body.md-wide main{padding-bottom:12px} body.md-wide .md-wrap{display:grid;grid-template-columns:minmax(0,1fr) 300px;grid-template-rows:auto auto auto minmax(0,1fr) auto;column-gap:12px;height:100%;max-height:820px} body.md-wide .md-board,body.md-wide .md-clock{grid-column:1/3} body.md-wide .md-board{font-size:20px} body.md-wide .md-stage{grid-column:1;grid-row:3/6;height:auto;min-height:420px;margin-bottom:0} body.md-wide .md-comm{grid-column:2;grid-row:3;margin-bottom:0} body.md-wide .md-log{grid-column:2;grid-row:4;max-height:none;min-height:0;overflow-y:auto} body.md-wide .md-controls2{grid-column:2;grid-row:5;grid-template-columns:1fr;margin-top:0;align-self:end}}
 @media (min-width:1600px) and (min-height:900px){body.md-wide #app{max-width:1500px}}
@@ -102,7 +102,7 @@ input{width:100%;font:inherit;padding:12px;background:var(--white);color:var(--b
 .md-log .us{color:var(--orange)}
 .md-controls{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr 1.2fr;gap:6px}
 .md-controls .b{margin:0;padding:11px 4px;font-size:14px;text-align:center}
-.md-controls2{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:6px}
+.md-controls2{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:0 0 6px}   /* on a phone this row sits straight under the stage, above the commentary and the log, so it never scrolls out of reach */
 .md-controls2 .b{margin:0;font-size:13px;padding:9px 6px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media (max-width:380px){.md-controls2 .b{font-size:12px;padding:9px 4px}}
 .md-tie{font-size:20px;text-align:center;margin:18px 0;line-height:1.3}
@@ -130,8 +130,14 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const money = n => (n<0?'-':'')+'£'+E.fmt(Math.abs(n));
 const SAVE_KEY = 'sm91-save';
-const APP_VERSION = '1.4.0';
+const APP_VERSION = '1.5.0';
 const CHANGELOG = [
+  { v:'1.5.0', when:'November 2026', notes:[
+    'Isometric matchday. Matches are now watched from a raised corner of a small early-nineties ground: painted stands and terraces, dugouts and advertising boards, and hand-painted sixteen-bit footballers in your kit colours who run, turn, pass, shoot, head the ball, volley, slide, block and dive in eight directions. Tap Camera for the close view or the whole pitch; the pixel-art view, the marker pitch and the tactics board are still there under View.',
+    'Highlights worth watching. Instead of passing sequences, each match shows its best incidents: goals built from through balls, crosses, corners and rebounds, headers met in the air, volleys, saves caught or parried, shots off the post and bar, blocks, goal-line clearances, bookings and sendings-off, chosen for variety and scaled to the match. A quiet 0-0 runs about seventy seconds, a six-goal thriller nearer two minutes. The result underneath is the same official result as ever.',
+    'Emotion. Scorers celebrate in different ways (arms aloft, a run to the supporters, a knee slide, a huddle) and their teammates join them; the beaten keeper and the nearest defender show it; a missed chance brings hands to heads; the scoring side\'s stands rise in a wave. The referee walks over to show a card.',
+    'Commentary that keeps up: lines are spoken as the action starts ("Kendrick shoots!") and resolved as it lands ("Davies holds it."), with a word on who is coming forward at the start of every highlight.',
+  ]},
   { v:'1.4.0', when:'November 2026', notes:[
     'The football is more believable. Players now have jobs: one defender presses, another covers, the back line holds its shape, two teammates offer the carrier an angle, keepers come off their line and set themselves for shots. Everyone moves at walking, jogging, running or sprinting pace and nobody teleports.',
     'Passes connect: the passer sets his feet and kicks, the ball leaves his foot, the receiver runs to meet it and takes a touch before playing on. Shots have a run-up, keepers dive, blocks and slide tackles look like what they are, and the ball sits at the feet of whoever has it.',
