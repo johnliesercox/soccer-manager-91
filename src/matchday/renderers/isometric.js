@@ -55,6 +55,21 @@
   function shadow(ctx, sx, sy, rx, ry, colour){ ctx.fillStyle = colour; for (let dy=-ry; dy<=ry; dy++){ const hw = Math.round(rx*Math.sqrt(Math.max(0, 1 - (dy/(ry+0.5))*(dy/(ry+0.5))))); if (hw>0) ctx.fillRect(sx - hw, sy + dy, 2*hw, 1); } }
   function ring(ctx, sx, sy, rx, ry, colour){ ctx.fillStyle = colour; for (let dy=-ry; dy<=ry; dy++){ const f = Math.sqrt(Math.max(0, 1 - (dy/(ry+0.5))*(dy/(ry+0.5)))); const hw = Math.round(rx*f); const inner = Math.round((rx-1.5)*f); if (hw>0){ ctx.fillRect(sx - hw, sy + dy, hw - inner, 1); ctx.fillRect(sx + inner, sy + dy, hw - inner, 1); } } }
 
+  // Which player a tap means. Every figure whose drawn box is within `slop` pixels of the tap is a candidate, and the one
+  // whose body is nearest the tap wins (the body sits a little below the middle of its box, above the feet), so of two
+  // overlapping figures it is the one tapped on, not simply the one in front; in a dead heat the nearer figure (drawn
+  // later) wins. A fingertip gets a wider slop than a mouse pointer.
+  const TOUCH_SLOP = 14, POINTER_SLOP = 4;
+  function pick(items, X, Y, slop){
+    let best = null, bestD = Infinity; slop = slop || 0;
+    for (let i=items.length-1; i>=0; i--){
+      const it = items[i]; if (it.kind!=='player' || !it.box) continue; const b = it.box;
+      const dx = Math.max(b.x - X, 0, X - (b.x + b.w)), dy = Math.max(b.y - Y, 0, Y - (b.y + b.h)); if (Math.hypot(dx, dy) > slop) continue;
+      const d = Math.hypot(X - (b.x + b.w/2), Y - (b.y + b.h*0.6)); if (d < bestD - 0.5){ bestD = d; best = it; }
+    }
+    return best? best.pl : null;
+  }
+
   const textW = (c, t) => { const m = c.measureText && c.measureText(t); return (m && m.width) || t.length * 7; };   // tolerant of stub contexts
   function drawFrame(ctx, w, h, scene, info){
     const st = info.state; const dt = info.dtReal===undefined? 1/60 : info.dtReal; const now = info.nowMs||0;
@@ -63,14 +78,14 @@
     const mode = info.cameraMode||'follow';
     const cam = ISO.camera.update(st, scene, w, h, mode, dt, snap, info.followP);
     // a cut inside a highlight (the restart after a goal, the cut to the scorer) dips through black like the cut into one
-    if (st.snapped && (st.cutKind==='scene' || st.cutKind==='celebration') && !info.reducedMotion) st.dipAt = now;
+    if (st.snapped && (st.cutKind==='scene' || st.cutKind==='celebration') && !info.reducedMotion && !info.still) st.dipAt = now;
     const teams = info.teams; const home = teams.home, away = teams.away;
     ctx.imageSmoothingEnabled = false;
     ctx.fillStyle = OUTSIDE; ctx.fillRect(0, 0, w, h);
     // the ground
     // the generated crowd (the near terrace and any gap in the painted stands) jumps: fast through the goal flash, then
     // on the beat through the first five seconds of the celebration
-    const crowdUp = !!((scene.flash && scene.flash.age < 2.4 && Math.floor(scene.flash.age*6)%2===0) || (scene.crowd && !info.reducedMotion && scene.crowd.age >= 2.4 && scene.crowd.age < 5 && Math.floor(scene.crowd.age*5)%2===0));
+    const crowdUp = !info.reducedMotion && !!((scene.flash && scene.flash.age < 2.4 && Math.floor(scene.flash.age*6)%2===0) || (scene.crowd && scene.crowd.age >= 2.4 && scene.crowd.age < 5 && Math.floor(scene.crowd.age*5)%2===0));
     const world = info.world && Math.abs(info.world.P - cam.P) < 1e-6? info.world : null;
     if (world) drawWorld(ctx, w, h, cam, world, crowdUp);
     else ISO.stadium.drawGround(ctx, cam, info.seed||1, crowdUp, null, { colours: [home.kit.primary, away.kit.primary] });
@@ -118,9 +133,11 @@
     // tags
     const font = px => `700 ${Math.round(px)}px "Courier New",Courier,monospace`;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    const tag = (X, Y, text, bg) => { const fs = 12; ctx.font = font(fs); const tw = textW(ctx, text) + 8; const th = fs + 4; ctx.fillStyle = bg||'rgba(0,0,0,0.75)'; ctx.fillRect(Math.round(X - tw/2), Math.round(Y - th - 2), Math.round(tw), th); ctx.fillStyle = '#FFFFFF'; ctx.fillText(text, X, Y - th/2 - 1); };
+    const tag = (X, Y, text, bg, below) => { const fs = 12; ctx.font = font(fs); const tw = textW(ctx, text) + 8; const th = fs + 4;
+      X = Math.max(tw/2 + 2, Math.min(w - tw/2 - 2, X)); if (Y - th - 2 < 2 && below!==undefined) Y = below + th + 4;   // kept inside the picture: slid along at an edge, hung under a figure at the top
+      ctx.fillStyle = bg||'rgba(0,0,0,0.75)'; ctx.fillRect(Math.round(X - tw/2), Math.round(Y - th - 2), Math.round(tw), th); ctx.fillStyle = '#FFFFFF'; ctx.fillText(text, X, Y - th/2 - 1); };
     const sel = info.selected && info.selected.until > now? items.find(x=>x.kind==='player' && x.pl.id===info.selected.id) : null;
-    if (sel && sel.box){ tag(sel.sx, sel.box.y, sel.pl.name+' '+sel.pl.shirtNo, 'rgba(230,110,0,0.9)'); ctx.strokeStyle = '#FFD200'; ctx.lineWidth = 1; ctx.strokeRect(sel.box.x + 0.5, sel.box.y + 0.5, sel.box.w - 1, sel.box.h - 1); }
+    if (sel && sel.box){ tag(sel.sx, sel.box.y, sel.pl.shirtNo+' '+sel.pl.name+(sel.pl.role? ' '+sel.pl.role : ''), 'rgba(230,110,0,0.9)', sel.box.y + sel.box.h); ctx.strokeStyle = '#FFD200'; ctx.lineWidth = 1; ctx.strokeRect(sel.box.x + 0.5, sel.box.y + 0.5, sel.box.w - 1, sel.box.h - 1); }
     // goal flash: a beat after the ball crosses the line, in the part of the view away from that goal
     if (scene.flash && scene.flash.type==='goal' && scene.flash.age > 0.35){
       const team = scene.flash.teamId===home.id? home : away;
@@ -134,10 +151,10 @@
       ctx.restore();
     }
     const dip = st.dipAt!==undefined? (now - st.dipAt)/1000 : 9;
-    const fadeIn = Math.min(info.sinceCut!==undefined? info.sinceCut/0.3 : 1, dip/0.25);
+    const fadeIn = info.still? 1 : Math.min(info.sinceCut!==undefined? info.sinceCut/0.3 : 1, dip/0.25);   // a still frame (nothing is playing) is drawn complete
     if (fadeIn < 1){ ctx.save(); ctx.globalAlpha = 1 - Math.max(0, fadeIn); ctx.fillStyle = '#000'; ctx.fillRect(0,0,w,h); ctx.restore(); }
     if (info.fastForward){ ctx.save(); ctx.globalAlpha = 0.9; ctx.font = font(12); const label = '▶▶ NEXT HIGHLIGHT'; const bw = textW(ctx, label) + 16, bh = 20; ctx.fillStyle = '#111'; ctx.fillRect(Math.round(w/2 - bw/2), 6, Math.round(bw), bh); ctx.fillStyle = '#FFD200'; ctx.fillText(label, w/2, 6+bh/2+1); ctx.restore(); }
-    return { cam, items };
+    return { cam, items, fading: fadeIn < 1 };
   }
 
   // ---- the renderer object ----
@@ -151,7 +168,7 @@
   function create(options){
     const opts = Object.assign({}, options||{});
     if (!opts.style && MD.isoDefaultStyle) opts.style = MD.isoDefaultStyle;   // a build may name the style the plain Iso view draws with (ISO_DEFAULT in build.py)
-    let container = null, canvas = null, ctx = null, teams = null, seed = 1, ro = null, lastW = 0, lastH = 0, lastTs = 0, lastFrame = null, lastScene = null, selected = null;
+    let container = null, canvas = null, ctx = null, teams = null, seed = 1, ro = null, lastW = 0, lastH = 0, lastTs = 0, lastFrame = null, lastScene = null, selected = null, loopTs = -1e9, settle = 0;
     const worlds = new Map();                                   // P -> world image (at most two: follow and whole)
     let cameraMode = opts.camera || (function(){ try { return root.localStorage.getItem(CAM_KEY) || 'close'; } catch(e){ return 'close'; } })();   // the close camera is the default (Phase 3 art direction)
     const state = { anim: {}, cx: undefined, cy: undefined };
@@ -172,14 +189,26 @@
       if (worlds.size >= 2){ const k = worlds.keys().next().value; worlds.get(k).dispose(); worlds.delete(k); }
       wld = buildWorld(makeCanvas, P, seed, [teams.home.kit.primary, teams.away.kit.primary]); worlds.set(P, wld); return wld;
     }
+    // Frames normally come from the playback loop. When nothing is playing (paused, full time) the picture still has to be
+    // put right after a tap, a turn of the phone, a camera change or a cut that left it mid-fade: a still frame draws the
+    // stored scene complete, without moving the camera on and without a fade.
+    const playing = () => nowMs() - loopTs < 300;
+    function still(){
+      if (!ctx || !lastScene || !r.isReady()) return;
+      const hud = r.lastHud || {}; const P = cameraMode==='whole'? PR.fit(canvas.width, canvas.height, DIM.runoff + 1.5).P : followP(lastScene, hud);
+      lastFrame = drawFrame(ctx, canvas.width, canvas.height, lastScene, { teams, seed, world: worldFor(P), state, dtReal: 0, nowMs: nowMs(), cameraMode, selected, followP: P, fastForward: !!hud.fastForward, still: true, snap: !!hud.reducedMotion, reducedMotion: !!hud.reducedMotion });
+    }
+    const redraw = () => { if (!lastScene) return; if (playing()){ const t = loopTs; r.render(lastScene, r.lastHud||{}); loopTs = t; } else still(); };   // a redraw of its own is not a frame from the loop
     function onTap(e){
       if (!lastFrame || !canvas) return;
-      const rect = canvas.getBoundingClientRect(); const X = (e.clientX - rect.left) * (canvas.width/rect.width), Y = (e.clientY - rect.top) * (canvas.height/rect.height);
-      // nearest-first: the last drawn sprite whose box holds the tap wins
-      let best = null;
-      for (let i=lastFrame.items.length-1; i>=0; i--){ const it = lastFrame.items[i]; if (it.kind!=='player' || !it.box) continue; if (X >= it.box.x && X <= it.box.x + it.box.w && Y >= it.box.y && Y <= it.box.y + it.box.h){ best = it.pl; break; } }
+      const rect = canvas.getBoundingClientRect(); const k = canvas.width/rect.width; const X = (e.clientX - rect.left) * k, Y = (e.clientY - rect.top) * (canvas.height/rect.height);
+      const finger = e.pointerType? (e.pointerType==='touch' || e.pointerType==='pen') : !!(root.matchMedia && root.matchMedia('(pointer: coarse)').matches);
+      const best = pick(lastFrame.items, X, Y, (finger? TOUCH_SLOP : POINTER_SLOP) * k);
       if (best){ selected = { id: best.id, until: nowMs() + 3500 }; if (opts.onSelect) opts.onSelect(best); } else selected = null;
-      if (lastScene) r.render(lastScene, r.lastHud||{});
+      // the tag appears with the loop's next frame; if the loop has just stopped (a tap straight after Pause) no frame is
+      // coming, so the still frame is drawn once that is certain, and the camera is never stepped on by a tap
+      if (!playing()) still();
+      else if (root.setTimeout){ if (settle) root.clearTimeout(settle); settle = root.setTimeout(() => { settle = 0; if (!playing()) still(); }, 350); }
     }
     const r = {
       id: 'isometric',
@@ -200,6 +229,7 @@
         if (cw===lastW && ch===lastH) return;
         lastW = cw; lastH = ch; canvas.width = cw; canvas.height = ch; state.cx = undefined;
         for (const wld of worlds.values()) wld.dispose(); worlds.clear();   // the whole-pitch scale depends on the stage size
+        redraw();   // sizing a canvas clears it: the picture is drawn again at once, playing or not (a phone turned while paused)
       },
       // the painted art of the style is still decoding: nothing generated is shown in its place, a plain holding frame
       // is drawn instead (the match screen waits for ready() before it starts the clock, so nothing is missed)
@@ -209,21 +239,24 @@
         if (!ctx) return;
         if (!r.isReady()){ holdingFrame(ctx, canvas.width, canvas.height); r.lastHud = hud; lastScene = scene; return; }
         const ts = nowMs(); const dt = lastTs? Math.min(0.1, (ts - lastTs)/1000) : 1/60; lastTs = ts;
-        r.lastHud = hud; lastScene = scene;
+        r.lastHud = hud; lastScene = scene; if (hud && hud.sinceCut!==undefined) loopTs = ts;   // the playback loop always says how long since the cut
         const P = cameraMode==='whole'? PR.fit(canvas.width, canvas.height, DIM.runoff + 1.5).P : followP(scene, hud);
         const world = worldFor(P);
         lastFrame = drawFrame(ctx, canvas.width, canvas.height, scene, { teams, seed, world, state, dtReal: dt, nowMs: ts, cameraMode, selected, followP: P, fastForward: !!(hud && hud.fastForward), sinceCut: hud? hud.sinceCut : undefined, snap: !!(hud && hud.reducedMotion), reducedMotion: !!(hud && hud.reducedMotion) });
+        // a frame drawn part-way through a fade is completed even if no frame follows it (Skip ends the match on a cut)
+        if (settle){ root.clearTimeout(settle); settle = 0; }
+        if (lastFrame.fading && root.setTimeout) settle = root.setTimeout(() => { settle = 0; if (!playing()) still(); }, 350);
       },
       cameraModes: ['follow', 'close', 'whole'],
-      setCamera(mode){ cameraMode = mode==='whole'? 'whole' : mode==='close'? 'close' : 'follow'; try { root.localStorage.setItem(CAM_KEY, cameraMode); } catch(e){} state.cx = undefined; if (lastScene) r.render(lastScene, r.lastHud||{}); return cameraMode; },
+      setCamera(mode){ cameraMode = mode==='whole'? 'whole' : mode==='close'? 'close' : 'follow'; try { root.localStorage.setItem(CAM_KEY, cameraMode); } catch(e){} state.cx = undefined; redraw(); return cameraMode; },
       getCamera(){ return cameraMode; },
       debugItems(){ return (lastFrame && lastFrame.items)? lastFrame.items.map(it => ({ kind: it.kind, id: it.pl? it.pl.id : it.key, box: it.box||null, sx: it.sx, sy: it.sy })) : []; },   // for tooling: what was drawn where
       lastFrame(){ return lastFrame; },   // the camera and the drawn items of the last frame (for tools and tests)
-      dispose(){ if (ro){ ro.disconnect(); ro = null; } if (canvas){ canvas.removeEventListener('click', onTap); if (canvas.parentNode) canvas.parentNode.removeChild(canvas); } for (const wld of worlds.values()) wld.dispose(); worlds.clear(); SP.clear(); canvas = ctx = container = lastFrame = lastScene = null; state.anim = {}; },
+      dispose(){ if (settle){ root.clearTimeout(settle); settle = 0; } if (ro){ ro.disconnect(); ro = null; } if (canvas){ canvas.removeEventListener('click', onTap); if (canvas.parentNode) canvas.parentNode.removeChild(canvas); } for (const wld of worlds.values()) wld.dispose(); worlds.clear(); SP.clear(); canvas = ctx = container = lastFrame = lastScene = null; state.anim = {}; },
     };
     return r;
   }
-  MD.renderers.isometric = { id:'isometric', name:'Isometric', short:'Iso', create, drawFrame, buildWorld, drawWorld, TILE, preload(url){ return MD.isoAssets? assetLoad(url) : Promise.resolve(); } };   // preload: decode the sheets while the player is still in the menus
+  MD.renderers.isometric = { id:'isometric', name:'Isometric', short:'Iso', create, drawFrame, buildWorld, drawWorld, TILE, pick, TOUCH_SLOP, POINTER_SLOP, preload(url){ return MD.isoAssets? assetLoad(url) : Promise.resolve(); } };   // preload: decode the sheets while the player is still in the menus
   // the two visual directions and the procedural art, selectable as views while the look is being chosen
   MD.renderers['isometric-a'] = { id:'isometric-a', name:'Iso A', short:'Iso A', create: o => Object.assign(create(Object.assign({ style:'A' }, o||{})), { id:'isometric-a' }), drawFrame };
   MD.renderers['isometric-proc'] = { id:'isometric-proc', name:'Iso M2', short:'Iso M2', create: o => Object.assign(create(Object.assign({ style:'none' }, o||{})), { id:'isometric-proc' }), drawFrame };

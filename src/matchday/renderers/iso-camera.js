@@ -140,7 +140,7 @@
       state.cx = cx; state.cy = cy; state.vx = 0; state.vy = 0; state.w = w; state.h = h; state.lastP = P;
     } else {
       // a critically damped spring towards the target, its speed capped; a shot in flight may go faster
-      const dt = Math.min(0.05, Math.max(0.001, dtReal));
+      const dt = dtReal===0? 0 : Math.min(0.05, Math.max(0.001, dtReal));   // no time has passed in a still frame (a tap or a turn while paused): the camera holds exactly where it is
       const shot = attacking && scene.ball.state==='travelling';
       const om = shot? OMEGA*1.6 : OMEGA;
       const ax = om*om*(cx - state.cx) - 2*om*state.vx, ay = om*om*(cy - state.cy) - 2*om*state.vy;

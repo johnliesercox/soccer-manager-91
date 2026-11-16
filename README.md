@@ -17,7 +17,7 @@ Live at https://johnliesercox.github.io/soccer-manager-91/
 | `tools/iso-art.js`, `tools/iso_paint.py`, `tools/floyo/`, `assets/matchday/isometric/` | The isometric art: the generator and its sprite sheets, the painted override sheets and stadium textures made through Floyo (`tools/floyo/README.md` and `tools/visual-rnd/README.md` are the reproducible process), and `tools/iso_pack.py`, which keeps the sheets as lossless palette PNGs; `build.py` inlines them (`ISO_STYLES=E` by default from 1.6.0; `ISO_STYLES=B` rebuilds the 1.5.0 look). See `ART-PIPELINE.md`. |
 | `build.py` | Inlines `engine.js` and the matchday modules into `ui.html` and writes `index.html` (and `soccer-manager-91.html`, a copy without the app links that opens straight from disk). |
 | `tools/visual-rnd/` | The graphics kit of Phase 3: the Blender figures and stadium pieces in the game's projection, the Floyo route graphs, the production references (`stage1/`, `stage2/`, `stage2b/`) and the comparison styles C, D, F under `assets/matchday/isometric/` (each an `inherit` that only ships when named in `ISO_STYLES`). `PHASE-3-VISUAL-RND.md` and `PHASE-3-OPTION-E-CHECKPOINT.md` are the write-ups. |
-| `legacy/` | Earlier engines (`engine.v104.js`, `v112`, `v150`) that the regression test loads old saves with, and `legacy/release-1.5.0/`, the exact files the site served as 1.5.0, for `tools/save-compat.js` and for a rollback (`ROLLBACK.md`). |
+| `legacy/` | Earlier engines (`engine.v104.js`, `v112`, `v150`) that the regression test loads old saves with, and `legacy/release-1.6.0/` and `legacy/release-1.5.0/`, the exact files the site served as those versions, for `tools/save-compat.js` (which starts from the last release) and for a rollback (`ROLLBACK.md`). |
 | `test-*.js`, `harness.js`, `sim.js` | The automated tests and the headless harness they use. |
 | `legacy/` | Old engine snapshots that the migration tests load. |
 | `ARCHITECTURE_MATCHDAY.md`, `PHASE-3-ARCHITECTURE.md`, `PHASE-3-QA-REPORT.md`, `ART-PIPELINE.md` | How the match viewer fits together, the isometric renderer, its QA matrix, and the art pipeline. |
@@ -45,12 +45,13 @@ node test-camera.js
 node test-record.js
 node test-restarts.js
 node test-contracts.js
-node test-hof.js
+node test-hof.js          # needs a copy of the built game at /tmp/sm91-ladder-test.html (cp soccer-manager-91.html /tmp/sm91-ladder-test.html)
 node test-youth.js
 node test-equivalence.js
 node test-regression.js
 node test-deadball.js
 node test-locomotion.js
+node test-touch.js
 ```
 
 To look at a particular match again, open the game with `?seed=1991&club=3` on the address (the same seed and club index give the same season every time) and, if you want, `&t=1640` to open the first match watched at that match second. In the match, with a keyboard, `,` and `.` step fifteen seconds back and forward, and `g`, `c`, `k`, `h`, `w` jump to five seconds before the next goal, card, save, header or volley, or shot against the woodwork (`s` still skips to the next highlight, space pauses, `1`, `2`, `4` set the speed).
@@ -70,8 +71,8 @@ Open it on your phone. In Safari tap Share > **Add to Home Screen**; in Chrome o
 ## Releasing an update
 
 1. Set `APP_VERSION` in `ui.html` and add the release's entry at the top of `CHANGELOG` (the What's new screen), set `VERSION` in `sw.js` to `sm91-v<version>`, run `python3 build.py`.
-2. Run the suites (the list above) and `node tools/save-compat.js legacy/release-1.5.0 .`, which plays games on the last release and resumes them on the new build. `node tools/viewport-audit.js . out` watches a match in the Isometric view at the five viewport sizes of the Phase 3 brief and reports controls, touch targets, selection and rotation, with screenshots (both tools need playwright).
-3. Tag the commit that is live before uploading anything (GitHub: Releases, "Draft a new release", a new tag such as `v1.5.0` on `main`), so there is always a named copy to go back to. `ROLLBACK.md` says how.
+2. Run the suites (the list above) and `node tools/save-compat.js legacy/release-1.6.0 .` (the folder of the last release), which plays games on the last release and resumes them on the new build. `node tools/viewport-audit.js . out` watches a match in the Isometric view at the five viewport sizes of the Phase 3 brief and checks controls, touch selection, turning the phone in every state, full time after Skip and the goal badge, with screenshots (both tools need playwright).
+3. Tag the commit that is live before uploading anything (GitHub: Releases, "Draft a new release", a new tag such as `v1.6.0` on `main`), so there is always a named copy to go back to, and copy the live `index.html`, `sw.js`, manifest and icons into `legacy/release-<version>/` for the same reason. `ROLLBACK.md` says how.
 4. Upload the new files over the old ones (same drag and drop) and commit. Players get the new version the next time they open the game online; their saves carry over because the game migrates old save formats and never clears storage. The `VERSION` string in `sw.js` makes installed phones refresh their offline copy too.
 
 ## Feedback link
@@ -80,6 +81,7 @@ In `ui.html`, near the top of the script, set `const FEEDBACK_URL = '';` to a Go
 
 ## Version history
 
+* **1.7 (Phase 3, Milestone 4): touch and layout.** Selecting a player by touch with a fingertip's tolerance and the tapped man winning in a crowd (`pick` in `renderers/isometric.js`), a tag with number, name and position; the stage redrawn complete when the phone is turned while paused, at full time and after Skip; 44 px match buttons on a phone held upright; the generated crowd still under reduced motion. `test-touch.js`, `test-camera.js` at the five real stage sizes and `tools/viewport-audit.js` keep it. Phone landscape is unchanged and recorded as open.
 * **1.6 (Phase 3, Option E): painted matchday.** Blender figures and ground painted through Floyo (Qwen Image 2512 with the Fun ControlNet Union, depth map only) as style E: every pose and frame in three hair styles, keepers and referee, painted stands, terraces and corners with a modelled crowd, Blender goals with sagging nets, a shadow and a net that bulges on a goal. Dead balls behind the goal line give goal kicks and corners; players run when they move. `test-deadball.js` and `test-locomotion.js` keep both. `PHASE-3-ARCHITECTURE.md` and `PHASE-3-OPTION-E-CHECKPOINT.md` are the record.
 * **1.5 (Phase 3): isometric matchday.** The raised-corner view with painted stands, dugouts and boards, highlights chosen for variety, emotion and commentary.
 * **1.4 (Phase 2.5): believable football.** A deterministic role planner (`src/matchday/behaviour.js`), bounded trajectories in metres per second (`trajectories.js`) and explicit ball-action beats (`interactions.js`) feed the shared scene that every renderer draws. Results are untouched. Desktop two-column match screen. `ARCHITECTURE_MATCHDAY.md` carries the Phase 3 handover contract.

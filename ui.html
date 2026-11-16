@@ -108,6 +108,9 @@ input{width:100%;font:inherit;padding:12px;background:var(--white);color:var(--b
 .md-controls2{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:0 0 6px}   /* on a phone this row sits straight under the stage, above the commentary and the log, so it never scrolls out of reach */
 .md-controls2 .b{margin:0;font-size:13px;padding:9px 6px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media (max-width:380px){.md-controls2 .b{font-size:12px;padding:9px 4px}}
+/* a phone held upright: every match button is a full fingertip tall (44 px), and the stage gives up the 14 px that costs */
+@media (max-width:899px) and (orientation:portrait){.md-controls .b,.md-controls2 .b,.action .b[data-a="md-fulltime"]{min-height:44px}}
+@media (max-width:599px) and (orientation:portrait){.md-stage{height:min(calc(64vh - 14px),560px)}}
 .md-tie{font-size:20px;text-align:center;margin:18px 0;line-height:1.3}
 </style>
 </head>
@@ -133,8 +136,15 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const money = n => (n<0?'-':'')+'£'+E.fmt(Math.abs(n));
 const SAVE_KEY = 'sm91-save';
-const APP_VERSION = '1.6.0';
+const APP_VERSION = '1.7.0';
 const CHANGELOG = [
+  { v:'1.7.0', when:'November 2026', notes:[
+    'Tap a player to see who he is. Selecting a footballer on the match screen is far more forgiving on a phone: a fingertip close to him is enough, the man you touched wins in a crowd (on the whole-pitch camera too), and the tag over his head shows his number, name and position.',
+    'The picture holds when the match is paused. Turning the phone while paused or at full time no longer leaves an empty stage, and tapping while paused no longer nudges the camera along.',
+    'Skip ends on the final whistle with the players on the pitch, instead of a black screen with the last goal\'s banner left on it.',
+    'Bigger buttons on a phone held upright: Play, the speeds, Skip, Camera, View and Sound are each a full fingertip tall, and the Camera and View labels no longer run out of room on narrower phones.',
+    'If your phone is set to reduce motion, the crowd on the near terrace now holds still after a goal as well.',
+  ]},
   { v:'1.6.0', when:'November 2026', notes:[
     'New matchday artwork. The footballers are painted figures with real volume now: the same body in the same light from every angle, in your kit colours, with short, cropped and long hair, keepers in gloves, and the referee. Every running, turning, kicking, heading, diving and celebrating frame was repainted; no pose was left out.',
     'A proper crowd. The stands and terraces are packed with painted supporters in winter coats, hats and scarves, shoulders, arms and children among them, a few arms raised, seated rows under the main stand roof, with the corner terraces and towers to match.',

@@ -1,15 +1,23 @@
 'use strict';
-// Milestone 3D camera audit: over the highlights of a dozen matches, run the isometric camera at 60 frames a second on a
-// desktop stage and a phone stage and check that what must be seen is seen: the ball always; the striker and both posts
+// Milestone 3D camera audit, run since Milestone 4 on the stage of each of the five viewport presets: over the highlights
+// of a dozen matches, run the isometric camera at 60 frames a second and check that what must be seen is seen: the ball always; the striker and both posts
 // through a shot; the offender and the referee through a booking; the scorer through a celebration; and that the camera
 // never pans faster than its cap except at a cut.
 //   node test-camera.js            prints the report and asserts
 const E = require('./engine.js'); globalThis.Engine = E;
 for (const f of ['schema','capture','timeline','behaviour','trajectories','interactions','scene','playback','sprites','renderers/iso-projection','iso-sprites','iso-assets','renderers/iso-pitch','renderers/iso-stadium','renderers/iso-camera']) require('./src/matchday/'+f+'.js');
 const MD = globalThis.Matchday; const PR = MD.iso.projection; const CAM = MD.iso.camera;
-let fails = 0, checks = 0; const ok = (c, msg) => { checks++; if (!c){ fails++; console.log('FAIL', msg); } };
+let fails = 0, checks = 0; const check = (c, msg) => { checks++; if (!c){ fails++; console.log('FAIL', msg); } };
 
-const VIEWS = [{ name: 'desktop', w: 904, h: 560, closeP: 24, wideP: 16 }, { name: 'phone', w: 390, h: 430, closeP: 16, wideP: 12 }];
+// the stage as it really is at the five viewport presets of the brief (tools/viewport-audit.js measures them): a stage
+// 700 px or wider gets the desktop scales, as the renderer decides it
+const VIEWS = [
+  { name: 'phone 360x640',      w: 336,  h: 396, closeP: 16, wideP: 12 },
+  { name: 'phone 390x664',      w: 366,  h: 411, closeP: 16, wideP: 12 },
+  { name: 'landscape 844x390',  w: 820,  h: 203, closeP: 24, wideP: 16, open: true },   // measured and reported, not asserted: phone landscape is left as it is in Milestone 4 (John's decision, 16 Nov 2026). The wide, short stage does not meet three of the checks, and lower scales do worse (the view cannot follow play to the ends without leaving the painted ground), so it needs its own piece of work
+  { name: 'desktop 1366x768',   w: 904,  h: 619, closeP: 24, wideP: 16 },
+  { name: 'desktop 1920x1080',  w: 1164, h: 756, closeP: 24, wideP: 16 },
+];
 function matches(){
   const out = []; const st = E.newGame({ seed: 1991, userClub: 3 });
   for (let w=0; w<2 && out.length<12; w++){ const res = E.advanceWeek(st); for (let i=0; i<res.length && out.length<12; i+=4) out.push(MD.withTimeline(MD.capture(st, res[i], st.lastWeekInfo))); }
@@ -17,8 +25,9 @@ function matches(){
 }
 const visible = (pt, cam, w, h, P) => { const m = PR.toMetres(pt.x, pt.y); const s = PR.project(m.X, m.Y, pt.z||0, cam); return s.sx >= 0 && s.sx <= w && s.sy >= 0 && s.sy <= h; };
 
-const tally = {};
+const tally = {}; let known = 0;
 for (const v of VIEWS){
+  const ok = v.open? (c, msg) => { if (!c){ known++; console.log('OPEN', msg); } } : check;
   const T = tally[v.name] = { frames: 0, ballIn: 0, shotFrames: 0, shotIn: 0, strikes: 0, strikesIn: 0, arrivals: 0, arrivalsIn: 0, cardFrames: 0, cardIn: 0, celebFrames: 0, celebIn: 0, tackleFrames: 0, tackleIn: 0, windows: 0, wide: 0, maxStep: 0, overCap: 0, cuts: 0, pCuts: 0, pCutsOdd: 0, celebClose: 0, empty: 0, carrierFrames: 0, carrierIn: 0 };
   for (const p of matches()){
     const scene = MD.createScene(p); const pb = MD.createPlayback(p); const map = pb.timeMap();
@@ -32,6 +41,7 @@ for (const v of VIEWS){
         lastP = P;
         const cam = CAM.update(state, s, v.w, v.h, 'follow', 1/60, first, P);
         if (!first && !state.snapped){ const step = Math.hypot(cam.ox - lastOx, cam.oy - lastOy); T.maxStep = Math.max(T.maxStep, step); if (step > CAM.PAN_MAX*CAM.SHOT_PAN*v.w/60 + 1.5) T.overCap++; } else T.cuts++;
+        { const c = CAM.clampToGround(v.w/2 - cam.ox, v.h/2 - cam.oy, v.w, v.h, P); if (Math.hypot(c.cx - (v.w/2 - cam.ox), c.cy - (v.h/2 - cam.oy)) > 1.5) T.offGround = (T.offGround||0) + 1; }   // the view never leaves the painted ground
         lastOx = cam.ox; lastOy = cam.oy; first = false;
         T.frames++; T.all = (T.all||0) + 1;
         const pts = s.frame || [];
@@ -64,6 +74,7 @@ for (const v of VIEWS){
   ok(T.pCutsOdd===0, `${v.name}: the scale changes only at a cut (${T.pCutsOdd} elsewhere)`);
   ok(T.empty <= T.all*0.001, `${v.name}: no empty pitch: a frame with no player in view at most one time in a thousand (${T.empty}; a loose ball rolling clear for a moment on a narrow stage)`);
   ok(T.carrierIn >= T.carrierFrames*0.99, `${v.name}: the man on the ball in view (${pct(T.carrierIn, T.carrierFrames)})`);
+  ok(!T.offGround, `${v.name}: the view never runs off the painted ground (${T.offGround||0} frames)`);
   ok(T.celebClose >= T.celebFrames*0.85, `${v.name}: celebrations are shown at the close scale (${pct(T.celebClose, T.celebFrames)})`);
 }
-console.log(checks+' checks, '+fails+' failures'); if (fails) process.exit(1); console.log('ALL CAMERA TESTS PASSED');
+console.log(checks+' checks, '+fails+' failures'+(known? ' ('+known+' open in phone landscape, reported above)' : '')); if (fails) process.exit(1); console.log('ALL CAMERA TESTS PASSED');

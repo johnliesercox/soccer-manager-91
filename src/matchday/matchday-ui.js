@@ -30,6 +30,11 @@
   const urlView = () => { try { const v = new URLSearchParams(root.location.search||'').get('view'); return (v && MD.renderers[v] && shipped(v))? v : null; } catch(e){ return null; } };
   const getView = () => { try { const u = urlView(); if (u && !getView._applied){ getView._applied = true; setView(u); } const v = root.localStorage.getItem(VIEW_KEY); return (v && MD.renderers[v] && shipped(v))? v : DEFAULT_VIEW; } catch(e){ return DEFAULT_VIEW; } };
   const setView = v => { try { root.localStorage.setItem(VIEW_KEY, v); } catch(e){} };
+  // the Camera and View buttons share a row of three: on a phone their labels are cut short so that none is clipped
+  // ("Camera: follow" does not fit a third of a 390 px screen), and the full wording stays as the accessible label
+  const narrow = () => (root.innerWidth||1000) < 480;
+  const labelCamera = (b, mode) => { b.textContent = (narrow()? 'Cam: ' : 'Camera: ')+mode; b.setAttribute('aria-label', 'Camera: '+mode); };
+  const labelView = (b, def) => { b.textContent = 'View: '+(narrow() && def.short? def.short : def.name); b.setAttribute('aria-label', 'View: '+def.name); };
   const reducedMotion = () => !!(root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
   function compLabel(m, week){
@@ -138,7 +143,7 @@
         const line = lineFor(e, s.score);
         if (line && log){ log.insertAdjacentHTML('beforeend', `<div class="${line.cls}">${line.html}</div>`); log.scrollTop = log.scrollHeight; }
         // a badge over the picture for the moments that must not be missed: a card (with its colour) and a goal
-        if (e.type===EV.CARD || e.type===EV.GOAL){
+        if ((e.type===EV.CARD || e.type===EV.GOAL) && !v.skipping){   // not for what Skip jumps past: the log has it, and the picture is already at full time
           const team = e.teamId===pres.teams.home.id? pres.teams.home : pres.teams.away;
           const html = e.type===EV.CARD? `<span class="sw ${e.card==='red'? 'red' : 'yel'}"></span>${e.card==='red'? 'RED CARD' : 'BOOKED'}  ${C.esc(e.playerName||'')}` : `GOAL!  ${C.esc(e.playerName||team.short)}  ${s.score.home} - ${s.score.away}`;
           badge(html, e.type===EV.CARD? 4200 : 3600);
@@ -153,6 +158,17 @@
       onState: (state) => { const b = C.$('#md-play'); if (b) b.textContent = state.playing? 'Pause' : (state.ended? 'Ended' : 'Play'); for (const x of [1,2,4]){ const sb = C.$('#md-speed-'+x); if (sb) sb.classList.toggle('on', state.speed===x); } },
       onEnd: () => { v.done = true; MD.audio.stop(); const act = C.$('#act'); if (act) act.innerHTML = `<button class="b" data-a="md-fulltime">Full time</button>`; },
     });
+    // Turning the phone (or resizing the window) while nothing is playing: every view sizes its canvas again, which clears
+    // it, and a paused or finished match sends no frames. The picture is put back here for all four views, a moment after
+    // they have resized (the isometric view also redraws itself at once; drawing it again changes nothing).
+    if (root.addEventListener){
+      v.onResize = () => { if (v.resizeT) root.clearTimeout(v.resizeT); v.resizeT = root.setTimeout(() => {
+        v.resizeT = 0; const cur = C.S.md && C.S.md.viewer; if (cur!==v || !v.renderer || !v.playback) return;
+        const st = v.playback.state(); if (st.playing) return;
+        v.renderer.render(scene.getSceneAt(st.sceneSecond===undefined? st.matchSecond : st.sceneSecond), { fastForward: false, speed: st.speed, reducedMotion: v.reduced });
+      }, 120); };
+      root.addEventListener('resize', v.onResize);
+    }
     // the painted art must have decoded before the clock starts (normally it has, preloaded at boot): until then the
     // renderer draws its holding frame and nothing generated stands in for the painted players; six seconds at most
     const go = () => {
@@ -174,13 +190,14 @@
     const def = MD.renderers[id] || MD.renderers.pixelart;
     v.renderer = def.create({ onSelect: pl => { const comm = C.$('#md-comm'); if (comm) comm.textContent = pl.name+', '+({GK:'goalkeeper',DEF:'defender',MID:'midfielder',FWD:'forward'}[pl.role]||pl.role)+', number '+pl.shirtNo+'.'; } });
     v.renderer.mount(stage, v.pres);
-    const cb = C.$('#md-camera'); if (cb){ const has = typeof v.renderer.setCamera==='function'; cb.style.display = has? '' : 'none'; if (has) cb.textContent = 'Camera: '+v.renderer.getCamera(); }
+    const cb = C.$('#md-camera'); if (cb){ const has = typeof v.renderer.setCamera==='function'; cb.style.display = has? '' : 'none'; if (has) labelCamera(cb, v.renderer.getCamera()); }
     const state = v.playback? v.playback.state() : { matchSecond:0, sceneSecond:0, fastForward:false, speed:1 };
     if (v.scene) v.renderer.render(v.scene.getSceneAt(state.sceneSecond===undefined? state.matchSecond : state.sceneSecond), { fastForward: state.fastForward, speed: state.speed, reducedMotion: v.reduced });
-    const vb = C.$('#md-view'); if (vb) vb.textContent = 'View: '+((root.innerWidth||1000) < 400 && def.short? def.short : def.name);
+    const vb = C.$('#md-view'); if (vb) labelView(vb, def);
   }
   function closeViewer(){
     const S = C.S; const v = S.md && S.md.viewer; if (!v) return;
+    if (v.onResize && root.removeEventListener){ root.removeEventListener('resize', v.onResize); if (v.resizeT) root.clearTimeout(v.resizeT); }
     try { if (v.playback) v.playback.dispose(); } catch(e){}
     try { if (v.renderer) v.renderer.dispose(); } catch(e){}
     MD.audio.stop();
@@ -246,10 +263,10 @@
       case 'md-continue': nextMatch(); break;
       case 'md-play': if (v && v.playback && !v.done) v.playback.toggle(); break;
       case 'md-speed': if (v && v.playback) v.playback.setSpeed(+d.s); break;
-      case 'md-skip': if (v && v.playback && !v.done) v.playback.skip(); break;
+      case 'md-skip': if (v && v.playback && !v.done){ v.skipping = true; try { v.playback.skip(); } finally { v.skipping = false; } const b = C.$('#md-badge'); if (b) b.hidden = true; } break;
       case 'md-sound': { MD.audio.setEnabled(!MD.audio.enabled); const b = C.$('#md-sound'); if (b){ b.textContent = 'Sound: '+(MD.audio.enabled? 'on' : 'off'); b.setAttribute('aria-pressed', String(MD.audio.enabled)); } if (MD.audio.enabled && v && !v.done) MD.audio.start(); break; }
       case 'md-view': { const ids = VIEW_ORDER.filter(k=>MD.renderers[k] && shipped(k)).concat(Object.keys(MD.renderers).filter(k=>k!=='common' && !VIEW_ORDER.includes(k))); const cur = getView(); const next = ids[(ids.indexOf(cur)+1)%ids.length]; setView(next); mountRenderer(next); break; }
-      case 'md-camera': { if (v && v.renderer && v.renderer.setCamera){ const modes = v.renderer.cameraModes || ['follow', 'whole']; const cur = v.renderer.getCamera(); const mode = v.renderer.setCamera(modes[(modes.indexOf(cur)+1) % modes.length]); const cb = C.$('#md-camera'); if (cb) cb.textContent = 'Camera: '+mode; } break; }
+      case 'md-camera': { if (v && v.renderer && v.renderer.setCamera){ const modes = v.renderer.cameraModes || ['follow', 'whole']; const cur = v.renderer.getCamera(); const mode = v.renderer.setCamera(modes[(modes.indexOf(cur)+1) % modes.length]); const cb = C.$('#md-camera'); if (cb) labelCamera(cb, mode); } break; }
     }
   }
   function onKey(e){

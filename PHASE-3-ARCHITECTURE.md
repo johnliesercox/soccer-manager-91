@@ -1,6 +1,6 @@
 # Phase 3: Isometric Matchday, architecture notes
 
-Status: **Milestones 1 to 3D released as 1.5.0; the visual R&D and the Option E checkpoint approved (16 November 2026); the correction and polish pass (dead balls, locomotion, the crowd's second generation, the modelled goals) approved; version 1.6.0 prepared with style E as the only shipped isometric art, all 17 suites and the saved-game update check passing, awaiting deployment.** Milestone 4 follows on the original specification. `ARCHITECTURE_MATCHDAY.md` remains the authority for everything up to the renderer contract; this file covers only what the isometric renderer adds.
+Status: **Milestones 1 to 3D released as 1.5.0; the visual R&D and the Option E checkpoint approved (16 November 2026); the correction and polish pass (dead balls, locomotion, the crowd's second generation, the modelled goals) approved; version 1.6.0 prepared with style E as the only shipped isometric art, all 17 suites and the saved-game update check passing, deployed 16 November 2026.** Milestone 4 (touch selection, still frames, the five viewports) is version 1.7.0; phone landscape is left open by John's decision. `ARCHITECTURE_MATCHDAY.md` remains the authority for everything up to the renderer contract; this file covers only what the isometric renderer adds.
 
 ## What is new, and what is untouched
 
@@ -149,6 +149,16 @@ The brief: a match should watch like a highlights programme, six interesting inc
 
 **Tests.** `test-matchday-ui.js` knows the comparison view's place in the cycle. The seventeen suites were run after the goal change (all pass); the goal pieces add no test of their own because the renderer path is the existing placed-piece path with a name chosen per frame, exercised by `test-isometric.js` and `test-playback.js`.
 
+## Milestone 4: touch selection and the picture when nothing is playing
+
+**Selection.** `pick(items, X, Y, slop)` in `renderers/isometric.js` is pure and exported on the renderer definition (with `TOUCH_SLOP` 14 and `POINTER_SLOP` 4, in canvas pixels). It works on the items of the last frame, so it is right at any scale and after any pan with no inverse projection of its own: every player whose drawn box is within `slop` of the tap is a candidate, and the one whose body is nearest wins (the body is taken at 60% down its box, above the feet anchor); a dead heat goes to the figure drawn later. The tap handler chooses the slop from the event's `pointerType`, falling back to the device's `(pointer: coarse)` when an old browser sends none. Nothing about selection is stored anywhere but the renderer: the scene, the presentation and the save are untouched.
+
+**Still frames.** Frames normally come from the playback loop through `render(scene, hud)`. Four things can need a frame when the loop is not running (paused, or at full time): a tap, a change of size, a camera change, and a cut that was drawn mid-fade and never followed. The renderer tells the two cases apart by the time since the last loop frame (the loop's frames carry `hud.sinceCut`; 300 ms without one means nothing is playing) and then draws a *still frame*: the stored scene with `still: true`, which skips the dip and the fade, and `dtReal: 0`, which `iso-camera.update` now treats as no time passing (the spring is not stepped). While the loop is running none of this happens: a tap waits for the loop's next frame, and a fade is left to finish on its own. A frame returned by `drawFrame` reports `fading`, and `render` arms a 350 ms timer on a fading frame that draws the still frame if no other frame has come; `dispose` cancels it.
+
+A 3D renderer needs the same three rules and nothing from this code: redraw on resize, complete a transition that no frame follows, and pass no time to the camera on a redraw that is not a frame.
+
+**The match screen.** `matchday-ui.js` redraws the paused picture 120 ms after a window resize for whichever view is mounted (Pixels, Markers and Board clear their canvas on a resize and do not redraw themselves; their code is unchanged), labels Camera and View through two small functions (short wording below 480 px, the full wording as `aria-label`) and does not raise badges for the events Skip jumps past. The 44 px buttons and the 14 px the stage gives up are two media queries for a screen held upright; a phone in landscape is deliberately outside both.
+
 ## Phase 4 (true 3D) readiness
 
 A WebGL renderer would replace steps 1 to 4 with its own projection and meshes and keep step 5. It would import nothing from the isometric files except, optionally, `iso-projection.toMetres` and `BALL_Z_M`; `scene.js` still carries no screen-space values. The world image cache, the sprite cache and the camera state are all private to this renderer and die with `dispose()`.
@@ -181,5 +191,5 @@ After the sign-off, style E became a complete art set rather than a test: every 
 * The preview with both styles at three scales is 3.4 MB; the shipped game would carry one style (about 1.1 MB of sheets).
 * The near side of the ground is deliberately shallow (boards, a rail, three rows), so the camera stops short of it and the concourse colour shows beyond; the camera keeps the near-right goal low in the frame for the same reason.
 * Headings are eight-way; a dive or slide seen head-on (N or S) foreshortens to a compact shape.
-* Phone landscape (844 x 390) gives a 234 px tall stage, as it does for Pixels; Milestone 4 decides whether landscape gets a lower scale.
+* Phone landscape (844 x 390) gives a 203 px tall stage. Milestone 4 measured it and left it as it is by John's decision: a lower scale does not help (see the limitations in `PHASE-3-QA-REPORT.md`); it needs work on the camera bounds and the layout.
 * Frame pacing is measured in headless Chromium, not yet on a real phone.

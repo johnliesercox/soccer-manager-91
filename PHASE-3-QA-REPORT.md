@@ -1,4 +1,4 @@
-# Phase 3 QA report (interim, updated through Milestone 3D)
+# Phase 3 QA report (interim, updated through Milestone 4)
 
 Source baseline: commit 9115a15 ("Add source, build script and tests (1.4.0)"), verified to rebuild the live `index.html` byte for byte. Milestones 1, 2 and 2A are on top of it in the working tree (preview build `1.5.0-m2a preview`, not deployed). Test commands: `node test-isometric.js`, plus every existing suite (`test-matchday.js`, `test-playback.js`, `test-matchday-ui.js`, `test-phase25.js`, `test-equivalence.js`, `test-regression.js`, `test-contracts.js`, `test-youth.js`, `test-hof.js`). Run them one at a time: two UI suites running at once share a temporary file and can trip each other.
 
@@ -11,7 +11,7 @@ Status words: **Pass** (automated, on this build), **Manual** (checked by eye in
 | A01 | Projection deterministic | Pass | same point, camera, viewport twice |
 | A02 | 105:68 metric mapping; centre, corners, spots align | Pass | formula checks, spots 83 m apart |
 | A03 | Centre circle, boxes, arcs follow world markings | Pass | 360 world samples project to a 2:1 ellipse (ratio 2.000); all markings inside the pitch rectangle |
-| A04 | Inverse projection accurate for taps | Pass (ground) / Open (sprite boxes at every zoom, M4) | half a metre per six pixels at P 12; taps use drawn sprite boxes nearest-first |
+| A04 | Inverse projection accurate for taps | Pass | half a metre per six pixels at P 12 on the ground; since Milestone 4 a tap is resolved by `pick()` against the drawn sprite boxes at every camera scale on the stage of each of the five viewport presets (`test-touch.js`: a tap on a figure's body selects it in 11 views, overlapped or not, after the camera has panned) |
 | A05 | World to screen to world round trip | Pass | worst error 0 at P 5.2, 12, 16 over 1,500 points |
 | A06 | Feet anchor stable across headings and poses | Pass | lowest filled row within 0.3 m of the anchor for 10 grounded poses, 8 headings, 2 scales |
 | A07 | Stable depth order, no flicker | Pass | 30 s at 30 fps: no pair of players swaps draw order three times within a second |
@@ -59,12 +59,12 @@ One scene change outside the renderer: `behaviour.js` no longer sends defenders 
 | D01 | Follow and Whole Pitch work and persist; unknown stored view falls back | Pass | UI test toggles both; `getView` falls back to Pixels |
 | D02 | Camera snaps on cuts/seeks, pans within its cap otherwise | Pass | 60 s at 60 fps within `PAN_MAX` (2.5x `PAN_MAX` while a shot is in flight); snap independent of prior state |
 | D03 | Keeper, shot and goalmouth visible for `goal` interest | Pass / Manual | both posts on screen at every shot and goal of the seed 1991 match on 904x619 at P 24 and 366x425 at P 16 and 12 (`camdiag`); goal sequences at both ends in the captures; right-end goal sits low in frame by design (shallow near side) |
-| D04 | Five viewports show required controls | Pass (Chromium) | 360x640, 390x664, 844x390, 1366x768, 1920x1080 with the Isometric view mounted |
-| D05 | Phone touch selection at zoom levels | Open (M4) | click hit-test implemented, not yet exercised on touch |
-| D06 | Reduced motion; official text accessible | Pass | `reducedMotion` snaps the camera; aria-live commentary unchanged |
+| D04 | Five viewports show required controls | Pass (Chromium, repeatable) | `tools/viewport-audit.js` at 360x640, 390x664, 844x390, 1366x768, 1920x1080 in the Isometric view: all 11 controls on screen, unclipped and uncovered while playing, after a turn and at full time; nothing scrolls sideways; no button label cut off in any camera (labels also checked at twelve widths from 320 to 768 px) |
+| D05 | Phone touch selection at zoom levels | Pass (emulated touch) / Manual on the phone | `test-touch.js` and `tools/viewport-audit.js`: a fingertip up to 14 px outside a figure selects it, the figure whose body is tapped wins among overlapping ones (all 22 on the whole-pitch camera on a phone), a tap on a control never selects a player, taps while paused do not move the picture. Real-finger check: John's phone, with the 1.7.0 preview |
+| D06 | Reduced motion; official text accessible | Pass | `reducedMotion` snaps the camera; aria-live commentary unchanged; since Milestone 4 the generated crowd holds still too (`test-touch.js`) |
 | D07 | Fast-forward banner, clock, goal overlay, commentary legible | Manual | both recordings |
 | D08 | Desktop side panel never pushes the action bar off | Pass | layout unchanged from 1.4.0 (two-column grid) |
-| D09 | Rotation reflow | Open (M4) | `resize` rebuilds tiles for the new scale |
+| D09 | Rotation reflow | Pass (emulated) / Manual on the phone | the stage is redrawn at once at the new size while playing, paused, in a fast-forward and at full time, the camera still on the same play (`test-touch.js`, `tools/viewport-audit.js` turns each preset both ways) |
 
 ## E. Performance, packaging, deployment (headless Chromium, this machine)
 
@@ -193,11 +193,40 @@ Stadium corrections made on the way: the X=105 end stand had collapsed into one 
 | 3D.13 | All fifteen suites pass one at a time on the final build; `test-camera.js` unchanged in substance (ball 100%; the striker and the ball at the strike 100% of 100; both posts at the arrival 100% of 63; bookings 100% desktop and 99.9% phone; celebrations 99.4% and 96.8%; both men at a challenge 100% and 94.3%; the man on the ball 100%; over the pan cap 1 and 3 frames in 139,000) | pass |
 | 3D.14 | Performance (headless Chromium, four viewports): see the checkpoint; the corner structures are painted into the ground tiles and cost nothing per frame | pass |
 
+## Milestone 4 (16 November 2026): touch, turning the phone, the five viewports
+
+Scope agreed with John on 16 November: an audit first, then touch selection, rotation, the camera at the real stage sizes and the small interface items of section 9. Phone landscape is left as it is by his decision (see the limitations below). Version 1.7.0.
+
+The audit of 1.6.0 (`tools/viewport-audit.js`, Playwright Chromium, phones emulated with touch) found every control on screen at all five sizes, and five faults, each now fixed and held by a test:
+
+| | Fault in 1.6.0 | Fix | Held by |
+|---|---|---|---|
+| D09 | Turning the phone (or resizing the window) while paused left the stage blank until Play: sizing a canvas clears it, and a paused match draws no frames | `resize()` redraws at once; when nothing is playing the renderer draws a still frame (the stored scene, complete, the camera not moved on). Pixels, Markers and Board had the same fault: the match screen now redraws the paused picture after a resize for every view | `test-touch.js`, the audit (turns while paused, playing, in a fast-forward, at full time; the other three views turned while paused) |
+| D09 | After Skip the stage stayed black at full time, with the last event's badge on it: the match ends on a cut, a cut fades in from black over several frames, and only one frame is drawn | a frame drawn part-way through a fade is completed 350 ms later if no frame follows; badges are not raised for the events Skip jumps past (the log still has them) | `test-touch.js`, the audit (full time must show the ground and no badge) |
+| D05 | Taps on the stage while paused slid the picture (20 to 49 px over a handful of taps): each tap redrew, and each redraw stepped the camera | a still frame passes no time to the camera (`dtReal` 0 holds it exactly); a tap never draws a loop frame of its own | `test-touch.js`, the audit (the paused picture must not move) |
+| D05 | Selection had no tolerance (4 px outside a figure's box missed) and the front-most box won, so overlapping figures on the whole-pitch camera could not be told apart on a phone | `pick()`: every figure within reach of the tap is a candidate (14 px for a fingertip, 4 px for a pointer) and the one whose body is nearest wins | `test-touch.js` (11 views), the audit (every figure on screen tapped on its body: 22 of 22 on the whole-pitch camera) |
+| 9 | "Camera: follow" was cut off at 384 and 390 px wide, "View: Isometric" at 412 px, and Camera, View and Sound were 34 to 35 px tall (Play, the speeds and Skip 40 px) | `Cam:` and `Iso` labels below 480 px with the full wording as the accessible label; 44 px buttons on a phone held upright, the stage giving up 14 px | the audit (labels in every camera, touch target sizes); twelve widths from 320 to 768 px checked by hand-run script |
+
+Also in the milestone: the tag over a selected player now reads number, name and position and stays inside the picture; under reduced motion the generated crowd no longer flickers through a goal (the painted stands already held still).
+
+Checked and found sound, so not changed: the goal badge never sits on the goal at either end at any of the five sizes (the audit measures it against the posts and bar at the moment it appears); the `GOAL!` lettering is placed in the half of the picture away from the goal.
+
+The camera at the real stage sizes (`test-camera.js`, a dozen matches at 60 frames a second, now on the stage of each preset instead of two approximations): at 336x396, 366x411, 904x619 and 1164x756 the ball is in view in 100% of frames, the striker and ball at every strike (95 of 95), both posts at every arrival (63 of 63), the man on the ball 100%, and the view never runs off the painted ground. Manual scenario 3 (counter-attack) reviewed on film strips of the fastest break of a match on a phone and a desktop (one frame a second): the carrier, the ball in flight, the receivers and the defenders ahead of him are in the picture throughout, and the pan stays within its cap.
+
+Saved games: `tools/save-compat.js legacy/release-1.6.0 .` 19 of 19 (single and three-manager hot-seat games, slots and autosave, played on after the update), and 19 of 19 with the two folders swapped (the rollback direction). The tool now reads both version numbers from the files it serves.
+
+On the final 1.7.0 build (`index.html` 7,083,243 bytes): all 18 suites pass one at a time (the 17 of 1.6.0 and `test-touch.js`, 61 checks), and `tools/viewport-audit.js` passes at all five sizes.
+
+Not checked here and left to John's phone: a real finger on a real screen (the emulation sends true touch events but a finger is not a point), and load time.
+
 ## Manual scenarios (Section 14)
 
-Covered so far by the recordings and captures: 1 kick-off, 2 midfield passing, 4 shot saved, 5 goal, 6 corner (desktop recording, 36 s), 8 ends swap (second-half goal at the left end), 12 next-highlight cut. Open: 3 counter-attack framing review, 7 red card, 9 extra time/penalties, 10 hot-seat in ISO, 11 view switching mid-match (passes the UI test), 13 offline mobile, 14 long log desktop (layout unchanged), 15 weak-browser fallback.
+Covered so far by the recordings and captures: 1 kick-off, 2 midfield passing, 4 shot saved, 5 goal, 6 corner (desktop recording, 36 s), 8 ends swap (second-half goal at the left end), 12 next-highlight cut. Since Milestone 4: 3 counter-attack framing (film strips, phone and desktop). Open: 7 red card, 9 extra time/penalties, 10 hot-seat in ISO, 11 view switching mid-match (passes the UI test), 13 offline mobile, 14 long log desktop (layout unchanged), 15 weak-browser fallback.
 
 ## Known limitations after the Phase 3 art completion
+
+* Phone landscape (844x390) is unchanged and open, by John's decision at Milestone 4. The stage is 820x203 px at the desktop scales: two or three players are in view, the commentary line is below the fold (the match column scrolls by 64 px), and the camera does not meet three of its checks there (ball in view 98.8% of frames, both posts at the arrival of 53 of 63 shots, 411 frames in 141,525 with no player in view). Lower scales do worse, not better (the view cannot follow play to the ends without leaving the painted ground on so wide a stage), so landscape needs its own piece of work on the camera bounds and the layout, not a change of zoom. `test-camera.js` reports these figures on every run without failing on them.
+* The whole-pitch camera on a phone held upright fills only the middle third of the stage (about 1.7 to 1.9 px per metre): a wide diamond in a tall stage.
 
 * The near terrace is the right end's painting mirrored (a packed pen of fans seen from behind): the depth preprocessor reads the low flat near terrace as a slab and painted it as one row of giant figures four times over; a dedicated painting can replace it in seconds if a later attempt comes out right.
 * The crowd figures in the painted stands are chunky (a head is about a player's head), in the 16-bit manner. (Since 3D the painted stands rise in a wave for a goal, with camera flashes; the main stand's rows under its roof stay still.)

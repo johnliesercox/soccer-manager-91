@@ -5,9 +5,10 @@
 // camera; whether a tap or click on a figure selects it, and how far outside the figure a tap still counts; and what
 // rotating the device does while paused and while playing. It changes nothing in the game and only reports.
 //   node tools/viewport-audit.js . out-dir        (after python3 build.py; needs playwright and its Chromium)
-// Writes out-dir/audit.json and screenshots, prints a summary, exits 1 if a required control is missing or clipped or the
-// stage stays unpainted while a match plays. What it reports without failing (touch targets, selection tolerance, the
-// commentary line below the fold, a blank stage after a turn while paused) is for the QA report.
+// Writes out-dir/audit.json and screenshots, prints a summary, and exits 1 if a required control is missing or clipped,
+// the stage is left unpainted (playing, paused, turned, in a fast-forward or at full time), a tap on a figure's body or
+// a fingertip just outside it does not select it, a tap on a control selects a player, or the paused picture moves. What
+// it reports without failing (touch target sizes, the commentary line below the fold in landscape) is for the QA report.
 const { chromium } = require('playwright'); const path = require('path'); const fs = require('fs'); const http = require('http');
 const [SITE = '.', OUT = 'viewport-audit-out'] = process.argv.slice(2);
 fs.mkdirSync(OUT, { recursive: true });
@@ -71,7 +72,7 @@ const figures = () => {
   const v = window.__sm91.S.md.viewer; const c = document.querySelector('#md-stage canvas'); const r = c.getBoundingClientRect(); const k = r.width / c.width;
   const names = {}; for (const pl of v.scene.getSceneAt(v.playback.state().sceneSecond || 0).players) names[pl.id] = pl.name;
   return v.renderer.debugItems().filter(it => it.kind === 'player' && it.box).map(it => ({ id: it.id, name: names[it.id], x: r.left + it.box.x * k, y: r.top + it.box.y * k, w: it.box.w * k, h: it.box.h * k }))
-    .filter(b => b.x >= r.left && b.y >= r.top && b.x + b.w <= r.right && b.y + b.h <= r.bottom);
+    .map(b => Object.assign(b, { inside: b.x >= r.left && b.y >= r.top && b.x + b.w <= r.right && b.y + b.h <= r.bottom }));   // inside: wholly on the stage
 };
 const commentary = () => document.querySelector('#md-comm').textContent;
 
@@ -104,13 +105,14 @@ const commentary = () => document.querySelector('#md-comm').textContent;
       // 2. each camera, paused so the figures hold still: their size, and what a tap selects
       await click('#md-play', 250); rec.steps.cameras = {};
       for (let i = 0; i < 3; i++){
-        const st = await page.evaluate(stage); const figs = await page.evaluate(figures);
+        const st = await page.evaluate(stage); const drawn = await page.evaluate(figures); const figs = drawn.filter(f => f.inside);
         const ws = figs.map(f => f.w).sort((a, b) => a - b), hs = figs.map(f => f.h).sort((a, b) => a - b); const med = a => a.length? +a[Math.floor(a.length/2)].toFixed(1) : null;
-        const cam = { P: st.P, onScreen: figs.length, boxW: med(ws), boxH: med(hs), boxMinW: ws.length? +ws[0].toFixed(1) : null, centre: { tried: 0, hit: 0 }, near: {} };
+        const lab = await page.evaluate(() => ['#md-camera', '#md-view', '#md-sound'].map(q => { const b = document.querySelector(q); return { text: b.textContent, cut: b.scrollWidth > b.clientWidth + 1 }; }));
+        const cam = { labels: lab, P: st.P, onScreen: figs.length, boxW: med(ws), boxH: med(hs), boxMinW: ws.length? +ws[0].toFixed(1) : null, centre: { tried: 0, hit: 0 }, near: {} };
         // figures nobody overlaps; each tap reads the figure's box again first, as it is drawn at that moment
-        const alone = figs.filter(f => !figs.some(g => g !== f && g.x < f.x + f.w + 20 && g.x + g.w > f.x - 20 && g.y < f.y + f.h + 20 && g.y + g.h > f.y - 20)).slice(0, 6);
+        const alone = figs.filter(f => !drawn.some(g => g !== f && g.x < f.x + f.w + 20 && g.x + g.w > f.x - 20 && g.y < f.y + f.h + 20 && g.y + g.h > f.y - 20)).slice(0, 6);
         const now = async id => (await page.evaluate(figures)).find(f => f.id === id);
-        const selects = async (id, dx, dy) => { const f = await now(id); if (!f) return null; await page.evaluate(() => { document.querySelector('#md-comm').textContent = ''; }); await poke(f.x + f.w/2 + dx(f), f.y + f.h/2 + dy(f)); return (await page.evaluate(commentary)).indexOf(f.name + ',') === 0; };
+        const selects = async (id, dx, dy) => { const f = await now(id); if (!f) return null; { const c = await page.evaluate(() => { const r = document.querySelector('#md-stage canvas').getBoundingClientRect(); return [r.left, r.top, r.right, r.bottom]; }); const x = f.x + f.w/2 + dx(f), y = f.y + f.h/2 + dy(f); if (x < c[0] + 1 || y < c[1] + 1 || x > c[2] - 1 || y > c[3] - 1) return null; }   /* a point off the stage is not a tap on it */ await page.evaluate(() => { document.querySelector('#md-comm').textContent = ''; }); await poke(f.x + f.w/2 + dx(f), f.y + f.h/2 + dy(f)); await sleep(30); return (await page.evaluate(commentary)).indexOf(f.name + ',') === 0; };
         const before = (await page.evaluate(stage)).cam;
         for (const f of alone){ const r = await selects(f.id, () => 0, () => 0); if (r === null) continue; cam.centre.tried++; if (r) cam.centre.hit++; }
         // the same figures, tapped a little outside their box on each side: how forgiving is selection?
@@ -119,7 +121,11 @@ const commentary = () => document.querySelector('#md-comm').textContent;
           for (const f of alone.slice(0, 4)) for (const [dx, dy] of [[g => -(g.w/2 + off), () => 0], [g => g.w/2 + off, () => 0], [() => 0, g => -(g.h/2 + off)], [() => 0, g => g.h/2 + off]]){ const r = await selects(f.id, dx, dy); if (r === null) continue; tried++; if (r) hit++; }
           cam.near[off + 'px outside'] = { tried, hit };
         }
+        // every figure on screen, tapped on its body: overlapping figures must still be told apart
+        cam.body = { tried: 0, hit: 0 };
+        for (const f of figs){ const g = await now(f.id); if (!g) continue; await page.evaluate(() => { document.querySelector('#md-comm').textContent = ''; }); await poke(g.x + g.w/2, g.y + g.h*0.6); cam.body.tried++; if ((await page.evaluate(commentary)).indexOf(g.name + ',') === 0) cam.body.hit++; }
         const after = (await page.evaluate(stage)).cam; cam.pausedPictureMoved = before && after? Math.round(Math.hypot(after[0] - before[0], after[1] - before[1])) : null;   // the picture should hold still while paused
+        if (figs[0]){ const g = await now(figs[0].id); if (g) await poke(g.x + g.w/2, g.y + g.h*0.6); }
         rec.steps.cameras[st.camera] = cam; await shot('2-camera-' + st.camera);
         await click('#md-camera', 500);
       }
@@ -137,13 +143,49 @@ const commentary = () => document.querySelector('#md-comm').textContent;
         rot.playingAfterTurn = { stage: await settled() }; await shot('3-turned-playing');
         await page.setViewportSize({ width: P.w, height: P.h }); await sleep(700);
         rot.playingTurnedBack = { stage: await settled(), layout: await page.evaluate(layout, REQUIRED) }; await shot('3-turned-back');
+        // during a fast-forward between highlights (the clock races, the picture cuts)
+        await click('#md-speed-4', 100);
+        const ff = await page.waitForFunction(() => window.__sm91.S.md.viewer.playback.state().fastForward, null, { timeout: 45000 }).then(() => true, () => false);
+        if (ff){ await page.setViewportSize({ width: P.rotate.w, height: P.rotate.h }); await sleep(500); rot.fastForwardAfterTurn = { stage: await settled() }; await shot('3-turned-fast-forward'); await page.setViewportSize({ width: P.w, height: P.h }); await sleep(500); }
+        else rot.fastForwardAfterTurn = null;
+        await click('#md-speed-1', 100);
         rec.steps.rotation = rot;
       } else await click('#md-play', 300);
 
+      // the other three views, turned while paused (one phone is enough: the redraw is the match screen's, not the view's)
+      if (P.rotate && P.touch && P.w < 400 && !report.presets.some(x => x.steps && x.steps.otherViews)){
+        await click('#md-play', 300); rec.steps.otherViews = [];
+        for (let i = 0; i < 3; i++){
+          await click('#md-view', 500); const name = await page.evaluate(() => document.querySelector('#md-view').getAttribute('aria-label') || document.querySelector('#md-view').textContent);
+          await page.setViewportSize({ width: P.rotate.w, height: P.rotate.h }); await sleep(600); const turned = (await page.evaluate(stage)).clearShare;
+          await page.setViewportSize({ width: P.w, height: P.h }); await sleep(600); const back = (await page.evaluate(stage)).clearShare;
+          rec.steps.otherViews.push({ view: name, clearedAfterTurn: turned === 1, clearedTurnedBack: back === 1 });
+        }
+        await click('#md-view', 500); await click('#md-play', 300);
+      }
+
+      // the badge that announces a goal sits over the picture: at neither end may it sit on the goal itself (brief, section 9)
+      rec.steps.goals = {};
+      const goals = await page.evaluate(() => { const v = window.__sm91.S.md.viewer; return v.pres.events.filter(e => e.type === window.Matchday.EVENT.GOAL).map(e => ({ t: e.matchSecond, x: v.scene.getSceneAt(e.matchSecond).ball.x })); });
+      for (const g of goals){
+        const end = g.x < 0.5? 'left' : 'right'; if (rec.steps.goals[end]) continue;
+        await page.evaluate(t => { document.querySelector('#md-badge').hidden = true; window.__sm91.S.md.viewer.playback.seek(t - 2.5); }, g.t);
+        const up = await page.waitForFunction(() => !document.querySelector('#md-badge').hidden, null, { timeout: 8000, polling: 30 }).then(() => true, () => false); if (!up) continue; await sleep(120);
+        rec.steps.goals[end] = await page.evaluate(() => {
+          const b = document.querySelector('#md-badge').getBoundingClientRect(), c = document.querySelector('#md-stage canvas').getBoundingClientRect(); const v = window.__sm91.S.md.viewer; const cam = v.renderer.lastFrame().cam; const PR = window.Matchday.iso.projection;
+          const X = v.scene.getSceneAt(v.playback.state().sceneSecond).ball.x < 0.5? 0 : PR.DIM.L; const pts = []; for (const y of [-3.66, 3.66]) for (const z of [0, 2.44]) pts.push(PR.project(X, PR.DIM.W/2 + y, z, cam));
+          const goal = { x0: Math.min(...pts.map(p => p.sx)), x1: Math.max(...pts.map(p => p.sx)), y0: Math.min(...pts.map(p => p.sy)), y1: Math.max(...pts.map(p => p.sy)) }; const badge = { x0: b.left - c.left, x1: b.right - c.left, y0: b.top - c.top, y1: b.bottom - c.top };
+          const inView = goal.x1 > 0 && goal.x0 < c.width && goal.y1 > 0 && goal.y0 < c.height;
+          return { badge: Object.values(badge).map(Math.round), goal: Object.values(goal).map(Math.round), goalInView: inView, covers: inView && badge.x0 < goal.x1 && badge.x1 > goal.x0 && badge.y0 < goal.y1 && badge.y1 > goal.y0 };
+        });
+        await shot('5-goal-' + end);
+      }
+
       // 4. full time: the log is as long as it gets
-      await click('[data-a="md-skip"]', 1200);
+      await click('[data-a="md-skip"]', 1500);
       rec.steps.fullTime = { layout: await page.evaluate(layout, ['#md-score', '#md-clock', '#md-stage', '#md-camera', '#md-view', '#md-sound', '#md-comm', '#md-log', '[data-a="md-fulltime"]']), stage: await page.evaluate(stage), logLines: await page.evaluate(() => document.querySelectorAll('#md-log div').length) };
       await shot('4-full-time');
+      if (P.rotate){ await page.setViewportSize({ width: P.rotate.w, height: P.rotate.h }); await sleep(700); rec.steps.fullTime.afterTurn = { stage: await page.evaluate(stage) }; await shot('4-full-time-turned'); }
     } catch (e){ rec.error = String(e && e.message || e).slice(0, 400); try { await shot('error'); } catch (x){} }
     rec.errors = errors; report.presets.push(rec); await ctx.close();
   }
@@ -165,14 +207,23 @@ const commentary = () => document.querySelector('#md-comm').textContent;
     const small = BUTTONS.map(b => [b, L.items[b]]).filter(([, v]) => v && !v.missing && (v.w < FINGER || v.h < FINGER));
     line('  touch targets under ' + FINGER + ' px: ' + (small.length? small.map(([k, v]) => k + ' ' + v.w + 'x' + v.h).join(', ') : 'none'));
     const cut = Object.entries(L.items).filter(([, v]) => v.cut); line('  text cut off: ' + (cut.length? cut.map(([k, v]) => k + ' "' + (v.text || '') + '"').join(', ') : 'none') + '; camera label "' + L.items['#md-camera'].text + '", view label "' + L.items['#md-view'].text + '"');
-    for (const [cam, c] of Object.entries(r.steps.cameras)) line('  camera ' + cam + ' (' + c.P + ' px/m): ' + c.onScreen + ' figures on screen, a figure is about ' + c.boxW + 'x' + c.boxH + ' px (narrowest ' + c.boxMinW + '); ' + (r.touch? 'tap' : 'click') + ' on the middle selects ' + c.centre.hit + '/' + c.centre.tried + '; just outside: ' + Object.entries(c.near).map(([k, v]) => k.replace(' outside', '') + ' ' + v.hit + '/' + v.tried).join(', ') + '; paused picture moved ' + c.pausedPictureMoved + ' px during the taps');
+    for (const [cam, c] of Object.entries(r.steps.cameras)) line('  camera ' + cam + ' (' + c.P + ' px/m): ' + c.onScreen + ' figures on screen, a figure is about ' + c.boxW + 'x' + c.boxH + ' px (narrowest ' + c.boxMinW + '); ' + (r.touch? 'tap' : 'click') + ' on the middle selects ' + c.centre.hit + '/' + c.centre.tried + '; just outside: ' + Object.entries(c.near).map(([k, v]) => k.replace(' outside', '') + ' ' + v.hit + '/' + v.tried).join(', ') + '; on the body of every figure ' + c.body.hit + '/' + c.body.tried + '; paused picture moved ' + c.pausedPictureMoved + ' px during the taps');
+    { const cutL = Object.values(r.steps.cameras).flatMap(c => c.labels.filter(l => l.cut).map(l => l.text)); line('  button labels in every camera: ' + (cutL.length? 'CUT OFF: ' + cutL.join(', ') : 'none cut off (' + Object.values(r.steps.cameras).map(c => c.labels[0].text).join(', ') + ')')); hard += cutL.length; }
+    for (const c of Object.values(r.steps.cameras)){ if (c.pausedPictureMoved > 2) hard++; if (c.centre.hit < c.centre.tried) hard++; if (c.body.hit < c.body.tried) hard++; if (r.touch && c.near['8px outside'].hit < c.near['8px outside'].tried) hard++; }
+    if (r.steps.controlTapSelects) hard++;
     line('  a tap on a control selects a player: ' + (r.steps.controlTapSelects? 'YES' : 'no'));
     if (r.steps.rotation){ const R = r.steps.rotation; const b2 = Object.entries(R.pausedAfterTurn.layout.items).filter(([, v]) => v.missing || !v.inside || v.covered || v.hidden);
-      line('  turned while paused: stage ' + R.pausedAfterTurn.stage.css.join('x') + ', ' + (R.pausedAfterTurn.stage.blank? 'BLANK' : 'painted') + '; controls ' + (b2.filter(([k]) => !INFO.includes(k)).length? 'NOT all on screen: ' + b2.map(([k]) => k).join(', ') : 'all on screen' + (b2.length? ' (commentary line below the fold)' : '')) + '; after pressing Play: ' + (R.playingAfterTurn.stage.blank? 'BLANK' : 'painted') + '; turned back while playing: ' + (R.playingTurnedBack.stage.blank? 'BLANK' : 'painted')); }
+      line('  turned while paused: stage ' + R.pausedAfterTurn.stage.css.join('x') + ', ' + (R.pausedAfterTurn.stage.blank? 'BLANK' : 'painted') + '; controls ' + (b2.filter(([k]) => !INFO.includes(k)).length? 'NOT all on screen: ' + b2.map(([k]) => k).join(', ') : 'all on screen' + (b2.length? ' (commentary line below the fold)' : '')) + '; after pressing Play: ' + (R.playingAfterTurn.stage.blank? 'BLANK' : 'painted') + '; turned back while playing: ' + (R.playingTurnedBack.stage.blank? 'BLANK' : 'painted') + '; turned during a fast-forward: ' + (R.fastForwardAfterTurn? (R.fastForwardAfterTurn.stage.blank? 'BLANK' : 'painted') : 'no fast-forward reached'));
+      for (const k of ['pausedAfterTurn', 'playingAfterTurn', 'playingTurnedBack', 'fastForwardAfterTurn']) if (R[k] && R[k].stage.blank) hard++; }
+    if (r.steps.otherViews){ line('  the other views turned while paused: ' + r.steps.otherViews.map(o => o.view.replace('View: ', '') + ' ' + (o.clearedAfterTurn || o.clearedTurnedBack? 'BLANK' : 'painted')).join(', ')); for (const o of r.steps.otherViews) if (o.clearedAfterTurn || o.clearedTurnedBack) hard++; }
+    { const G = r.steps.goals || {}; const ends = Object.keys(G); const land = /landscape/.test(r.preset);
+      line('  goal badge and the goal: ' + (ends.length? ends.map(e => e + ' end ' + (G[e].covers? 'BADGE COVERS THE GOAL' : G[e].goalInView? 'clear' : 'goal not in the picture at that moment')).join(', ') : 'no goal in this match'));
+      for (const e of ends) if (G[e].covers && !land) hard++; }
     const F = r.steps.fullTime; const b3 = Object.entries(F.layout.items).filter(([k, v]) => k !== '#md-log' && !INFO.includes(k) && off(v));
-    line('  full time (' + F.logLines + ' log lines): ' + (b3.length? 'NOT on screen: ' + b3.map(([k]) => k).join(', ') : 'everything still on screen') + ', stage ' + (F.stage.blank? 'one flat colour' : 'shows the ground') + (F.layout.badge? ', badge still showing "' + F.layout.badge.text + '"' : '') + ', match column scrolls: ' + (F.layout.mainScrolls? 'yes, by ' + F.layout.mainOverflow + ' px' : 'no'));
+    line('  full time (' + F.logLines + ' log lines): ' + (b3.length? 'NOT on screen: ' + b3.map(([k]) => k).join(', ') : 'everything still on screen') + ', stage ' + (F.stage.blank? 'one flat colour' : 'shows the ground') + (F.layout.badge? ', badge still showing "' + F.layout.badge.text + '"' : ', no badge') + (F.afterTurn? ', after a turn ' + (F.afterTurn.stage.blank? 'BLANK' : 'painted') : '') + ', match column scrolls: ' + (F.layout.mainScrolls? 'yes, by ' + F.layout.mainOverflow + ' px' : 'no'));
+    if (F.stage.blank || F.layout.badge || (F.afterTurn && F.afterTurn.stage.blank)) hard++;
     if (r.errors.length) line('  page errors: ' + r.errors.slice(0, 3).join(' | '));
   }
-  line('\n' + (hard? hard + ' REQUIRED CONTROL PROBLEMS' : 'NO REQUIRED CONTROL IS MISSING OR CLIPPED') + '   (details in ' + path.join(OUT, 'audit.json') + ')');
+  line('\n' + (hard? hard + ' PROBLEMS' : 'ALL VIEWPORT CHECKS PASSED') + '   (details in ' + path.join(OUT, 'audit.json') + ')');
   process.exit(hard? 1 : 0);
 })();

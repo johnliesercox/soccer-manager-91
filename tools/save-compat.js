@@ -1,11 +1,16 @@
-// Saved-game compatibility across the real update path: the live 1.5.0 site is served over http, games are started and
+// Saved-game compatibility across the real update path: the last release is served over http, games are started and
 // played through its own screens (a single manager and a three-manager hot-seat), saved to slots and to the autosave; then
-// the 1.6.0 files replace them at the same addresses, the page is reloaded (the service worker revalidates and swaps its
+// the new build's files replace them at the same addresses, the page is reloaded (the service worker revalidates and swaps its
 // cache), and every save is resumed and played on. Facts about each game are compared before and after.
-//   node tools/save-compat.js legacy/release-1.5.0 .        (after python3 build.py: the repo root holds the new index.html and sw.js)
+//   node tools/save-compat.js legacy/release-1.6.0 .        (after python3 build.py: the repo root holds the new index.html and sw.js)
+// The two version numbers and service worker cache names are read from the files served, so the tool needs no editing per release.
 // Needs playwright (npm install playwright) and its Chromium.
 const { chromium } = require('playwright'); const path = require('path'); const fs = require('fs'); const http = require('http');
 const [OLD, NEW] = process.argv.slice(2);
+const versionOf = dir => (/APP_VERSION = '([^']+)'/.exec(fs.readFileSync(path.join(dir, 'index.html'), 'utf8')) || [])[1];
+const cacheOf = dir => (/VERSION = '([^']+)'/.exec(fs.readFileSync(path.join(dir, 'sw.js'), 'utf8')) || [])[1];
+const OV = versionOf(OLD), NV = versionOf(NEW), OC = cacheOf(OLD), NC = cacheOf(NEW);
+if (!OV || !NV || !OC || !NC || OV === NV || OC === NC){ console.log('cannot compare: old ' + OV + ' (' + OC + '), new ' + NV + ' (' + NC + '); the two must differ in version and in cache name'); process.exit(1); }
 let serveDir = OLD;
 const MIME = { '.html': 'text/html', '.js': 'application/javascript', '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.json': 'application/json' };
 const server = http.createServer((req, res) => {
@@ -55,29 +60,29 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     if (await has('[data-a="nextround"]')) await click('[data-a="nextround"]', 300);
   };
 
-  // ---------- 1.5.0 ----------
-  console.log('serving 1.5.0 from', OLD, 'at', URL);
-  await page.goto(URL); await sleep(600); let a = await app(); ok(a.version === '1.5.0', 'the old site is 1.5.0 (' + a.version + ')');
+  // ---------- the last release ----------
+  console.log('serving ' + OV + ' from', OLD, 'at', URL);
+  await page.goto(URL); await sleep(600); let a = await app(); ok(a.version === OV, 'the old site is ' + OV + ' (' + a.version + ')');
   await startGame(['John']);
   for (let w = 0; w < 3; w++) await playWeek('instant');
-  const single150 = await facts(); ok(single150 && single150.week === 4, 'single game played to week 4 on 1.5.0 (week ' + (single150 && single150.week) + ')');
-  await saveSlot('single on 1.5');
+  const single150 = await facts(); ok(single150 && single150.week === 4, 'single game played to week 4 on ' + OV + ' (week ' + (single150 && single150.week) + ')');
+  await saveSlot('single, last release');
   await startGame(['Ann', 'Bob', 'Cat']); await hotseatRound(1); await hotseatRound(-1);
-  const multi150 = await facts(); ok(multi150 && multi150.mgrs.length === 3 && multi150.week === 3, 'hot-seat game played two rounds on 1.5.0 (week ' + (multi150 && multi150.week) + ', ' + (multi150 && multi150.mgrs.length) + ' managers)');
-  await saveSlot('hot-seat on 1.5');
+  const multi150 = await facts(); ok(multi150 && multi150.mgrs.length === 3 && multi150.week === 3, 'hot-seat game played two rounds on ' + OV + ' (week ' + (multi150 && multi150.week) + ', ' + (multi150 && multi150.mgrs.length) + ' managers)');
+  await saveSlot('hot-seat, last release');
   const slots150 = await page.evaluate(() => JSON.parse(localStorage.getItem('sm91-slots') || '[]').map(s => s.name));
-  ok(slots150.length === 2, 'two slots saved on 1.5.0: ' + slots150.join(', '));
+  ok(slots150.length === 2, 'two slots saved on ' + OV + ': ' + slots150.join(', '));
   const sw150 = await page.evaluate(async () => (await caches.keys()).join(','));
-  ok(sw150.includes('sm91-v1.5.0'), 'service worker cache on 1.5.0: ' + sw150);
-  ok(errors.length === 0, 'no page errors on 1.5.0' + (errors.length? ': ' + errors.slice(0, 2).join(' | ') : ''));
+  ok(sw150.includes(OC), 'service worker cache on ' + OV + ': ' + sw150);
+  ok(errors.length === 0, 'no page errors on ' + OV + (errors.length? ': ' + errors.slice(0, 2).join(' | ') : ''));
 
-  // ---------- the update: the same addresses now serve 1.6.0 ----------
-  serveDir = NEW; console.log('now serving 1.6.0 from', NEW);
+  // ---------- the update: the same addresses now serve the new build ----------
+  serveDir = NEW; console.log('now serving ' + NV + ' from', NEW);
   await page.goto(URL); await sleep(1500);
-  a = await app(); ok(a.version === '1.6.0', 'the page is 1.6.0 after the swap (' + a.version + ')');
+  a = await app(); ok(a.version === NV, 'the page is ' + NV + ' after the swap (' + a.version + ')');
   // the service worker update: a reload or two for the new worker to install, activate and drop the old cache
-  let swKeys = ''; for (let i = 0; i < 6; i++){ swKeys = await page.evaluate(async () => (await caches.keys()).join(',')); if (swKeys.includes('sm91-v1.6.0') && !swKeys.includes('sm91-v1.5.0')) break; await page.reload(); await sleep(1500); }
-  ok(swKeys.includes('sm91-v1.6.0') && !swKeys.includes('sm91-v1.5.0'), 'service worker cache after the update: ' + swKeys);
+  let swKeys = ''; for (let i = 0; i < 6; i++){ swKeys = await page.evaluate(async () => (await caches.keys()).join(',')); if (swKeys.includes(NC) && !swKeys.includes(OC)) break; await page.reload(); await sleep(1500); }
+  ok(swKeys.includes(NC) && !swKeys.includes(OC), 'service worker cache after the update: ' + swKeys);
   const ttl = await text(); ok(/What's new \(updated\)/.test(ttl) || /updated/i.test(ttl), 'title screen flags What\'s new as updated');
   ok(/Continue current game/.test(ttl) && /Load a saved game/.test(ttl), 'title offers Continue and Load after the update');
   const slots160 = await page.evaluate(() => JSON.parse(localStorage.getItem('sm91-slots') || '[]').map(s => s.name));
@@ -86,22 +91,22 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await click('[data-a="continue"]', 500);
   const same = (a, b, what) => { const bad = Object.keys(a).filter(k => JSON.stringify(a[k]) !== JSON.stringify(b[k])); ok(bad.length === 0, what + (bad.length? ' differs in ' + bad.map(k => k + ': ' + JSON.stringify(a[k]).slice(0, 120) + ' -> ' + JSON.stringify(b[k]).slice(0, 120)).join('; ') : '')); };
   const multi160 = await facts(); same(multi150, multi160, 'hot-seat autosave identical after the update');
-  await hotseatRound(0); const multiOn = await facts(); ok(multiOn.week === multi150.week + 1 && multiOn.mgrs.length === 3, 'hot-seat game plays on under 1.6.0 (week ' + multiOn.week + ')');
+  await hotseatRound(0); const multiOn = await facts(); ok(multiOn.week === multi150.week + 1 && multiOn.mgrs.length === 3, 'hot-seat game plays on under ' + NV + ' (week ' + multiOn.week + ')');
   // the single-manager slot
   await page.goto(URL); await sleep(800); await click('[data-a="saves"]', 300);
-  const id = await page.evaluate(() => JSON.parse(localStorage.getItem('sm91-slots') || '[]').find(s => s.name === 'single on 1.5').id);
+  const id = await page.evaluate(() => JSON.parse(localStorage.getItem('sm91-slots') || '[]').find(s => s.name === 'single, last release').id);
   await click(`[data-a="loadslot"][data-i="${id}"]`, 600);
   const single160 = await facts(); same(single150, single160, 'single-manager slot identical after the update');
-  await playWeek('watch'); const singleOn = await facts(); ok(singleOn.week === single150.week + 1, 'single game plays on under 1.6.0 with a watched match (week ' + singleOn.week + ')');
+  await playWeek('watch'); const singleOn = await facts(); ok(singleOn.week === single150.week + 1, 'single game plays on under ' + NV + ' with a watched match (week ' + singleOn.week + ')');
   const view = await page.evaluate(() => (window.__sm91.S.md && window.__sm91.S.md.viewer && window.__sm91.S.md.viewer.renderer && window.__sm91.S.md.viewer.renderer.id) || (window.Matchday && window.Matchday.isoDefaultStyle));
   ok(true, 'match viewer drew with ' + view + ' (default style ' + (await page.evaluate(() => window.Matchday.isoDefaultStyle)) + ')');
   // the hot-seat slot too
   await page.goto(URL); await sleep(800); await click('[data-a="saves"]', 300);
-  const id2 = await page.evaluate(() => JSON.parse(localStorage.getItem('sm91-slots') || '[]').find(s => s.name === 'hot-seat on 1.5').id);
+  const id2 = await page.evaluate(() => JSON.parse(localStorage.getItem('sm91-slots') || '[]').find(s => s.name === 'hot-seat, last release').id);
   await click(`[data-a="loadslot"][data-i="${id2}"]`, 600);
   const multiSlot = await facts(); same(multi150, multiSlot, 'hot-seat slot identical after the update');
-  await hotseatRound(2); const multiSlotOn = await facts(); ok(multiSlotOn.week === multi150.week + 1, 'hot-seat slot plays on under 1.6.0 with a watched match (week ' + multiSlotOn.week + ')');
-  ok(errors.length === 0, 'no page errors on 1.6.0' + (errors.length? ': ' + errors.slice(0, 3).join(' | ') : ''));
+  await hotseatRound(2); const multiSlotOn = await facts(); ok(multiSlotOn.week === multi150.week + 1, 'hot-seat slot plays on under ' + NV + ' with a watched match (week ' + multiSlotOn.week + ')');
+  ok(errors.length === 0, 'no page errors on ' + NV + (errors.length? ': ' + errors.slice(0, 3).join(' | ') : ''));
   await browser.close(); server.close();
   console.log(`${checks} checks, ${fails} failures`); console.log(fails? 'SAVE COMPATIBILITY FAILED' : 'SAVE COMPATIBILITY OK'); process.exit(fails? 1 : 0);
 })().catch(e => { console.log('ERROR', e.message); process.exit(2); });
