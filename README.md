@@ -70,7 +70,7 @@ Open it on your phone. In Safari tap Share > **Add to Home Screen**; in Chrome o
 ## Releasing an update
 
 1. Set `APP_VERSION` in `ui.html` and add the release's entry at the top of `CHANGELOG` (the What's new screen), set `VERSION` in `sw.js` to `sm91-v<version>`, run `python3 build.py`.
-2. Run the suites (the list above) and `node tools/save-compat.js legacy/release-1.5.0 .`, which plays games on the last release and resumes them on the new build.
+2. Run the suites (the list above) and `node tools/save-compat.js legacy/release-1.5.0 .`, which plays games on the last release and resumes them on the new build. `node tools/viewport-audit.js . out` watches a match in the Isometric view at the five viewport sizes of the Phase 3 brief and reports controls, touch targets, selection and rotation, with screenshots (both tools need playwright).
 3. Tag the commit that is live before uploading anything (GitHub: Releases, "Draft a new release", a new tag such as `v1.5.0` on `main`), so there is always a named copy to go back to. `ROLLBACK.md` says how.
 4. Upload the new files over the old ones (same drag and drop) and commit. Players get the new version the next time they open the game online; their saves carry over because the game migrates old save formats and never clears storage. The `VERSION` string in `sw.js` makes installed phones refresh their offline copy too.
 
