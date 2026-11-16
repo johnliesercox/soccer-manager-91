@@ -250,7 +250,7 @@
         if (st.endHold >= opts.endHold){ finish(); return; }
       } else {
         const seg = segAt(st.matchSecond);
-        if (seg!==curSeg){ if (curSeg && curSeg.ff) st.sinceCut = 0; curSeg = seg; segVisual = 0; }   // a cut when a fast-forward ends
+        if (seg!==curSeg){ if (curSeg && curSeg.ff) st.sinceCut = 0; curSeg = seg; segVisual = 0; st.segA = seg.a; st.segB = seg.b; st.segFF = !!seg.ff; }   // a cut when a fast-forward ends
         st.fastForward = seg.ff;
         let adv = seg.rate * st.speed * dt;
         // do not let one real frame leap over a segment boundary at the wrong rate
@@ -270,7 +270,7 @@
       pause(){ if (!st.playing) return; st.playing = false; if (raf){ root.cancelAnimationFrame(raf); raf = 0; } emit('onState', st); },
       toggle(){ if (st.playing) pb.pause(); else pb.play(); },
       setSpeed(x){ st.speed = [1,2,4].includes(x)? x : 1; emit('onState', st); },
-      seek(s){ s = Math.max(0, Math.min(finalSecond, s)); st.matchSecond = s; st.sceneSecond = s; curSeg = null; st.sinceCut = 0 /* a seek is a cut */; st.endHold = 0; syncEventIndex(s); syncLineIndex(s); if (s>=finalSecond && !st.ended){ st.ended = true; st.playing = false; emit('onEnd', st); } else if (st.ended && s<finalSecond){ st.ended = false; } emit('onFrame', st.matchSecond, st); emit('onState', st); },
+      seek(s){ s = Math.max(0, Math.min(finalSecond, s)); st.matchSecond = s; st.sceneSecond = s; curSeg = null; st.sinceCut = 0 /* a seek is a cut */; st.endHold = 0; { const sg = segAt(s); if (sg){ st.segA = sg.a; st.segB = sg.b; st.segFF = !!sg.ff; } } syncEventIndex(s); syncLineIndex(s); if (s>=finalSecond && !st.ended){ st.ended = true; st.playing = false; emit('onEnd', st); } else if (st.ended && s<finalSecond){ st.ended = false; } emit('onFrame', st.matchSecond, st); emit('onState', st); },
       skip(){ pb.pause(); st.matchSecond = finalSecond; finish(); },   // the official events still to come are emitted so the log is complete
       replay(){ st.ended = false; st.endHold = 0; st.matchSecond = 0; st.sceneSecond = 0; curSeg = null; syncEventIndex(0); nextLine = 0; emit('onState', st); emit('onFrame', 0, st); pb.play(); },
       state(){ return Object.assign({}, st); },

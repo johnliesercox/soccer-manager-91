@@ -19,11 +19,16 @@
   // the Isometric view (Phase 3 art direction) is the default; the others stay a tap away on the View button. Views that
   // need art the build does not ship (Iso A when only style B is inlined) are left out of the cycle.
   const DEFAULT_VIEW = 'isometric';
-  const VIEW_ORDER = ['isometric', 'pixelart', 'isometric-a', 'isometric-proc', 'canvas2d', 'wireframe'];
+  const VIEW_ORDER = ['isometric', 'isometric-f', 'pixelart', 'isometric-a', 'isometric-c', 'isometric-d', 'isometric-e', 'isometric-proc', 'canvas2d', 'wireframe'];   // F right after Iso: a review build that inlines F compares it with the default one tap apart
   // views in the cycle: style A only when its assets are in the build, the generated-figure isometric (a Milestone 2 debug view) only with ?dev
   const dev = () => { try { return /[?&]dev\b/.test(root.location.search||''); } catch(e){ return false; } };
-  const shipped = id => id==='isometric-proc'? dev() : id!=='isometric-a' || !MD.isoAssetData || Object.keys(MD.isoAssetData).some(k => k.indexOf('A/')===0);
-  const getView = () => { try { const v = root.localStorage.getItem(VIEW_KEY); return (v && MD.renderers[v] && shipped(v))? v : DEFAULT_VIEW; } catch(e){ return DEFAULT_VIEW; } };
+  const inBuild = st => !MD.isoAssetData || Object.keys(MD.isoAssetData).some(k => k.indexOf(st+'/')===0);
+  const RND = { 'isometric-c': 'C', 'isometric-d': 'D', 'isometric-e': 'E', 'isometric-f': 'F' };      // the visual R&D styles: ?dev and in the build
+  // the R&D views show under ?dev, or in a review build (one that names a default style) so the comparison is a button away
+  const shipped = id => id==='isometric-proc'? dev() : RND[id]? ((dev() || !!MD.isoDefaultStyle) && !!MD.isoAssetData && inBuild(RND[id]) && RND[id]!==MD.isoDefaultStyle) : id!=='isometric-a' || inBuild('A');
+  // ?view=<renderer id> on the address picks the view once on arrival (a review aid); the camera button cycles from there as usual
+  const urlView = () => { try { const v = new URLSearchParams(root.location.search||'').get('view'); return (v && MD.renderers[v] && shipped(v))? v : null; } catch(e){ return null; } };
+  const getView = () => { try { const u = urlView(); if (u && !getView._applied){ getView._applied = true; setView(u); } const v = root.localStorage.getItem(VIEW_KEY); return (v && MD.renderers[v] && shipped(v))? v : DEFAULT_VIEW; } catch(e){ return DEFAULT_VIEW; } };
   const setView = v => { try { root.localStorage.setItem(VIEW_KEY, v); } catch(e){} };
   const reducedMotion = () => !!(root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
@@ -93,6 +98,8 @@
     mountRenderer(getView());
     const us = C.user(); const usHome = pres.teams.home.clubId===us.id;
     const log = C.$('#md-log'), comm = C.$('#md-comm');
+    let badgeTimer = null;
+    const badge = (html, ms) => { const b = C.$('#md-badge'); if (!b) return; b.innerHTML = html; b.hidden = false; if (badgeTimer) clearTimeout(badgeTimer); badgeTimer = setTimeout(() => { b.hidden = true; }, ms); };
     const lineFor = (e, score) => {
       const team = e.teamId===pres.teams.home.id? pres.teams.home : e.teamId===pres.teams.away.id? pres.teams.away : null;
       const ours = team && team.clubId===us.id;
@@ -122,7 +129,7 @@
         if (v.reduced && now - v.lastDraw < 200 && !state.ended) return;
         v.lastDraw = now;
         const s = scene.getSceneAt(state.sceneSecond===undefined? sec : state.sceneSecond);   // the picture
-        if (v.renderer) v.renderer.render(s, { fastForward: state.fastForward, speed: state.speed, reducedMotion: v.reduced, sinceCut: state.sinceCut });
+        if (v.renderer) v.renderer.render(s, { fastForward: state.fastForward, speed: state.speed, reducedMotion: v.reduced, sinceCut: state.sinceCut, segment: (state.segA!==undefined && !state.segFF)? { a: state.segA, b: state.segB } : null });
         board(scene.getSceneAt(sec), s, state.fastForward);                                     // the clock and score (the clock races during a fast-forward)
       },
       onLine: (l) => { if (comm) comm.textContent = l.text; },
@@ -130,6 +137,12 @@
         const s = scene.getSceneAt(e.matchSecond);
         const line = lineFor(e, s.score);
         if (line && log){ log.insertAdjacentHTML('beforeend', `<div class="${line.cls}">${line.html}</div>`); log.scrollTop = log.scrollHeight; }
+        // a badge over the picture for the moments that must not be missed: a card (with its colour) and a goal
+        if (e.type===EV.CARD || e.type===EV.GOAL){
+          const team = e.teamId===pres.teams.home.id? pres.teams.home : pres.teams.away;
+          const html = e.type===EV.CARD? `<span class="sw ${e.card==='red'? 'red' : 'yel'}"></span>${e.card==='red'? 'RED CARD' : 'BOOKED'}  ${C.esc(e.playerName||'')}` : `GOAL!  ${C.esc(e.playerName||team.short)}  ${s.score.home} - ${s.score.away}`;
+          badge(html, e.type===EV.CARD? 4200 : 3600);
+        }
         if (e.type===EV.GOAL) MD.audio.goal();
         else if (e.type===EV.KICK_OFF || e.type===EV.SECOND_HALF || e.type===EV.ET_START) MD.audio.whistle('start');
         else if (e.type===EV.HALF_TIME || e.type===EV.ET_HALF || e.type===EV.ET_END) MD.audio.whistle('half');
@@ -140,9 +153,19 @@
       onState: (state) => { const b = C.$('#md-play'); if (b) b.textContent = state.playing? 'Pause' : (state.ended? 'Ended' : 'Play'); for (const x of [1,2,4]){ const sb = C.$('#md-speed-'+x); if (sb) sb.classList.toggle('on', state.speed===x); } },
       onEnd: () => { v.done = true; MD.audio.stop(); const act = C.$('#act'); if (act) act.innerHTML = `<button class="b" data-a="md-fulltime">Full time</button>`; },
     });
-    MD.audio.start();
-    v.playback.play();
-    if (C.Track) C.Track.send('match_watched', { competition: pres.competition.kind, extra: pres.official.extra||'none', view: getView(), reduced_motion: v.reduced, build_ms: v.stat.buildMs });
+    // the painted art must have decoded before the clock starts (normally it has, preloaded at boot): until then the
+    // renderer draws its holding frame and nothing generated stands in for the painted players; six seconds at most
+    const go = () => {
+      if (S.md.viewer!==v || v.started) return; v.started = true;
+      MD.audio.start();
+      // review aid: ?t=1640 opens the first match watched at that match second (once), so an incident can be found again
+      try { const q = new URLSearchParams(root.location.search||''); const tq = q.get('t'); if (tq!==null && isFinite(+tq) && !MD.ui._seeked){ MD.ui._seeked = true; v.playback.seek(Math.max(0, +tq)); } } catch(e){}
+      v.playback.play();
+      if (C.Track) C.Track.send('match_watched', { competition: pres.competition.kind, extra: pres.official.extra||'none', view: getView(), reduced_motion: v.reduced, build_ms: v.stat.buildMs });
+    };
+    const ready = (v.renderer && typeof v.renderer.ready==='function')? v.renderer.ready() : null;
+    if (!ready || (v.renderer.isReady && v.renderer.isReady())) go();
+    else { if (comm) comm.textContent = 'Preparing the ground...'; const cap = root.setTimeout(go, 6000); ready.then(() => { root.clearTimeout(cap); if (comm && comm.textContent==='Preparing the ground...') comm.textContent = ''; go(); }, () => go()); }
   }
   function mountRenderer(id){
     const v = C.S.md && C.S.md.viewer; if (!v) return;
@@ -185,7 +208,7 @@
         const sound = MD.audio.enabled;
         return { main: `<div class="md-wrap"><div class="md-board"><span class="t ${usH?'hot':''}">${esc(p.teams.home.short)}</span><span class="s" id="md-score" aria-live="polite">0 - 0</span><span class="t a ${!usH?'hot':''}">${esc(p.teams.away.short)}</span></div>
           <div class="md-clock" id="md-clock">00:00  Kick-off</div>
-          <div class="md-stage" id="md-stage"></div>
+          <div class="md-stage" id="md-stage"><div class="md-badge" id="md-badge" hidden aria-live="polite"></div></div>
           <div class="md-controls2"><button class="b quiet" data-a="md-camera" id="md-camera">Camera</button><button class="b quiet" data-a="md-view" id="md-view">View</button><button class="b quiet" data-a="md-sound" id="md-sound" aria-pressed="${sound}">Sound: ${sound? 'on' : 'off'}</button></div>
           <div class="md-comm" id="md-comm" aria-live="polite" role="status">${esc(compLabel(S.md.queue[0].m, S.results.week))}${p.official.attendance? ' Attendance '+E.fmt(p.official.attendance)+'.' : ''}</div>
           <div class="md-log" id="md-log" aria-label="Match events"></div></div>`,
@@ -235,6 +258,11 @@
     if (e.key===' '){ e.preventDefault(); act('md-play', {}); }
     else if (e.key==='s' || e.key==='S') act('md-skip', {});
     else if (e.key==='1' || e.key==='2' || e.key==='4') act('md-speed', { s: e.key });
+    // review keys (keyboards only): , and . step 15 s; g, c, k, h, w jump to a few seconds before the next goal, card, save, header or volley, woodwork
+    else if (e.key===',' || e.key==='.'){ const v = S.md.viewer; const st = v.playback.state(); v.playback.seek(Math.max(0, st.matchSecond + (e.key===','? -15 : 15))); }
+    else if ('gckhw'.indexOf(e.key) >= 0 && S.md.viewer.pres){ const v = S.md.viewer; const st = v.playback.state(); const now = st.matchSecond + 1;
+      const want = e.key==='g'? x => x.type===EV.GOAL : e.key==='c'? x => x.type===EV.CARD : e.key==='k'? x => x.type===EV.SHOT_SAVED : e.key==='w'? x => x.type===EV.SHOT_POST : x => (x.technique==='header' || x.technique==='volley') && (x.type===EV.SHOT_SAVED || x.type===EV.SHOT_WIDE || x.type===EV.GOAL || x.type===EV.SHOT_POST || x.type===EV.SHOT_BLOCKED || x.type===EV.CLEARANCE);
+      const next = v.pres.events.find(x => x.matchSecond > now + 3 && want(x)); if (next) v.playback.seek(Math.max(0, next.matchSecond - 5)); }
   }
 
   function install(ctx){

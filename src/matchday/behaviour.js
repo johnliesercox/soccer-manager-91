@@ -69,7 +69,7 @@
     // Nobody presses a dead ball lying in the net: the beaten keeper fetches it (set-piece window).
     let press = -1, cover = -1, best = 1e9, second = 1e9;
     const distBall = i => dm(pos[i].x, pos[i].y, ball.x, ball.y);
-    const inNet = ball.state==='dead' && (ball.x < 0.005 || ball.x > 0.995);
+    const inNet = ball.state==='dead' && (ball.x < 0.005 || ball.x > 0.995 || (ball.from && ball.from.out));   // or dead beyond a line after a miss
     for (let i=0;i<n;i++){ const pl = players[i]; if (inNet || pl.teamId!==D || ctx.roleAt(i, t)==='GK' || ctx.offAtIdx(i, t)) continue; const d = distBall(i); if (d < best){ second = best; cover = press; best = d; press = i; } else if (d < second){ second = d; cover = i; } }
     if (!inNet && mem.press!==undefined && mem.press>=0 && mem.press!==press && players[mem.press].teamId===D && !ctx.offAtIdx(mem.press, t) && distBall(mem.press) < best + 3){ if (cover===mem.press) cover = press; press = mem.press; }
     if (!inNet && mem.cover!==undefined && mem.cover>=0 && mem.cover!==cover && mem.cover!==press && players[mem.cover].teamId===D && !ctx.offAtIdx(mem.cover, t) && distBall(mem.cover) < second + 3) cover = mem.cover;
@@ -83,15 +83,24 @@
       let tx, ty, band = BAND.JOG, role = 'shape';
       if (ctx.offAtIdx(i, t)){ const spot = ctx.offSpot(pl.id); tx = spot.x; ty = spot.y; band = BAND.JOG; role = 'off'; }
       else if (win && win.targets[pl.id]){ const tg = win.targets[pl.id]; tx = tg.x; ty = tg.y; band = win.band && win.band[pl.id]? win.band[pl.id] : BAND.RUN; role = 'setPiece'; }
+      else if (ball.placed && ball.carrier!==pl.id && ball.from && (ball.from.cut || ball.from.t===0) && !(ball.to && ctx.keys[ball.to.idx+1] && ctx.keys[ball.to.idx+1].carrier===pl.id)){ tx = pos[i].x; ty = pos[i].y; band = BAND.STILL; role = 'set'; }   // a kick-off being placed: nobody but the taker and the man he plays it to moves until it is taken
       else if (ball.carrier===pl.id){
         // he runs with the ball a quarter of a second ahead of him; never past the point he strikes it from, and in the
         // last half second before the strike he drops behind the ball so that his kicking foot (or head) meets it
         const k1 = ball.to; const launching = !!(k1 && k1.kind==='launch' && k1.carrier===pl.id);
         const ahead = ctx.ballAt(launching? Math.min(t + 0.25, k1.t - 0.02) : t + 0.25); tx = ahead.x; ty = ahead.y; band = BAND.SPRINT; role = 'carrier';
         // in the last second he heads for the spot he strikes from (a fixed target, so he brakes to arrive on it)
-        if (launching && k1.sox!==undefined && k1.t - t < 1.0){ tx = k1.x + k1.sox; ty = k1.y + k1.soy; }
+        const still = launching && ball.from && dm(ball.from.x, ball.from.y, k1.x, k1.y) < 0.3;   // a restart, or a ball he strikes from where he got it
+        if (launching && k1.sox!==undefined && (k1.t - t < 1.0 || still)){ tx = k1.x + k1.sox; ty = k1.y + k1.soy; if (still) band = BAND.RUN; }
       }
-      else if (ball.state==='loose' && ball.from && ball.from.carrier===pl.id){ tx = ball.x; ty = ball.y; band = BAND.RUN; role = 'receiver'; }   // the loose ball is his to collect
+      // the man who has just struck it holds his follow-through for a moment rather than sprinting off at the instant of
+      // the kick (the plan for the launch tick would otherwise move him before the ball has left his foot)
+      else if (ball.inFlight && ball.from && ball.from.carrier===pl.id && t - ball.from.t < 0.45){ tx = pos[i].x; ty = pos[i].y; band = BAND.WALK; role = 'carrier'; }
+      else if (ball.state==='loose' && ball.from && ball.from.carrier===pl.id){
+        // the loose ball is his to collect; after a tackle or a block he finishes the challenge where he made it first
+        if ((ball.from.tackle || ball.from.block) && t - ball.from.t < 0.3){ tx = pos[i].x; ty = pos[i].y; band = BAND.WALK; role = 'carrier'; }
+        else { tx = ball.x; ty = ball.y; band = BAND.RUN; role = 'receiver'; }
+      }
       else {
         const take = nextTake(i);
         if (take && take.t - t < 9){
@@ -120,13 +129,24 @@
           } else { tx = sx; ty = sy; band = BAND.JOG; role = 'shape'; }
         }
       }
-      o.x = clamp(tx, 0.005, 0.995); o.y = role==='off'? ty : clamp(ty, 0.005, 0.995); o.band = band; o.role = role;
+      o.x = clamp(tx, -0.008, 1.008); o.y = role==='off'? ty : clamp(ty, -0.012, 1.012); o.band = band; o.role = role;   // a stride beyond the lines is allowed: a corner taker stands off the pitch
     }
     // referee: behind play, a little inside, never within four metres of the ball
     const attDir = P===H? dirH : dirA;
     let rx = ball.x - attDir*0.07, ry = ball.y + (0.5 - ball.y)*0.35;
     const dr = dm(rx, ry, ball.x, ball.y); if (dr < 4){ const u = dr>1e-6? 4/dr : 0; rx = ball.x + (rx-ball.x)*u; ry = ball.y + (ry-ball.y)*u; if (dr<1e-6){ rx = ball.x; ry = ball.y + 4/PY; } }
-    out.ref.x = clamp(rx, 0.02, 0.98); out.ref.y = clamp(ry, 0.02, 0.98); out.ref.band = BAND.RUN; out.ref.role = 'ref';
+    const behind = pos.ref? dm(pos.ref.x, pos.ref.y, ball.x, ball.y) : 0;
+    out.ref.x = clamp(rx, 0.02, 0.98); out.ref.y = clamp(ry, 0.02, 0.98); out.ref.band = behind > 20? BAND.SPRINT : BAND.RUN; out.ref.role = 'ref';   // left well behind by a long ball: he sprints
+    // a foul: the offender runs at the man on the ball and goes in on him where the ball is
+    const foul = ctx.foulAt? ctx.foulAt(t) : null;
+    if (foul){
+      const fi = ctx.index[foul.playerId]; const fp = pos[fi];
+      if (fp){ const o = out[fi]; const d = dm(fp.x, fp.y, foul.x, foul.y); const u = d > 1e-6? Math.min(1, Math.max(0, (d - 0.75)/d)) : 0;
+        o.x = fp.x + (foul.x - fp.x)*u; o.y = fp.y + (foul.y - fp.y)*u; o.band = t < foul.t? BAND.SPRINT : BAND.WALK; o.role = 'press'; }
+      if (foul.victimId!==null && foul.victimId!==undefined && t >= foul.t){ const vi = ctx.index[foul.victimId]; const vp = pos[vi]; if (vp){ const o = out[vi]; o.x = vp.x; o.y = vp.y; o.band = BAND.WALK; o.role = 'set'; } }
+      // the whistle has gone: the referee makes straight for the offender
+      if (fp && t >= foul.t){ const side = fp.y < 0.5? 1 : -1; out.ref.x = clamp(fp.x + 0.6/PX, 0.02, 0.98); out.ref.y = clamp(fp.y + side*1.4/PY, 0.02, 0.98); out.ref.band = BAND.SPRINT; }
+    }
     // a booking: the referee goes to the offender and shows him the card from a metre and a half; the offender stands for it
     const card = ctx.cardAt? ctx.cardAt(t) : null;
     if (card){
@@ -134,7 +154,7 @@
       if (bp){
         const o = out[bi]; o.x = bp.x; o.y = bp.y; o.band = BAND.WALK; o.role = 'set';
         const side = bp.y < 0.5? 1 : -1;                   // the referee stands on the inside of him, towards the centre
-        out.ref.x = clamp(bp.x + 0.6/PX, 0.02, 0.98); out.ref.y = clamp(bp.y + side*1.4/PY, 0.02, 0.98); out.ref.band = BAND.RUN;
+        out.ref.x = clamp(bp.x + 0.6/PX, 0.02, 0.98); out.ref.y = clamp(bp.y + side*1.4/PY, 0.02, 0.98); out.ref.band = (pos.ref && dm(pos.ref.x, pos.ref.y, bp.x, bp.y) > 6)? BAND.SPRINT : BAND.RUN;
       }
     }
     out.press = press; out.cover = cover; out.possession = P; out.ball = ball;

@@ -90,7 +90,10 @@ input{width:100%;font:inherit;padding:12px;background:var(--white);color:var(--b
 .md-board .t.a{text-align:right}
 .md-board .s{font-size:30px;color:var(--orange);padding:0 10px;white-space:nowrap}
 .md-clock{text-align:center;color:var(--grey);font-size:13px;margin-bottom:6px;white-space:pre}
-.md-stage{height:min(64vh,560px);background:#1E5F2A;box-shadow:inset 2px 2px 0 var(--black),inset -2px -2px 0 var(--white);margin-bottom:6px;overflow:hidden}
+.md-stage{position:relative;height:min(64vh,560px);background:#1E5F2A;box-shadow:inset 2px 2px 0 var(--black),inset -2px -2px 0 var(--white);margin-bottom:6px;overflow:hidden}
+.md-badge{position:absolute;left:8px;top:8px;z-index:2;pointer-events:none;background:rgba(0,0,0,.78);color:var(--white);font-size:13px;line-height:1;padding:7px 10px;white-space:pre;box-shadow:inset 1px 1px 0 var(--white),1px 1px 0 var(--black)}
+.md-badge .sw{display:inline-block;width:9px;height:13px;vertical-align:-2px;margin-right:7px;border:1px solid var(--black)}
+.md-badge .sw.yel{background:#f5d327}.md-badge .sw.red{background:#e0261c}
 @media (orientation:landscape) and (max-height:500px){.md-stage{height:min(52vh,300px)}}
 @media (min-width:600px) and (min-height:501px){.md-stage{height:min(64vh,400px)}}
 @media (min-width:900px) and (min-height:600px){body.md-wide #app{max-width:1240px} body.md-wide main{padding-bottom:12px} body.md-wide .md-wrap{display:grid;grid-template-columns:minmax(0,1fr) 300px;grid-template-rows:auto auto auto minmax(0,1fr) auto;column-gap:12px;height:100%;max-height:820px} body.md-wide .md-board,body.md-wide .md-clock{grid-column:1/3} body.md-wide .md-board{font-size:20px} body.md-wide .md-stage{grid-column:1;grid-row:3/6;height:auto;min-height:420px;margin-bottom:0} body.md-wide .md-comm{grid-column:2;grid-row:3;margin-bottom:0} body.md-wide .md-log{grid-column:2;grid-row:4;max-height:none;min-height:0;overflow-y:auto} body.md-wide .md-controls2{grid-column:2;grid-row:5;grid-template-columns:1fr;margin-top:0;align-self:end}}
@@ -130,8 +133,16 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const money = n => (n<0?'-':'')+'£'+E.fmt(Math.abs(n));
 const SAVE_KEY = 'sm91-save';
-const APP_VERSION = '1.5.0';
+const APP_VERSION = '1.6.0';
 const CHANGELOG = [
+  { v:'1.6.0', when:'November 2026', notes:[
+    'New matchday artwork. The footballers are painted figures with real volume now: the same body in the same light from every angle, in your kit colours, with short, cropped and long hair, keepers in gloves, and the referee. Every running, turning, kicking, heading, diving and celebrating frame was repainted; no pose was left out.',
+    'A proper crowd. The stands and terraces are packed with painted supporters in winter coats, hats and scarves, shoulders, arms and children among them, a few arms raised, seated rows under the main stand roof, with the corner terraces and towers to match.',
+    'Real goals. Round posts and crossbar, steel stanchions and a back rail, nets that sag like nets and cast a shadow on the grass, and a back net that bulges where the ball goes in.',
+    'Football that follows the rules behind the goal. A shot that goes wide or over is now a goal kick, or a corner if a defender touched it last; the ball is dead the moment it crosses the line and nobody plays on with it.',
+    'Players run when they move. Nobody slides across the turf standing still any more: a man receiving, celebrating, protesting or being booked runs into position first, and the stride no longer breaks when the camera cuts.',
+    'The painted art is ready before the first whistle, so the match no longer opens on the old figures for a second or two.',
+  ]},
   { v:'1.5.0', when:'November 2026', notes:[
     'Isometric matchday. Matches are now watched from a raised corner of a small early-nineties ground: painted stands and terraces, dugouts and advertising boards, and hand-painted sixteen-bit footballers in your kit colours who run, turn, pass, shoot, head the ball, volley, slide, block and dive in eight directions. Tap Camera for the close view or the whole pitch; the pixel-art view, the marker pitch and the tactics board are still there under View.',
     'Highlights worth watching. Instead of passing sequences, each match shows its best incidents: goals built from through balls, crosses, corners and rebounds, headers met in the air, volleys, saves caught or parried, shots off the post and bar, blocks, goal-line clearances, bookings and sendings-off, chosen for variety and scaled to the match. A quiet 0-0 runs about seventy seconds, a six-goal thriller nearer two minutes. The result underneath is the same official result as ever.',
@@ -1008,7 +1019,9 @@ async function act(a, d){
     case 'start': {
       const names = Array.from(document.querySelectorAll('.mgrname')).map((i,k)=>i.value.trim() || (S.setupCount>1? 'Manager '+(k+1) : 'The Gaffer'));
       const mode = names.length>1? 'classic' : (S.setupMode||'classic');
-      S.state = E.newGame({ managers: names, mode });
+      // review aid: ?seed=1991&club=3 starts the same game every time (the club is an index into the shuffled list), so an incident can be found again
+      const q = new URLSearchParams(location.search||''); const seedQ = q.get('seed');
+      S.state = seedQ!==null && seedQ!=='' && isFinite(+seedQ)? E.newGame({ managers: names, mode, seed: +seedQ, userClub: q.get('club')!==null && isFinite(+q.get('club'))? +q.get('club') : undefined }) : E.newGame({ managers: names, mode });
       Track.send('game_started', { number_of_managers: names.length, mode });
       S.hasSave = true; await save(); startTurn(0); break; }
     case 'continue': startTurn(st.cur); break;
@@ -1173,6 +1186,9 @@ if ('serviceWorker' in navigator && /^https?:/.test(location.protocol) && docume
   if (saved){ S.state = saved; S.hasSave = true; }
   S.slots = await listSlots(); S.slotCount = S.slots.length;
   go('title');
+  // the match viewer's painted art is decoded now, while the player is on the title screen, so the first match
+  // watched opens with its players rather than a wait (the viewer still waits for it if a match is opened at once)
+  try { const MD = window.Matchday; const pre = () => { if (MD && MD.renderers && MD.renderers.isometric && MD.renderers.isometric.preload) MD.renderers.isometric.preload(); }; if (window.requestIdleCallback) window.requestIdleCallback(pre, { timeout: 2000 }); else setTimeout(pre, 600); } catch(e){}
 })();
 })();
 </script>

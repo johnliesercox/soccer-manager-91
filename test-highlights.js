@@ -37,7 +37,7 @@ const isShot = e => e.type===EV.SHOT_SAVED || e.type===EV.SHOT_WIDE || e.type===
       outcomes[o] = (outcomes[o]||0) + 1;
       ok(MD.TECHNIQUES.includes(e.technique), 'shot technique '+e.technique);
       // the ball is met where the technique says: headers around head height, volleys around the knee
-      if (e.technique==='header' && Math.abs((e.from.z||0) - G.HEAD_Z) > 0.08) badZ++;
+      if (e.technique==='header' && ((e.from.z||0)*3 < 1.7 || (e.from.z||0)*3 > 2.5)) badZ++;   // met between 1.7 and 2.5 m (a jump for most)
       if (e.technique==='volley' && Math.abs((e.from.z||0) - G.VOLLEY_Z) > 0.08) badZ++;
       const gx = e.to.x > 0.5? 1 : 0;
       if (e.type===EV.SHOT_POST){
@@ -62,7 +62,7 @@ const isShot = e => e.type===EV.SHOT_SAVED || e.type===EV.SHOT_WIDE || e.type===
       // the scorer makes the final touch: the ball event just before the goal hands him the ball (or he already had it)
       const prior = p.events.filter(e=>e.matchSecond < g.matchSecond && (e.type===EV.PASS || e.type===EV.CROSS || e.type===EV.DEFLECTION || e.type===EV.TACKLE || e.type===EV.KICK_OFF || e.type===EV.CORNER)).pop();
       if (prior && g.playerId && (prior.type===EV.PASS || prior.type===EV.CROSS)) ok(prior.toPlayerId===g.playerId || prior.playerId===g.playerId, 'last pass before a goal reaches the scorer '+p.matchId+' '+prior.type+' '+prior.toPlayerId+' vs '+g.playerId);
-      if (g.technique==='header') ok(prior && prior.type===EV.CROSS && Math.abs((prior.to.z||0) - G.HEAD_Z) < 0.01, 'a headed goal comes from a cross at head height '+p.matchId);
+      if (g.technique==='header') ok(prior && prior.type===EV.CROSS && Math.abs((prior.to.z||0) - (g.from.z||0)) < 0.01 && (g.from.z||0)*3 >= 1.7, 'a headed goal comes from a cross met at the height it is headed from '+p.matchId);
       if (g.technique==='volley') ok(prior && prior.type===EV.CROSS, 'a volleyed goal comes from a cross '+p.matchId);
     }
   }
@@ -257,6 +257,30 @@ const isShot = e => e.type===EV.SHOT_SAVED || e.type===EV.SHOT_WIDE || e.type===
   ok(mates.length && mates.every(n=>n >= 2), 'teammates join every celebration');
   ok(crowdN > 0 && crowdOk===crowdN, 'the crowd signal names the scoring side for the whole celebration');
   ok(dismayKinds.size >= 2, 'missed chances draw more than one kind of reaction');
+}
+
+// ---- 7. bookings read from the picture (Milestone 3C) ----
+{
+  let cards = 0, refNear = 0, offenderAtFoul = 0, foulShown = 0, victimDown = 0;
+  for (const p of pres.slice(0, 40)){
+    const cardEvents = p.events.filter(e=>e.type===EV.CARD && e.playerId); if (!cardEvents.length) continue;
+    const sc = MD.createScene(p);
+    for (const c of cardEvents){
+      const foul = p.events.filter(e=>e.type===EV.FOUL && e.playerId===c.playerId && e.matchSecond <= c.matchSecond && c.matchSecond - e.matchSecond < 8).pop(); if (!foul) continue;
+      cards++;
+      const sCard = sc.getSceneAt(c.matchSecond + 0.3); const off = sCard.players.find(q=>q.id===c.playerId);
+      if (off && !off.sentOff && dm(sCard.ref, off) <= 3) refNear++;                                  // the referee shows it from beside him
+      const sFoul = sc.getSceneAt(foul.matchSecond); const offF = sFoul.players.find(q=>q.id===c.playerId);
+      if (offF && dm(offF, foul.at) <= 3) offenderAtFoul++;                                           // he is where the foul is
+      if (offF && offF.action==='tackle') foulShown++;                                                  // and goes in
+      const sAfter = sc.getSceneAt(foul.matchSecond + 1); if (sAfter.players.some(q=>q.action==='dismay' && q.id!==c.playerId && dm(q, foul.at) <= 3)) victimDown++;   // the man he fouled goes down
+    }
+  }
+  console.log(`bookings: ${cards} with a foul, referee beside the offender ${refNear}, offender at the foul ${offenderAtFoul}, foul shown ${foulShown}, victim down ${victimDown}`);
+  ok(cards > 0 && refNear >= cards*0.9, 'the referee shows the card from beside the offender');
+  ok(cards > 0 && offenderAtFoul >= cards*0.9, 'the offender is where the foul happens');
+  ok(cards > 0 && foulShown >= cards*0.9, 'the foul is shown as a challenge');
+  ok(cards > 0 && victimDown >= cards*0.8, 'the man fouled goes down');
 }
 
 console.log(fails? `\n${fails} FAILURES` : '\nALL HIGHLIGHT TESTS PASSED');

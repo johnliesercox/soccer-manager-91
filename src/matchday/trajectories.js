@@ -20,6 +20,8 @@
   const SEPARATION = 1.4;        // metres; actors closer than this are nudged apart
   const SEP_MAX = 0.15;          // metres per tick an actor can be nudged (keeps speeds honest)
   const TURN_RATE = 9.0;         // radians per second a facing may turn
+  const SET_OFF = 1.0, PULL_UP = 0.3;   // metres: a man who has stopped sets off only once his target is this far away, and stops this close (no creeping after a drifting shape target)
+  const PRECISE = { carrier: 1, receiver: 1, setPiece: 1, off: 1 };   // roles steered to the point regardless
   const FACE_SPEED = 1.2;        // m/s above which movement sets the facing
   const PX = B.PX, PY = B.PY;
 
@@ -41,18 +43,32 @@
     const pos = players.map(()=>({ x:0, y:0 }));
     let out = null;
 
-    // put everyone on their kick-off spots (the ball on the centre spot, neutral posture)
+    // put everyone on their kick-off spots: each side in its own half in its formation, squeezed towards its own goal
+    // (a forward on the halfway line), the receiving side outside the centre circle, the taker on the ball with a
+    // partner beside him, the referee a few metres off
+    const CIRCLE_M = 9.15;
     function placeAll(t){
-      const anchors = ctx.anchorsAt(t);
+      const anchors = ctx.anchorsAt(t); const b = ctx.ballAt(t); const kicking = b.carrier? b.team : null;
+      const taker = b.carrier!==null && b.carrier!==undefined? ctx.index[b.carrier] : undefined;
+      let partner = -1, pd = Infinity;
       for (let i=0;i<n;i++){
         const pl = players[i];
         if (!onAt(i, t)){ const s = ctx.offSpot(pl.id); px[i] = s.x; py[i] = s.y; vx[i] = vy[i] = 0; continue; }
-        const dir = ctx.dirAt(pl.teamId, t); const sp = MD.shapePos(anchors[pl.id], ctx.roleAt(i, t), 0.5, 0.5, 0.5);
-        px[i] = dir===1? sp.x : 1-sp.x; py[i] = sp.y; vx[i] = vy[i] = 0;
+        const dir = ctx.dirAt(pl.teamId, t); const role = ctx.roleAt(i, t); const sp = MD.shapePos(anchors[pl.id], role, 0.5, 0.5, 0.5);
+        let ax = role==='GK'? sp.x : Math.min(0.47, sp.x*0.68), y = sp.y;      // own half: the forwards up to the line, the rest behind them
+        if (pl.teamId!==kicking || taker===undefined){                            // not the side kicking off: outside the circle
+          const dym = (y - 0.5)*PY; const need = Math.sqrt(Math.max(0, CIRCLE_M*CIRCLE_M - dym*dym)) + 0.4;
+          ax = Math.min(ax, 0.5 - need/PX);
+        }
+        px[i] = dir===1? ax : 1-ax; py[i] = y; vx[i] = vy[i] = 0;
         face[i] = dir===1? 0 : Math.PI;   // facing the goal they attack
+        if (pl.teamId===kicking && i!==taker && role==='FWD'){ const d = Math.abs(y - 0.5); if (d < pd){ pd = d; partner = i; } }
       }
-      // the kick-off taker stands on the ball
-      const b = ctx.ballAt(t); if (b.carrier){ const i = ctx.index[b.carrier]; if (i!==undefined){ px[i] = b.x; py[i] = b.y; } }
+      // the kick-off taker stands on the ball, his partner a stride beside him, both facing the goal they attack
+      if (taker!==undefined){
+        px[taker] = b.x; py[taker] = b.y;
+        if (partner >= 0){ const dir = ctx.dirAt(players[taker].teamId, t); px[partner] = b.x - dir*1.2/PX; py[partner] = b.y + (py[partner] >= 0.5? 1 : -1)*1.6/PY; }
+      }
       rpx = 0.5; rpy = 0.62; rvx = rvy = 0; rface = -Math.PI/2;
     }
     // steer a velocity towards a target within a band, with acceleration and braking limits
@@ -104,6 +120,7 @@
     }
 
     placeAll(0);
+    const moving = new Uint8Array(n); let refMoving = 0;
     let cutIdx = 0;
     const cuts = ctx.cutTimes;
     for (let k=0;k<ticks;k++){
@@ -112,7 +129,12 @@
       while (cutIdx < cuts.length && cuts[cutIdx] <= t){ placeAll(cuts[cutIdx]); cutIdx++; mem.press = mem.cover = undefined; }
       while (nextLaunch < launches.length && launches[nextLaunch].t <= t + DT){ reaim(launches[nextLaunch], t); nextLaunch++; }
       for (let i=0;i<n;i++){ pos[i].x = px[i]; pos[i].y = py[i]; }
+      pos.ref = { x: rpx, y: rpy };
+      // the positions at this tick are the ones the plan is made from; the step below takes everyone to the next tick
+      for (let i=0;i<n;i++){ X[k*n+i] = px[i]; Y[k*n+i] = py[i]; F[k*n+i] = face[i]; }
+      RX[k] = rpx; RY[k] = rpy; RF[k] = rface;
       out = B.plan(ctx, t, pos, mem, out);
+      if (typeof process!=='undefined' && process.env && process.env.TRACE_ID){ const ti = ctx.index[process.env.TRACE_ID]; const [ta, tb] = (process.env.TRACE_T||'0,0').split(',').map(Number); if (ti!==undefined && t >= ta && t <= tb){ const tg = out[ti]; console.log('trace', t.toFixed(2), 'at', (px[ti]*PX).toFixed(2), (py[ti]*PY).toFixed(2), 'target', (tg.x*PX).toFixed(2), (tg.y*PY).toFixed(2), 'band', tg.band, tg.role); } }
       if (t >= end){ for (let i=0;i<n;i++) out[i].band = 0; out.ref.band = 0; }   // the whistle has gone: pull up
       for (let i=0;i<n;i++){
         const tg = out[i];
@@ -120,7 +142,15 @@
           const s = ctx.offSpot(players[i].id);
           if (Math.hypot((px[i]-s.x)*PX, (py[i]-s.y)*PY) < 0.5){ px[i] = s.x; py[i] = s.y; vx[i] = vy[i] = 0; }
           else { steer(px[i], py[i], vx[i], vy[i], tg.x, tg.y, B.BAND.JOG); vx[i] = nvx; vy[i] = nvy; px[i] += nvx*DT/PX; py[i] += nvy*DT/PY; }
-        } else { steer(px[i], py[i], vx[i], vy[i], tg.x, tg.y, tg.band); vx[i] = nvx; vy[i] = nvy; px[i] += nvx*DT/PX; py[i] += nvy*DT/PY; }
+        } else {
+          let band = tg.band;
+          if (!PRECISE[tg.role]){
+            const d = Math.sqrt(((tg.x - px[i])*PX)**2 + ((tg.y - py[i])*PY)**2);
+            if (moving[i]){ if (d < PULL_UP) moving[i] = 0; } else if (d > SET_OFF) moving[i] = 1;
+            if (!moving[i]) band = 0;
+          } else moving[i] = 1;
+          steer(px[i], py[i], vx[i], vy[i], tg.x, tg.y, band); vx[i] = nvx; vy[i] = nvy; px[i] += nvx*DT/PX; py[i] += nvy*DT/PY;
+        }
         role[k*n+i] = B.ROLE_CODE[tg.role]||0;
       }
       // separation: nudge pairs apart a little (never more than SEP_MAX per tick), carrier stays put
@@ -145,9 +175,7 @@
       // facing: follows the direction of travel when moving, holds when still
       for (let i=0;i<n;i++){ const sp = Math.sqrt((vx[i])*(vx[i]) + (vy[i])*(vy[i])); if (sp > FACE_SPEED) face[i] = turn(face[i], Math.atan2(vy[i], vx[i])); }
       // referee
-      { const r = out.ref; steer(rpx, rpy, rvx, rvy, r.x, r.y, r.band); rvx = nvx; rvy = nvy; rpx += rvx*DT/PX; rpy += rvy*DT/PY; rpx = Math.max(0.01, Math.min(0.99, rpx)); rpy = Math.max(0.01, Math.min(0.99, rpy)); if (Math.sqrt((rvx)*(rvx) + (rvy)*(rvy)) > FACE_SPEED) rface = turn(rface, Math.atan2(rvy, rvx)); }
-      for (let i=0;i<n;i++){ X[k*n+i] = px[i]; Y[k*n+i] = py[i]; F[k*n+i] = face[i]; }
-      RX[k] = rpx; RY[k] = rpy; RF[k] = rface;
+      { const r = out.ref; const rd = Math.sqrt(((r.x - rpx)*PX)**2 + ((r.y - rpy)*PY)**2); if (refMoving){ if (rd < PULL_UP) refMoving = 0; } else if (rd > SET_OFF) refMoving = 1; steer(rpx, rpy, rvx, rvy, r.x, r.y, refMoving? r.band : 0); rvx = nvx; rvy = nvy; rpx += rvx*DT/PX; rpy += rvy*DT/PY; rpx = Math.max(0.01, Math.min(0.99, rpx)); rpy = Math.max(0.01, Math.min(0.99, rpy)); if (Math.sqrt((rvx)*(rvx) + (rvy)*(rvy)) > FACE_SPEED) rface = turn(rface, Math.atan2(rvy, rvx)); }
     }
 
     // ---- sampling ----

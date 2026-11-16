@@ -135,10 +135,11 @@ ok(kinds.etGoals>0, 'extra-time goals credited');
       const s = sc.getSceneAt(t); calls++; frames++;
       ok(s.ball.x>=-0.03 && s.ball.x<=1.03 && s.ball.y>=0 && s.ball.y<=1, 'ball off pitch '+p.matchId+' t='+t);   // a scored ball sits just inside the net
       ok(s.players.length===p.players.length, 'player count');
-      for (const pl of s.players){ if (pl.sentOff) continue; ok(pl.x>=0 && pl.x<=1 && pl.y>=0 && pl.y<=1, 'player off pitch '+pl.name+' t='+t+' '+pl.x+','+pl.y); }
+      for (const pl of s.players){ if (pl.sentOff) continue; ok(pl.x>=-0.01 && pl.x<=1.01 && pl.y>=-0.015 && pl.y<=1.015, 'player off pitch '+pl.name+' t='+t+' '+pl.x+','+pl.y); }   // a stride beyond the lines: a corner taker
       ok(s.score.home>=lastScore.home && s.score.away>=lastScore.away, 'score went backwards'); lastScore = s.score;
       if (s.ball.carrierId){ carried++; const c = s.players.find(x=>x.id===s.ball.carrierId); const dm = Math.hypot((c.x-s.ball.x)*105, (c.y-s.ball.y)*68); ok(dm < 3.0, 'carrier not on the ball ('+dm.toFixed(1)+'m) '+p.matchId+' t='+t); }
-      if (prevScene && prevScene.phase===s.phase) for (const pl of s.players){ const q = prevScene.players.find(x=>x.id===pl.id); if (!pl.sentOff && !q.sentOff) maxMove = Math.max(maxMove, Math.hypot(pl.x-q.x, pl.y-q.y)); }
+      const acrossCut = prevScene && sc.cutTimes.some(c => c > prevScene.t && c <= s.t);   // a restart placed (a half, a kick-off after a goal) is a cut, not a run
+      if (prevScene && prevScene.phase===s.phase && !acrossCut) for (const pl of s.players){ const q = prevScene.players.find(x=>x.id===pl.id); if (!pl.sentOff && !q.sentOff) maxMove = Math.max(maxMove, Math.hypot(pl.x-q.x, pl.y-q.y)); }
       prevScene = s;
     }
     const end = sc.getSceneAt(sc.duration+5);
@@ -162,7 +163,7 @@ ok(kinds.etGoals>0, 'extra-time goals credited');
     }
     ok(maxMove<0.1, 'player jumped '+maxMove.toFixed(3)+' in half a second '+p.matchId);
     // and at fine steps (a frame at the fastest highlight rate) nothing teleports
-    let fine = 0, q0 = null; for (let t=0; t<=sc.duration; t+=0.05){ const s = sc.getSceneAt(t); if (q0 && q0.phase===s.phase) for (const pl of s.players){ const q = q0.players.find(x=>x.id===pl.id); if (!pl.sentOff && !q.sentOff) fine = Math.max(fine, Math.hypot(pl.x-q.x, pl.y-q.y)); } q0 = s; }
+    let fine = 0, q0 = null; for (let t=0; t<=sc.duration; t+=0.05){ const s = sc.getSceneAt(t); if (q0 && q0.phase===s.phase && !sc.cutTimes.some(c => c > q0.t && c <= s.t)) for (const pl of s.players){ const q = q0.players.find(x=>x.id===pl.id); if (!pl.sentOff && !q.sentOff) fine = Math.max(fine, Math.hypot(pl.x-q.x, pl.y-q.y)); } q0 = s; }
     ok(fine<0.02, 'no teleport at 50ms steps (worst '+fine.toFixed(3)+') '+p.matchId);
   }
   console.log(`scene calls ${calls} in ${Date.now()-t2}ms (${((Date.now()-t2)/calls*1000).toFixed(1)}us each)`);

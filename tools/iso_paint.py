@@ -123,15 +123,14 @@ def outline(mat, tone):
     mat = np.where(ring, MAT['LINE'], mat); tone = np.where(ring, 1, tone)
     return mat, tone
 
-def process(refdir, painted_path, stem, manifest_by_spr, sheets, kit_override=None, dirs=None, cells=None):
-    meta, mask, refmat = load_ref(refdir, stem)
-    painted = np.array(Image.open(painted_path).convert('RGB'))
+def extract_figure(painted, meta, mask_p, s):
+    """the painted figure as the converter takes it: paint that differs from the flat background, within 5 cm of the
+    reference silhouette, the painter's ground shadow keyed out, holes filled; then, cell by cell, stray marks dropped.
+    A blob is kept when it is the main body or lies mostly inside the silhouette (an arm held away from the trunk is its own
+    blob and must stay; before 15 Nov 2026 only the largest blob was kept and 11% of the cells lost an arm that way) and is
+    dropped when it lies mostly outside (a shadow, a loose ball, a speck). The referee's raised card is the one thing kept
+    outside the silhouette. Shared with the audit, so the audit sees exactly what the sprite will hold."""
     H, W, _ = painted.shape
-    s = W/meta['width']
-    if abs(H/meta['height'] - s) > 0.02: print(f'  warning: {stem} painted aspect differs from the reference ({W}x{H} vs {meta["width"]}x{meta["height"]})')
-    # bring the mask and material map to the painted size
-    mask_p = np.array(Image.fromarray(mask.astype(np.uint8)*255).resize((W, H), Image.NEAREST)) > 127
-    mat_p = np.array(Image.fromarray((refmat + 1).astype(np.uint8)).resize((W, H), Image.NEAREST)).astype(np.int32) - 1
     ppm = meta['refspr']*s                                   # painted pixels per metre
     grow = max(2, int(round(ppm*0.05)))
     near = ndimage.binary_dilation(mask_p, iterations=grow)
@@ -139,17 +138,23 @@ def process(refdir, painted_path, stem, manifest_by_spr, sheets, kit_override=No
     far = ~ndimage.binary_dilation(mask_p, iterations=grow*2)
     bg = np.median(painted[far].reshape(-1, 3), axis=0) if far.any() else np.array(meta['bg'])
     diff = np.sqrt(((painted.astype(np.float64) - bg)**2).sum(axis=-1))
-    figure = near & (diff > 30)
+    # the painter's ground shadow (neutral grey, darker than the background) is not figure where it lies outside the
+    # reference silhouette; inside the silhouette dark greys are the figure's own (boot edges, hair) and stay
+    figure = near & (diff > 30) & ~(shadow_like(painted, bg) & ~mask_p)
     figure = ndimage.binary_opening(figure, iterations=1)
     figure = ndimage.binary_fill_holes(figure)
-    # one figure per cell: drop stray marks (the model's ground shadows and specks) that do not join the main body
+    inside = ndimage.binary_dilation(mask_p, iterations=max(2, int(round(ppm*0.02))))   # 2 cm of tolerance for a limb drawn a little off
     keep = np.zeros_like(figure)
     for cell in meta['cells']:
         x0, y0 = int(round(cell['x']*s)), int(round(cell['y']*s)); x1, y1 = int(round((cell['x'] + cell['w'])*s)), int(round((cell['y'] + cell['h'])*s))
         sub = figure[y0:y1, x0:x1]; lab, n = ndimage.label(sub)
         if n > 1:
-            sizes = ndimage.sum(sub, lab, range(1, n + 1)); big = 1 + int(np.argmax(sizes))
+            sizes = ndimage.sum(sub, lab, range(1, n + 1)); big = 1 + int(np.argmax(sizes)); ins = inside[y0:y1, x0:x1]
             body = lab == big
+            for k in range(1, n + 1):
+                if k == big: continue
+                comp = lab == k
+                if (comp & ins).sum() >= 0.5*sizes[k-1]: body |= comp
             if cell['pose'] == 'card':
                 # the raised card can float clear of the hand: keep any small yellow mark in the upper half of the cell
                 px = painted[y0:y1, x0:x1].astype(np.float64); half = (y1 - y0)//2
@@ -161,7 +166,19 @@ def process(refdir, painted_path, stem, manifest_by_spr, sheets, kit_override=No
                     if r > 150 and g > 110 and b < 110 and r - b > 80: body |= comp
             sub = body
         keep[y0:y1, x0:x1] = sub
-    figure = keep
+    return keep
+
+def process(refdir, painted_path, stem, manifest_by_spr, sheets, kit_override=None, dirs=None, cells=None):
+    meta, mask, refmat = load_ref(refdir, stem)
+    painted = np.array(Image.open(painted_path).convert('RGB'))
+    H, W, _ = painted.shape
+    s = W/meta['width']
+    if abs(H/meta['height'] - s) > 0.02: print(f'  warning: {stem} painted aspect differs from the reference ({W}x{H} vs {meta["width"]}x{meta["height"]})')
+    # bring the mask and material map to the painted size
+    mask_p = np.array(Image.fromarray(mask.astype(np.uint8)*255).resize((W, H), Image.NEAREST)) > 127
+    mat_p = np.array(Image.fromarray((refmat + 1).astype(np.uint8)).resize((W, H), Image.NEAREST)).astype(np.int32) - 1
+    ppm = meta['refspr']*s                                   # painted pixels per metre
+    figure = extract_figure(painted, meta, mask_p, s)
     kit = kit_override or meta['kit']
     mat_f = nearest_fill(np.where(figure | mask_p, mat_p, -1), figure)
     mat, tone = classify(painted, figure, mat_f, kit)
@@ -200,6 +217,7 @@ def process(refdir, painted_path, stem, manifest_by_spr, sheets, kit_override=No
             fx = (cell['w']*s/2)*k; fy = (cell['feet']*s)*k
             ox = int(round(cw/2 - fx)); oy = int(round(feet - fy))
             sheet = sheets[(spr, gk)]
+            sheet[sy:sy+chh, sx:sx+cw] = 0                           # a converted cell replaces whatever the sheet held there
             # paste with clipping to the sheet cell
             for ty in range(th):
                 yy = sy + oy + ty
@@ -244,6 +262,12 @@ def stand(refdir, painted_path, outdir, sprs, crop=None):
     base = Image.fromarray(np.ascontiguousarray(rgba), 'RGBA')
     info = { 'piece': 'far', 'axis': 'X', 'metres': metres, 'from': x_from, 'anchor': anchor }
     for spr in sprs: save_texture(base, os.path.join(outdir, f'stand-{spr}'), spr, P, 'png', info)
+
+def shadow_like(arr, bg):
+    """pixels that read as the painter's ground shadow on the flat grey background: nearly neutral, and darker than the
+    background but nowhere near black (black boots and dark hair are far darker or carry colour)"""
+    pf = arr.astype(np.float64); lum = pf.mean(axis=-1); chroma = pf.max(axis=-1) - pf.min(axis=-1)
+    return (chroma < 28) & (lum > 85) & (lum < float(np.mean(bg)) - 25)
 
 def keyed_background(arr, outside, tol=26):
     """the painter's flat background, flood-filled from the image border, so it can be made transparent even where it

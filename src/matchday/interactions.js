@@ -18,6 +18,9 @@
 
   // Decide when each hand-over key really takes effect: the ball waits (loose) at the key point
   // until its new carrier is close, up to a grace period. traj.at(i, t) gives planned positions.
+  const challengeControl = (k, next) => Math.max(k.t, Math.min(k.t + 0.5, next? next.t - 0.2 : k.t + 0.5));
+  // known before the simulation runs (the planner reads the ball's state while it plans): a challenge's control time
+  function presetControl(keys){ for (let i=0;i<keys.length;i++){ const k = keys[i]; if ((k.tackle || k.block) && k.carrier) k.controlT = challengeControl(k, keys[i+1]); } return keys; }
   function controlTimes(ctx, traj){
     const keys = ctx.keys;
     for (let i=0;i<keys.length;i++){
@@ -26,7 +29,11 @@
       if (!k.carrier || k.kind==='launch') continue;
       if (k.kind==='restart' || k.cut) continue;           // restarts are placed, not chased
       const pi = ctx.index[k.carrier]; if (pi===undefined) continue;
-      const next = keys[i+1]; const limit = Math.min(k.t + CONTROL_GRACE, next? next.t - 0.2 : k.t + CONTROL_GRACE);
+      const next = keys[i+1];
+      // a ball won in a tackle or stopped by a block lies where it was met while the man who met it gets up to it: it does
+      // not jump to his feet at the instant of the challenge
+      if (k.tackle || k.block){ k.controlT = challengeControl(k, next); continue; }
+      const limit = Math.min(k.t + CONTROL_GRACE, next? next.t - 0.2 : k.t + CONTROL_GRACE);
       let tt = k.t, found = k.t;
       while (tt <= limit){ const q = traj.at(pi, tt); if (B.dm(q.x, q.y, k.x, k.y) <= CONTROL_RADIUS){ found = tt; break; } tt += traj.dt; found = tt; }
       k.controlT = Math.max(k.t, Math.min(found, limit));
@@ -72,10 +79,15 @@
         else { add(k.carrier, k.t-0.5, k.t+0.8, 'dive', { aimX: k.x, aimY: k.y, contact: k.t, z: k.z1||0, parry: !!k.parried }); add(k.carrier, k.t+0.8, k.t+2.0, 'getup', {}); }
       }
       if (k.block && k.carrier){ add(k.carrier, k.t-0.4, k.t+0.6, 'block', { aimX: pk? pk.x : k.x, aimY: pk? pk.y : k.y, contact: k.t, slide: !!k.slide, line: !!k.line }); }
-      if (k.tackle && k.carrier){ add(k.carrier, k.t-0.5, k.t+0.55, 'tackle', { aimX: pk? pk.x : k.x, aimY: pk? pk.y : k.y, contact: k.t, slide: k.slide!==false }); }
+      if (k.tackle && k.carrier){ const aim = k.tackleFrom? k : (pk||k); add(k.carrier, k.t-0.5, k.t+0.55, 'tackle', { aimX: aim.x, aimY: aim.y, contact: k.t, slide: k.slide!==false }); }
       if (k.kind==='restart' && k.carrier){ const n2 = keys.slice(i+1).find(x=>x.kind==='launch'); if (n2 && n2.carrier===k.carrier && n2.t - k.t < 12) add(k.carrier, n2.t-0.5, n2.t+0.35, 'pass', { aimX: keys[n2.idx+1]? keys[n2.idx+1].x : n2.x, aimY: keys[n2.idx+1]? keys[n2.idx+1].y : n2.y, contact: n2.t }); }
     }
     for (const e of ctx.events){ if (e.type===MD.EVENT.CARD && e.playerId) add(e.playerId, e.matchSecond-0.5, e.matchSecond+2.5, 'booked'); }
+    // a foul: a clumsy slide from the offender at the man on the ball, who goes down on his knees for a moment
+    for (const f of (ctx.fouls||[])){
+      add(f.playerId, f.t-0.45, f.t+0.6, 'tackle', { aimX: f.x, aimY: f.y, contact: f.t, slide: true });
+      if (f.victimId!==null && f.victimId!==undefined) add(f.victimId, f.t+0.05, f.t+2.4, 'dismay', { variant: 1 });
+    }
     // set-piece and celebration windows: a plain action name spans the window; a list gives timed segments with extras
     for (const w of ctx.windows) for (const id in w.anim){
       const an = w.anim[id];
@@ -109,15 +121,38 @@
       const z = Math.min(1, Math.sin(Math.PI*u) * Math.min(1, dist*1.6) * arc + lerp(k0.z0||0, k1.z1||0, u));
       return { x: lerp(k0.x,k1.x,u), y: lerp(k0.y,k1.y,u), z, carrier:null, team:k0.team, state:'travelling', inFlight:true, from:k0, to:k1, progress:u };
     }
+    // a ball that has gone out of play is dead where it crossed the line: it runs on for a moment with what is left of
+    // its pace (behind the goal, towards the boards) and lies there until the restart places it on its spot. It never
+    // rolls back into play to be collected (it used to drift to the next key, so a wide shot came back off the boards
+    // to a defender's feet)
+    if (k0.out){
+      if (k0.rx===undefined){
+        const pk = keys[i-1]; let dx = 0, dy = 0;
+        if (pk && pk.kind==='launch'){ dx = (k0.x - pk.x)*105; dy = (k0.y - pk.y)*68; }
+        const len = Math.hypot(dx, dy) || 1; const run = k0.miss==='over'? 2.5 : 2.2;   // metres of run-on, over the bar a touch more
+        let rx = k0.x + dx/len*run/105, ry = k0.y + dy/len*run/68;
+        // and at least a metre beyond the goal line, so it is seen to be out; a ball the timeline has already run to the
+        // corner flag (behind for a corner) lies there as it is
+        const atFlag = Math.abs(k0.y - 0.5) > 0.45;
+        if (atFlag){ rx = k0.x; ry = k0.y; }
+        else if (k0.x > 0.9) rx = Math.max(rx, 1 + 1.0/105); else if (k0.x < 0.1) rx = Math.min(rx, -1.0/105);
+        k0.rx = rx; k0.ry = Math.max(0, Math.min(1, ry));
+      }
+      const u = Math.max(0, Math.min(1, (t - k0.t)/0.8)); const e = 1 - (1-u)*(1-u);
+      return { x: lerp(k0.x, k0.rx, e), y: lerp(k0.y, k0.ry, e), z: 0, carrier: null, team: k0.team, state: 'dead', inFlight: false, from: k0, to: k1, progress: 0 };
+    }
     // a hand-over waits for its carrier: loose at the key point until controlT
     const ct = k0.controlT||k0.t;
     if (t < ct) return { x:k0.x, y:k0.y, z: k0.z1||0, carrier:null, team:k0.team, state:'loose', inFlight:false, from:k0, to:k1, progress:0 };
     if (held){
-      // in the net after a goal; a ball that went behind off the woodwork or wide lies a little behind the line too
-      const behind = k0.kind==='goal' || (k0.out && (k0.x < 0.002 || k0.x > 0.998));
+      // in the net after a goal, a little behind the line
+      const behind = k0.kind==='goal';
       const x = behind? k0.x + (k0.x>0.5? 0.012 : -0.012) : k0.x;
-      return { x, y:k0.y, z: (k0.catch && k0.carrier && k0.save)? 1.15/3 : 0, carrier:k0.carrier, team:k0.team, state: k0.carrier? 'controlled' : (dead? 'dead' : 'loose'), inFlight:false, from:k0, to:null, progress:1 };
+      // a restart nobody takes (the whistle goes first) stays placed on its spot
+      return { x, y:k0.y, z: (k0.catch && k0.carrier && k0.save)? 1.15/3 : 0, carrier:k0.carrier, team:k0.team, state: k0.carrier? 'controlled' : (dead? 'dead' : 'loose'), placed: k0.kind==='restart', inFlight:false, from:k0, to:null, progress:1 };
     }
+    // a restart is placed: the ball lies on its spot (the corner arc, the centre spot, the six-yard line) until it is kicked
+    if (k0.kind==='restart' && k1 && k1.kind==='launch' && k1.carrier===k0.carrier) return { x:k0.x, y:k0.y, z:0, carrier:k0.carrier, team:k0.team, state:'controlled', placed:true, inFlight:false, from:k0, to:k1, progress:0 };
     // a carried ball moves at a steady pace with a short ease at each end (a smoothstep over a long carry peaks at one and a
     // half times the average speed, which the man carrying it cannot match, so he was left behind at the strike)
     const T = Math.max(0.01, k1.t-ct); const ramp = Math.min(0.3, 0.25*T)/T; const uu = Math.max(0, Math.min(1, (t-ct)/T));
@@ -129,8 +164,9 @@
       const down = k1.kind==='launch'? Math.max(0, Math.min(1, (t - (k1.t - 0.6))/0.6)) : 0;
       zHold = lerp(lerp(k0.z1||CHEST, CHEST, Math.min(1, (t - ct)/0.3)), k1.z0||0, down);
     }
-    // the ball rolls to the next key (a dribble when carried, a slow roll when loose); a dead ball stays in the net until the restart
-    if (k0.kind==='goal'){ const x = k0.x + (k0.x>0.5? 0.012 : -0.012); const u2 = Math.max(0, (t - (k1.t-2))/2); return { x: lerp(x, k1.x, smooth(u2)), y: lerp(k0.y, k1.y, smooth(u2)), z:0, carrier:null, team:k0.team, state: u2>0? 'dead' : 'dead', inFlight:false, from:k0, to:k1, progress:u2 }; }
+    // the ball rolls to the next key (a dribble when carried, a slow roll when loose); a dead ball stays in the net until the
+    // restart, which is a cut (it used to glide to the centre spot over the last two seconds, dragging the camera across an empty pitch)
+    if (k0.kind==='goal'){ const x = k0.x + (k0.x>0.5? 0.012 : -0.012); return { x, y: k0.y, z:0, carrier:null, team:k0.team, state:'dead', inFlight:false, from:k0, to:k1, progress:0 }; }
     return { x: lerp(k0.x,k1.x,u), y: lerp(k0.y,k1.y,u), z: zHold, carrier:k0.carrier, team:k0.team, state, inFlight:false, from:k0, to:k1, progress:u };
   }
 
@@ -165,7 +201,12 @@
   // his body for a parry, a first touch is taken 0.32 m in front. Each key gets the offset (normalised units) from the
   // ball to where its player should stand, along the heading the renderer will give him; the planner and the
   // re-aiming use (k.x + k.sox, k.y + k.soy) as the player's spot. A key that moves keeps its offset.
-  const STAND = { pass: 0.42, shoot: 0.52, volley: 0.6, header: 0.27, catch: 0.46, parry: 1.25, receive: 0.32, block: 0.15, slide: 0 };
+  // how far behind the ball a man stands so that the contact point of the pose drawn (iso-sprites) meets it: the kicking foot
+  // of the kick and shoot poses, the volley foot, the head thrown forward, the keeper's hands (reaching up for a high ball,
+  // in front of the chest for one at chest height, low for one along the ground), the outstretched hand of a parry, the
+  // receiving foot, the shins of a standing block, the leading foot of a sliding block, a slide tackle or a standing poke
+  const STAND = { pass: 0.42, shoot: 0.52, volley: 0.6, header: 0.27, catch: 0.46, catchChest: 0.26, catchLow: 0.3, parry: 1.25, receive: 0.32, block: 0.1, slide: 0.6, tackle: 0.7, poke: 0.62 };
+  const catchStand = z => { const zm = (z||0)*3; return zm < 0.8? STAND.catchLow : zm < 1.45? STAND.catchChest : STAND.catch; };
   // the world direction of the eight-way sprite heading a world direction is drawn with (iso-projection.dir8 and
   // iso-sprites.HEADING, in closed form): the screen direction of (dX, dY) is (dX - dY, (dX + dY)/2); the sector centre
   // at angle s has screen direction (cos s, sin s), which is the world direction ((cos s + 2 sin s)/2, (2 sin s - cos s)/2)
@@ -186,17 +227,30 @@
         // met first time: he waits where the strike will be made, not where the ball lands
         if (pk && pk.kind==='arrive' && pk.carrier===k.carrier && k.t - pk.t < 0.6 && !pk.save){ pk.sox = k.sox; pk.soy = k.soy; }
       } else if (k.kind==='arrive' && k.save && k.carrier && pk){
-        if (k.catch) set(k, unit(k, pk), STAND.catch);                                   // facing the shooter, hands in front
+        if (k.catch) set(k, unit(k, pk), catchStand(k.z1));                              // facing the shooter, hands in front at the ball's height
         else { const g = { x: k.x < 0.5? 0 : 1, y: 0.5 }; set(k, unit(g, k), STAND.parry); }   // diving from the middle of his goal at the ball
       } else if (k.kind==='arrive' && k.carrier && !k.save && !k.block && pk && pk.kind==='launch' && k.sox===undefined){
         set(k, unit(k, pk), STAND.receive);                                              // the first touch, facing the ball
       } else if (k.block && k.carrier && pk && pk.kind==='launch'){
         set(k, unit(k, pk), k.slide? STAND.slide : STAND.block);
+      } else if (k.tackle && k.carrier && pk){
+        // the line the ball is on: where it has come from since the last key, or, when it has not moved on yet (a man
+        // tackled as he takes his first touch), the line it came in on; failing both, the line from the middle of the pitch
+        const ppk = keys[i-2]; const centre = { x: 0.5, y: 0.5 };
+        const path = unit(pk, k) || (ppk && unit(ppk, pk)) || unit(centre, k) || { x: 1, y: 0 };   // (a tackle on the centre spot itself: along the halfway line)
+        if (k.slide===false) set(k, { x: -path.x, y: -path.y }, STAND.poke);             // a standing poke: he meets the ball head on
+        else {
+          // a sliding tackle comes in from the side of the ball's path (from the inside, towards the middle of the pitch),
+          // the leading foot reaching the ball where it is won; the cue faces him at the ball along the same line
+          let nx = -path.y, ny = path.x;                                                  // a normal to the path
+          const cx = (0.5 - k.x)*PX, cy = (0.5 - k.y)*PY; if (nx*cx + ny*cy < 0){ nx = -nx; ny = -ny; }   // the one towards the middle
+          const n = quantised(nx, ny); k.sox = -STAND.tackle*n.x/PX; k.soy = -STAND.tackle*n.y/PY; k.tackleFrom = { x: k.x + k.sox, y: k.y + k.soy };
+        }
       }
     }
     return keys;
   }
   const standOf = k => ({ x: k.x + (k.sox||0), y: k.y + (k.soy||0) });
 
-  MD.interactions = { controlTimes, actions, ballAt, cameraInterest, standOffsets, standOf, STAND, CONTROL_RADIUS, CONTROL_GRACE };
+  MD.interactions = { controlTimes, presetControl, actions, ballAt, cameraInterest, standOffsets, standOf, STAND, catchStand, CONTROL_RADIUS, CONTROL_GRACE };
 })(typeof window!=='undefined'? window : globalThis);

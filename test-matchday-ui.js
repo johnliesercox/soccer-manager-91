@@ -27,13 +27,20 @@ let fails = 0; const ok = (c, msg) => { if (!c){ fails++; console.log('FAIL', ms
     await H.click('[data-a="md-camera"]', 40); ok(S.md.viewer.renderer.getCamera()==='whole' && H.d.querySelector('#md-camera').textContent.includes('whole'), 'isometric camera steps to whole pitch');
     await H.click('[data-a="md-camera"]', 40); ok(S.md.viewer.renderer.getCamera()==='follow', 'isometric camera steps to follow');
     await H.click('[data-a="md-camera"]', 40); ok(S.md.viewer.renderer.getCamera()==='close', 'isometric camera cycles back to close');
+    const MDw = H.w.Matchday; const ships = st => !!(MDw.isoAssetData && Object.keys(MDw.isoAssetData).some(k => k.indexOf(st+'/')===0));
+    // a review build that inlines F (the crowd comparison of Stage B) offers it one tap after the plain Iso view
+    if (MDw.isoDefaultStyle && MDw.isoDefaultStyle!=='F' && ships('F')){ await H.click('[data-a="md-view"]', 60); ok(S.md.viewer.renderer.id==='isometric-f', 'renderer swapped on to the comparison view '+S.md.viewer.renderer.id); }
     await H.click('[data-a="md-view"]', 60); ok(S.md.viewer.renderer.id==='pixelart', 'renderer swapped to '+S.md.viewer.renderer.id);
     ok(H.d.querySelector('#md-view').textContent.includes('Pixels') && H.d.querySelector('#md-camera').style.display!=='none', 'pixel view labelled, with a camera button');
     ok(H.d.querySelector('#md-camera').textContent.includes('follow'), 'pixel camera button shows follow mode');
     await H.click('[data-a="md-camera"]', 40); ok(S.md.viewer.renderer.getCamera()==='whole' && H.d.querySelector('#md-camera').textContent.includes('whole'), 'pixel camera toggles to whole pitch');
     await H.click('[data-a="md-camera"]', 40); ok(S.md.viewer.renderer.getCamera()==='follow', 'pixel camera toggles back');
-    const shipsA = !!(H.w.Matchday.isoAssetData && Object.keys(H.w.Matchday.isoAssetData).some(k => k.indexOf('A/')===0));
+    const shipsA = ships('A');
     if (shipsA){ await H.click('[data-a="md-view"]', 60); ok(S.md.viewer.renderer.id==='isometric-a', 'renderer swapped on to '+S.md.viewer.renderer.id); }
+    // a review build (ISO_DEFAULT names the style the plain Iso view draws) also offers the other inlined R&D styles as
+    // comparison views, in the order C, D, E (F came straight after Iso); the production build (style B only) has none of them
+    const review = MDw.isoDefaultStyle? ['C', 'D', 'E'].filter(st => st!==MDw.isoDefaultStyle && ships(st)) : [];
+    for (const st of review){ await H.click('[data-a="md-view"]', 60); ok(S.md.viewer.renderer.id==='isometric-'+st.toLowerCase(), 'renderer swapped on to the review view '+S.md.viewer.renderer.id); }
     await H.click('[data-a="md-view"]', 60); ok(S.md.viewer.renderer.id==='canvas2d', 'renderer swapped on to '+S.md.viewer.renderer.id+(shipsA? '' : ' (Iso A left out: the build ships style B only; the generated-figure isometric is a ?dev view)'));
     ok(H.d.querySelector('#md-camera').style.display==='none', 'camera button hidden for a renderer without a camera');
     await H.click('[data-a="md-view"]', 60); ok(S.md.viewer.renderer.id==='wireframe', 'renderer swapped on to '+S.md.viewer.renderer.id);

@@ -93,6 +93,14 @@ const def = MD.renderers.isometric;
   try { r.mount(el, pres[0]); r.render(scenes[0].getSceneAt(5), { fastForward:false, sinceCut: 1 }); r.resize(); r.setCamera('whole'); r.render(scenes[0].getSceneAt(6), {}); r.setCamera('follow'); r.dispose(); } catch(e){ threw = e; }
   ok(!threw, 'B01 create/mount/render/resize/setCamera/dispose run without error'+(threw? ': '+threw.message : ''));
   ok(r.id==='isometric' && def.name==='Isometric', 'B01 renderer id and name');
+  // E10 (visual R&D) a review build names the style the plain Iso view draws with; without it the view keeps B
+  {
+    const AS = MD.isoAssets; const before = AS.getStyle();
+    MD.isoDefaultStyle = 'E'; const r2 = def.create({}); let st = null; try { r2.mount(el, pres[0]); st = AS.getStyle(); r2.dispose(); } catch(e){ st = 'threw '+e.message; }
+    delete MD.isoDefaultStyle; const r3 = def.create({}); let st3 = null; try { r3.mount(el, pres[0]); st3 = AS.getStyle(); r3.dispose(); } catch(e){ st3 = 'threw '+e.message; }
+    ok(st==='E' && st3==='B', 'E10 ISO_DEFAULT picks the Iso view\'s style ('+st+' with it, '+st3+' without)');
+    AS.setStyle(before);
+  }
   globalThis.document = realDoc;
 }
 // B02 headless drawFrame on the same scenes as the other renderers; B03 every movement/action has a frame
@@ -101,7 +109,7 @@ const def = MD.renderers.isometric;
   let drawn = 0, threw = null; const actions = new Set(), moves = new Set();
   for (const [i, sc] of scenes.entries()){
     const p = pres[i]; const world = def.buildWorld(createCanvas, 16, p.seed); const state = { anim: {}, cx: undefined };
-    for (let t=0; t<sc.duration; t+=sc.duration/60){
+    for (let t=0; t<sc.duration; t+=sc.duration/150){
       const s = sc.getSceneAt(t); s.players.forEach(pl => { actions.add(pl.action); moves.add(pl.movement); });
       try { def.drawFrame(ctx, w, h, s, { teams: p.teams, seed: p.seed, world, state, dtReal: 1/60, nowMs: t*1000, cameraMode:'follow', followP: 16, snap: t===0 }); drawn++; } catch(e){ threw = e; break; }
     }
@@ -131,13 +139,32 @@ const def = MD.renderers.isometric;
 {
   const sc = scenes[0]; const p = pres[0]; const w = 904, h = 619; const state = { anim: {}, cx: undefined }; let maxStep = 0, first = true;
   let maxShotStep = 0;
-  for (let t=200; t<260; t+=1/60){ const s = sc.getSceneAt(t); const c = ISO.camera.update(state, s, w, h, 'follow', 1/60, first, 16); if (!first){ const step = Math.hypot(c.ox - state.lastOx, c.oy - state.lastOy); const shot = s.cameraInterest && (s.cameraInterest.kind==='attack' || s.cameraInterest.kind==='goal') && s.ball.state==='travelling'; if (shot) maxShotStep = Math.max(maxShotStep, step); else maxStep = Math.max(maxStep, step); } state.lastOx = c.ox; state.lastOy = c.oy; first = false; }
+  for (let t=200; t<260; t+=1/60){ const s = sc.getSceneAt(t); const c = ISO.camera.update(state, s, w, h, 'follow', 1/60, first, 16); if (!first && !state.snapped){ const step = Math.hypot(c.ox - state.lastOx, c.oy - state.lastOy); const shot = s.cameraInterest && (s.cameraInterest.kind==='attack' || s.cameraInterest.kind==='goal') && s.ball.state==='travelling'; if (shot) maxShotStep = Math.max(maxShotStep, step); else maxStep = Math.max(maxStep, step); } state.lastOx = c.ox; state.lastOy = c.oy; first = false; }
   ok(maxStep <= ISO.camera.PAN_MAX*w/60 + 1.5, 'D02 camera pans within its cap ('+maxStep.toFixed(1)+' px per frame)');
   ok(maxShotStep <= ISO.camera.PAN_MAX*ISO.camera.SHOT_PAN*w/60 + 1.5, 'D02 camera whips within the shot cap ('+maxShotStep.toFixed(1)+' px per frame)');
   const s = sc.getSceneAt(2000); const c1 = ISO.camera.update(state, s, w, h, 'follow', 1/60, true, 16); const c2 = ISO.camera.update({ anim:{} }, s, w, h, 'follow', 1/60, true, 16);
   ok(c1.ox===c2.ox && c1.oy===c2.oy, 'D02 a snap lands on the target regardless of previous state');
   // the view never shows bare canvas beyond the allowed overshoot: its centre stays inside the clamp
   const cl = ISO.camera.clampToGround(c1.ox, c1.oy, w, h, 16); ok(isFinite(cl.cx) && isFinite(cl.cy), 'D02 clamp returns finite values');
+}
+// E01 the corner structures (Milestone 3D correction pass) stand outside the playing area and never cover it on screen:
+// every corner terrace and tower footprint is beyond the run-off, and at the close scale no tower rises into the
+// projected pitch polygon; the only floodlights are in the far corners, behind the stands
+{
+  const STAD = ISO.stadium; const DIM = PR.DIM; const m = DIM.runoff;
+  const inside = (pt, poly) => { let c = false; for (let i=0, j=poly.length-1; i<poly.length; j=i++){ const a = poly[i], b = poly[j]; if ((a.y > pt.y) !== (b.y > pt.y) && pt.x < (b.x - a.x)*(pt.y - a.y)/(b.y - a.y) + a.x) c = !c; } return c; };
+  const cam = { P: 24, ox: 0, oy: 0 };
+  const pitch = [[0,0],[DIM.L,0],[DIM.L,DIM.W],[0,DIM.W]].map(([X,Y]) => { const q = PR.project(X, Y, 0, cam); return { x: q.sx, y: q.sy }; });
+  let footprintOk = true, coverOk = true;
+  for (const c of STAD.CORNERS){
+    const back = { X: c.x0 + c.sx*12*0.8, Y: c.y0 + c.sy*12*0.8 };
+    for (const q of [{ X: c.x0, Y: c.y0 }, back]) if (q.X > -m && q.X < DIM.L + m && q.Y > -m && q.Y < DIM.W + m) footprintOk = false;
+    if (c.tower){ for (const dx of [0, c.sx*2.6]) for (const dy of [0, c.sy*2.6]) for (const z of [0, c.tower]){ const s2 = PR.project(c.x0 + dx, c.y0 + dy, z, cam); if (inside({ x: s2.sx, y: s2.sy }, pitch)) coverOk = false; } }
+    const py = STAD.cornerPylonAt(c); if (c.near) ok(STAD.nearPylons().length===0, 'E01 no floodlight in a near corner (it would stand between the viewer and the corner flag)');
+    else ok(py.X < -m || py.X > DIM.L + m, 'E01 the far corner floodlight stands beyond the end of the pitch');
+  }
+  ok(footprintOk, 'E01 every corner structure stands beyond the run-off');
+  ok(coverOk, 'E01 no corner tower rises into the projected pitch at the close scale');
 }
 // C01 watching (rendering) changes nothing in the game state; C03 the renderer touches no engine function
 {
@@ -198,6 +225,48 @@ const def = MD.renderers.isometric;
       }
       AS.register('B', 16, { img, patterns, keepers, crowd, grass, manifest: m });   // back to the generated sheets for the checks that follow
     } else console.log('   (no override sheets present; painted-cell checks skipped)');
+  }
+  // E08 (visual R&D) a style may inherit another's assets: the build writes '@style/spr/field' references and the loader
+  // resolves them, decoding each image once, so an inheriting style draws the parent's stadium and its own figures
+  {
+    const dir = './assets/matchday/isometric/B'; const b64 = f => 'data:image/png;base64,' + fs.readFileSync(dir+'/'+f).toString('base64');
+    const m = JSON.parse(fs.readFileSync(dir+'/players-12.json'));
+    const base = { manifest: m, players: b64('players-12.png'), patterns: b64('patterns-12.png'), keepers: b64('keepers-12.png'), crowd: b64('crowd-12.png'), grass: b64('grass-12.png') };
+    if (fs.existsSync(dir+'/piece-dugout-12.png')) base.pieces = { dugout: { image: b64('piece-dugout-12.png'), meta: JSON.parse(fs.readFileSync(dir+'/piece-dugout-12.json')) } };
+    const kid = { manifest: '@B/12/manifest', players: '@B/12/players', patterns: '@B/12/patterns', keepers: '@B/12/keepers', crowd: '@B/12/crowd', grass: '@B/12/grass' };
+    if (base.pieces) kid.pieces = { dugout: '@B/12/pieces/dugout' };
+    const { Image } = require('@napi-rs/canvas'); const hadImage = globalThis.Image; globalThis.Image = Image;
+    const saved = MD.isoAssetData; MD.isoAssetData = { 'B/12': base, 'Q/12': kid };
+    try {
+      const avail = await AS.load();
+      ok(AS.has(12, 'Q') && AS.has(12, 'B'), 'E08 an inheriting style registers from references ('+avail.join('; ')+')');
+      AS.setStyle('Q'); const q = AS.get({ primary:'#C8102E', secondary:'#FFFFFF', pattern:'plain' }, { skin:1, hair:2, style:0 }, 'S', 'run', 0, 12);
+      AS.setStyle('B'); const b = AS.get({ primary:'#C8102E', secondary:'#FFFFFF', pattern:'plain' }, { skin:1, hair:2, style:0 }, 'S', 'run', 0, 12);
+      ok(!!q && !!b && q.width === b.width && q.height === b.height, 'E08 the inheriting style draws the parent\'s figures');
+      if (base.pieces){ AS.setStyle('Q'); const pq = AS.pieceTexture(12, 'dugout'); AS.setStyle('B'); const pb = AS.pieceTexture(12, 'dugout'); ok(!!pq && !!pb && pq.image === pb.image && pq.meta === pb.meta, 'E08 a referenced piece shares the parent\'s decoded image'); }
+    } finally { MD.isoAssetData = saved; globalThis.Image = hadImage; }
+    // back to the generated sheets for the checks that follow
+    for (const st of ['A','B']) for (const spr of [24, 16, 12]){ const d2 = './assets/matchday/isometric/'+st; const man = d2+'/players-'+spr+'.json'; if (!fs.existsSync(man)) continue; const mm = JSON.parse(fs.readFileSync(man)); const [img, patterns, keepers, crowd, grass] = await Promise.all(['players','patterns','keepers','crowd','grass'].map(n => loadImage(d2+'/'+n+'-'+spr+'.png'))); AS.register(st, spr, { img, patterns, keepers, crowd, grass, manifest: mm }); }
+  }
+  // E09 (visual R&D) a modelled goal: when a style ships goal<end><b|f> pieces, drawGoal places the texture by its world
+  // anchor instead of rasterising the net, and the two parts keep their depth keys
+  {
+    const dD = './assets/matchday/isometric/E'; const goalPng = fs.existsSync(dD+'/piece-goal0f-16.webp')? dD+'/piece-goal0f-16.webp' : dD+'/piece-goal0f-16.png';   // E ships the goal as webp
+    if (fs.existsSync(goalPng)){
+      const dir = './assets/matchday/isometric/B'; const m = JSON.parse(fs.readFileSync(dir+'/players-16.json'));
+      const [img, patterns, keepers, crowd, grass, tex] = await Promise.all(['players','patterns','keepers','crowd','grass'].map(n => loadImage(dir+'/'+n+'-16.png')).concat([loadImage(goalPng)]));
+      const meta = JSON.parse(fs.readFileSync(dD+'/piece-goal0f-16.json'));
+      AS.register('B', 16, { img, patterns, keepers, crowd, grass, pieces: { goal0f: { image: tex, meta } }, manifest: m }); AS.setStyle('B');
+      const a0 = PR.project(meta.anchorWorld[0], meta.anchorWorld[1], meta.anchorWorld[2], { P: 16, ox: 0, oy: 0 });
+      const cam = { P: 16, ox: 300 - a0.sx, oy: 200 - a0.sy }; const cv = createCanvas(600, 400); const ctx = cv.getContext('2d');
+      ISO.stadium.drawGoal(ctx, cam, 0, 'front');
+      const d = ctx.getImageData(0, 0, 600, 400).data; let minx = 1e9, miny = 1e9, n = 0; for (let y=0;y<400;y++) for (let x=0;x<600;x++){ if (d[(y*600+x)*4+3] > 0){ n++; if (x < minx) minx = x; if (y < miny) miny = y; } }
+      const tc = createCanvas(tex.width, tex.height); tc.getContext('2d').drawImage(tex, 0, 0); const td = tc.getContext('2d').getImageData(0, 0, tex.width, tex.height).data; let tminx = 1e9, tminy = 1e9; for (let y=0;y<tex.height;y++) for (let x=0;x<tex.width;x++){ if (td[(y*tex.width+x)*4+3] > 0){ if (x < tminx) tminx = x; if (y < tminy) tminy = y; } }
+      const ex = Math.round(300 - meta.anchor.x) + tminx, ey = Math.round(200 - meta.anchor.y) + tminy;
+      ok(n > 0 && Math.abs(minx - ex) <= 1 && Math.abs(miny - ey) <= 1, 'E09 the goal texture lands by its world anchor ('+minx+','+miny+' vs '+ex+','+ey+')');
+      const g = ISO.stadium.goalGeometry(0); ok(g.backDepth < g.frontDepth, 'E09 the back and front parts keep their depth keys with a texture');
+      AS.register('B', 16, { img, patterns, keepers, crowd, grass, manifest: m });
+    } else console.log('   (no modelled goal pieces present; E09 skipped)');
   }
   for (const st of ['A','B']){
     AS.setStyle(st); let missing = 0, total = 0, feetOk = 0;

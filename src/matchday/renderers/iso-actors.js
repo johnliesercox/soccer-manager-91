@@ -20,7 +20,11 @@
   // Pose and frame for a scene player's action. The header's jump is added here (a lift in metres, apex at the
   // contact) so the player meets the ball where it is. Celebrations and reactions come in variants chosen by the
   // scene (actionDetail.variant), so the same incident does not always look the same.
-  const JUMP = { base: 0.18, maxExtra: 0.55, headHeight: 1.7 };
+  const JUMP = { base: 0.1, maxExtra: 0.6, headHeight: 1.82 };
+  // actions drawn standing: while the man is still travelling at a walk or faster he is drawn walking or running instead
+  // (a receiver on his way to the ball, a teammate running to the celebration, the beaten side walking back), and the
+  // action pose takes over when he has slowed to take it
+  const STANDING = { receive: true, set: true, celebrate: true, dismay: true, booked: true, block: true, getup: true };
   function poseFor(pl, a, t){
     let pose = 'idle', frame = 0, lift = 0;
     const mv = pl.movement || 'idle';
@@ -28,26 +32,42 @@
     if (mv==='walk'){ pose = 'walk'; frame = Math.floor(a.dist/(STRIDE_M*0.7))%SP.POSES.walk; }
     else if (mv==='jog' || mv==='run' || mv==='sprint'){ pose = 'run'; frame = runFrame(SP.POSES.run); }
     const ph = pl.actionPhase||0; const d = pl.actionDetail||{}; const v = d.variant||0;
+    const moving = (pl.speedMs||0) >= 0.7;
+    const act = pl.action||'none'; const dv = (pl.actionDetail && pl.actionDetail.variant)||0;
+    if (STANDING[act] && moving && !(act==='celebrate' && (dv===1 || dv===2)) && !(act==='block' && pl.actionDetail && pl.actionDetail.slide)){
+      if (act==='celebrate'){ pose = 'runcheer'; frame = runFrame(SP.POSES.runcheer); }      // on his way to the huddle, arms up
+      return { pose, frame, lift };
+    }
     switch (pl.action){
-      case 'pass': case 'shoot': pose = pl.action==='pass'? 'kick' : 'shoot'; frame = ph < 0.42? 0 : ph < 0.66? 1 : ph < 0.86? 2 : 3; break;
+      // the kick cue runs from half a second before the ball leaves to a third of a second after, so the ball leaves at
+      // phase 0.59: the wind-up until just before that, the contact frame as it goes, then the follow-through
+      case 'pass': case 'shoot': pose = pl.action==='pass'? 'kick' : 'shoot'; frame = ph < 0.55? 0 : ph < 0.74? 1 : ph < 0.9? 2 : 3; break;
       case 'volley': pose = 'volley'; frame = ph < 0.35? 0 : ph < 0.7? 1 : 2; break;
       case 'header': {
         pose = 'header'; frame = ph < 0.3? 0 : ph < 0.72? 1 : 2;
-        const ballZ = (d.z||0)*PR.BALL_Z_M;                     // metres; a ball above head height needs a jump
-        const h = JUMP.base + Math.max(0, Math.min(JUMP.maxExtra, ballZ - JUMP.headHeight));
+        const ballZ = (d.z||0)*PR.BALL_Z_M;                     // metres; the head of the jump frame is at 1.82 m standing
+        const h = Math.max(JUMP.base, Math.min(JUMP.maxExtra + JUMP.base, ballZ - JUMP.headHeight));   // so the head meets the ball
         lift = h*Math.max(0, Math.sin(Math.PI*Math.min(1, ph)));   // the apex is the contact, at phase 0.5
         break;
       }
       case 'receive': pose = 'receive'; frame = ph < 0.45? 0 : 1; break;
       case 'tackle': if (d.slide===false){ pose = 'poke'; } else { pose = 'slide'; frame = ph < 0.3? 0 : 1; } break;
       case 'block': if (d.slide){ pose = 'slide'; frame = ph < 0.35? 0 : 1; } else pose = 'block'; break;
-      case 'dive': if (d.parry){ pose = 'parry'; frame = ph < 0.6? 0 : 1; } else { pose = 'dive'; frame = ph < 0.25? 0 : ph < 0.7? 1 : 2; } break;
-      case 'catch': pose = 'catch'; frame = ph < 0.5? 0 : 1; break;
+      // the dive cue runs from half a second before the ball arrives to 0.8 s after (the ball arrives at phase 0.385): he is
+      // set until a quarter of a second before it, springs, is at full stretch as it arrives, and is down a third of a second later
+      case 'dive': if (d.parry){ const low = (d.z||0)*PR.BALL_Z_M < 0.9; pose = ph < 0.18? 'set' : 'parry'; frame = (low || ph >= 0.62)? 1 : 0; } else { pose = 'dive'; frame = ph < 0.2? 0 : ph < 0.62? 1 : 2; } break;   // a low shot is parried low, along the ground
+      case 'catch': {                                             // reach for a high ball, gather one at the chest, crouch for one along the ground
+        const zm = (d.z||0)*PR.BALL_Z_M;
+        if (zm < 0.8){ pose = ph < 0.4? 'set' : 'catch'; frame = 1; }
+        else if (zm < 1.45){ pose = 'catch'; frame = 1; }
+        else { pose = 'catch'; frame = ph < 0.5? 0 : 1; }
+        break;
+      }
       case 'set': pose = 'set'; break;
       case 'getup': pose = 'getup'; frame = ph < 0.5? 0 : 1; break;
       case 'celebrate': {
         // variants: arms aloft (0), running to the crowd (1), the knee slide (2), the group hug (3)
-        if (v===1 || (v===2 && ph < 0.45)){ pose = 'runcheer'; frame = runFrame(SP.POSES.runcheer); }
+        if (v===1 || (v===2 && ph < 0.45)){ if ((pl.speedMs||0) < 0.5){ pose = 'celebrate'; frame = Math.floor((t||0)*3)%2; } else { pose = 'runcheer'; frame = runFrame(SP.POSES.runcheer); } }   // arms up on the spot once he has stopped
         else if (v===2){ pose = 'kneeslide'; frame = ph < 0.7? 0 : 1; }
         else if (v===3){ pose = 'hug'; frame = ph < 0.4? 0 : 1; }
         else { pose = 'celebrate'; frame = Math.floor((t||0)*3)%2; }
@@ -86,7 +106,10 @@
   // one actor (player or referee) -> item
   function actorItem(kind, pl, kit, variant, st, t, cam, spr){
     const a = st.anim[kind+':'+(pl.id||'ref')] || (st.anim[kind+':'+(pl.id||'ref')] = { dir:'S', dist:0, lx: pl.x, ly: pl.y });
-    const moved = Math.hypot((pl.x - a.lx)*DIM.L, (pl.y - a.ly)*DIM.W); if (moved < 3) a.dist += moved; a.lx = pl.x; a.ly = pl.y;
+    // the distance he has covered drives his leg frames; a placement (a cut to a restart, a seek) is not a stride, but a
+    // long step at a high fast-forward rate is (it used to be dropped past three metres, which froze the legs of a sprinter
+    // at the fastest playback)
+    const moved = Math.hypot((pl.x - a.lx)*DIM.L, (pl.y - a.ly)*DIM.W); if (!st.sceneCut && moved < 12) a.dist += moved; a.lx = pl.x; a.ly = pl.y;
     const act = pl.action||'none';
     if (pl.aim && (act==='pass' || act==='shoot' || act==='volley' || act==='header' || act==='dive' || act==='catch' || act==='tackle' || act==='block' || act==='receive') && Math.hypot((pl.aim.x - pl.x)*DIM.L, (pl.aim.y - pl.y)*DIM.W) > 0.4){
       a.dir = PR.dir8(angleTo(pl, pl.aim), a.dir, 0.05);         // face the ball for a kick, a trap, a block; fly towards it for a dive or a slide
@@ -114,14 +137,16 @@
       if (pl.hasBall) carrier = it;
     }
     if (scene.ref){ const it = actorItem('ref', scene.ref, SP.REF_KIT, { skin:1, hair:0, style:1 }, st, t, cam, spr); items.push(it); shadows.push({ sx: it.gsx, sy: it.gsy, w: 0.9 }); }
-    // the ball: shadow at its ground point, the ball itself lifted by its height. A controlled ball sits a
-    // touch ahead of its owner's feet along his heading so it shows at the front foot.
-    const b = scene.ball; let bm = PR.toMetres(b.x, b.y); const bz = Math.max(0, b.z||0)*PR.BALL_Z_M;
-    if (carrier && b.state==='controlled' && b.carrierId===carrier.pl.id && carrier.pl.facingAngle!==undefined){ const ang = carrier.pl.facingAngle; bm = { X: bm.X + Math.cos(ang)*0.3, Y: bm.Y + Math.sin(ang)*0.3 }; }
+    // the ball: shadow at its ground point, the ball itself lifted by its height (the scene already puts a controlled
+    // ball a touch ahead of its owner's feet, and blends it onto the spot it is struck from or lost at)
+    const b = scene.ball; const bm = PR.toMetres(b.x, b.y); const bz = Math.max(0, b.z||0)*PR.BALL_Z_M;
     const bg = PR.project(bm.X, bm.Y, 0, cam), bp = PR.project(bm.X, bm.Y, bz, cam);
     shadows.push({ sx: Math.round(bg.sx), sy: Math.round(bg.sy), w: 0.5, ball: true });
-    items.push({ kind:'ball', key:'ball', depth: goalmouthDepth(bm.X, bm.Y) + 0.06, sx: Math.round(bp.sx), sy: Math.round(bp.sy), gsx: Math.round(bg.sx), gsy: Math.round(bg.sy), z: bz });
+    // a ball in the air at a man's hands or head is drawn in front of him, not hidden behind his sprite (a lift of the
+    // draw order by a stride of depth); on the ground it sorts with everything else
+    items.push({ kind:'ball', key:'ball', depth: goalmouthDepth(bm.X, bm.Y) + (bz > 0.5? 1.2 : 0.06), sx: Math.round(bp.sx), sy: Math.round(bp.sy), gsx: Math.round(bg.sx), gsy: Math.round(bg.sy), z: bz });
     // goals
+    if (STAD.nearPylons) STAD.nearPylons().forEach((q, i) => items.push({ kind:'pylon', key:'pylon'+i, X: q.X, Y: q.Y, depth: q.depth }));   // the near corners' floodlights, in front of the near terrace
     for (const end of [0, 1]){ const g = STAD.goalGeometry(end); items.push({ kind:'goal', key:'goal'+end+'b', end, part:'back', depth: g.backDepth }); items.push({ kind:'goal', key:'goal'+end+'f', end, part:'front', depth: g.frontDepth }); }
     items.sort((p, q) => (p.depth - q.depth) || (p.key < q.key? -1 : p.key > q.key? 1 : 0));
     return { items, shadows };

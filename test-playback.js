@@ -67,7 +67,7 @@ for (const p of samples){
       frames++; if (state.fastForward) ffFrames++;
       maxClockJump = Math.max(maxClockJump, sec - lastClock); lastClock = sec;
       const s = sc.getSceneAt(state.sceneSecond);
-      if (prev && state.sinceCut > 0.05 && prev.phase===s.phase){ for (const pl of s.players){ const q = prev.players.find(x=>x.id===pl.id); if (!pl.sentOff && !q.sentOff) worst = Math.max(worst, Math.hypot(pl.x-q.x, pl.y-q.y)); } }
+      if (prev && state.sinceCut > 0.05 && prev.phase===s.phase && !sc.cutTimes.some(c => c > prev.t && c <= s.t)){ for (const pl of s.players){ const q = prev.players.find(x=>x.id===pl.id); if (!pl.sentOff && !q.sentOff) worst = Math.max(worst, Math.hypot(pl.x-q.x, pl.y-q.y)); } }
       if (state.sinceCut < 0.02) cuts++;
       prev = s;
     } });

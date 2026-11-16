@@ -1,0 +1,1027 @@
+{
+"groups": [
+{
+"stem": "idle-0+walk-0",
+"frames": [
+"idle:0",
+"walk:0"
+],
+"hair": 0
+},
+{
+"stem": "walk-1+walk-2",
+"frames": [
+"walk:1",
+"walk:2"
+],
+"hair": 0
+},
+{
+"stem": "walk-3+run-0",
+"frames": [
+"walk:3",
+"run:0"
+],
+"hair": 0
+},
+{
+"stem": "run-1+run-2",
+"frames": [
+"run:1",
+"run:2"
+],
+"hair": 0
+},
+{
+"stem": "run-3+run-4",
+"frames": [
+"run:3",
+"run:4"
+],
+"hair": 0
+},
+{
+"stem": "run-5+kick-0",
+"frames": [
+"run:5",
+"kick:0"
+],
+"hair": 0
+},
+{
+"stem": "kick-1+kick-2",
+"frames": [
+"kick:1",
+"kick:2"
+],
+"hair": 0
+},
+{
+"stem": "kick-3+shoot-0",
+"frames": [
+"kick:3",
+"shoot:0"
+],
+"hair": 0
+},
+{
+"stem": "shoot-1+shoot-2",
+"frames": [
+"shoot:1",
+"shoot:2"
+],
+"hair": 0
+},
+{
+"stem": "shoot-3+receive-0",
+"frames": [
+"shoot:3",
+"receive:0"
+],
+"hair": 0
+},
+{
+"stem": "receive-1+block-0",
+"frames": [
+"receive:1",
+"block:0"
+],
+"hair": 0
+},
+{
+"stem": "set-0+celebrate-0",
+"frames": [
+"set:0",
+"celebrate:0"
+],
+"hair": 0
+},
+{
+"stem": "celebrate-1+booked-0",
+"frames": [
+"celebrate:1",
+"booked:0"
+],
+"hair": 0
+},
+{
+"stem": "whistle-0+card-0",
+"frames": [
+"whistle:0",
+"card:0"
+],
+"hair": 0
+},
+{
+"stem": "point-0+header-0",
+"frames": [
+"point:0",
+"header:0"
+],
+"hair": 0
+},
+{
+"stem": "header-1+header-2",
+"frames": [
+"header:1",
+"header:2"
+],
+"hair": 0
+},
+{
+"stem": "volley-0+volley-1",
+"frames": [
+"volley:0",
+"volley:1"
+],
+"hair": 0
+},
+{
+"stem": "volley-2+poke-0",
+"frames": [
+"volley:2",
+"poke:0"
+],
+"hair": 0
+},
+{
+"stem": "catch-0+catch-1",
+"frames": [
+"catch:0",
+"catch:1"
+],
+"hair": 0
+},
+{
+"stem": "parry-0+parry-1",
+"frames": [
+"parry:0",
+"parry:1"
+],
+"hair": 0
+},
+{
+"stem": "getup-0+getup-1",
+"frames": [
+"getup:0",
+"getup:1"
+],
+"hair": 0
+},
+{
+"stem": "kneeslide-0+kneeslide-1",
+"frames": [
+"kneeslide:0",
+"kneeslide:1"
+],
+"hair": 0
+},
+{
+"stem": "runcheer-0+runcheer-1",
+"frames": [
+"runcheer:0",
+"runcheer:1"
+],
+"hair": 0
+},
+{
+"stem": "runcheer-2+runcheer-3",
+"frames": [
+"runcheer:2",
+"runcheer:3"
+],
+"hair": 0
+},
+{
+"stem": "hug-0+hug-1",
+"frames": [
+"hug:0",
+"hug:1"
+],
+"hair": 0
+},
+{
+"stem": "dismay-0+kneel-0",
+"frames": [
+"dismay:0",
+"kneel:0"
+],
+"hair": 0
+},
+{
+"stem": "appeal-0",
+"frames": [
+"appeal:0"
+],
+"hair": 0
+},
+{
+"stem": "slide-0+slide-1",
+"frames": [
+"slide:0",
+"slide:1"
+],
+"wide": true,
+"hair": 0
+},
+{
+"stem": "dive-0",
+"frames": [
+"dive:0"
+],
+"wide": true,
+"hair": 0
+},
+{
+"stem": "dive-1",
+"frames": [
+"dive:1"
+],
+"wide": true,
+"hair": 0
+},
+{
+"stem": "dive-2",
+"frames": [
+"dive:2"
+],
+"wide": true,
+"hair": 0
+},
+{
+"stem": "idle-0+walk-0-h1",
+"frames": [
+"idle:0",
+"walk:0"
+],
+"hair": 1
+},
+{
+"stem": "walk-1+walk-2-h1",
+"frames": [
+"walk:1",
+"walk:2"
+],
+"hair": 1
+},
+{
+"stem": "walk-3+run-0-h1",
+"frames": [
+"walk:3",
+"run:0"
+],
+"hair": 1
+},
+{
+"stem": "run-1+run-2-h1",
+"frames": [
+"run:1",
+"run:2"
+],
+"hair": 1
+},
+{
+"stem": "run-3+run-4-h1",
+"frames": [
+"run:3",
+"run:4"
+],
+"hair": 1
+},
+{
+"stem": "run-5+kick-0-h1",
+"frames": [
+"run:5",
+"kick:0"
+],
+"hair": 1
+},
+{
+"stem": "kick-1+kick-2-h1",
+"frames": [
+"kick:1",
+"kick:2"
+],
+"hair": 1
+},
+{
+"stem": "kick-3+shoot-0-h1",
+"frames": [
+"kick:3",
+"shoot:0"
+],
+"hair": 1
+},
+{
+"stem": "shoot-1+shoot-2-h1",
+"frames": [
+"shoot:1",
+"shoot:2"
+],
+"hair": 1
+},
+{
+"stem": "shoot-3+receive-0-h1",
+"frames": [
+"shoot:3",
+"receive:0"
+],
+"hair": 1
+},
+{
+"stem": "receive-1+block-0-h1",
+"frames": [
+"receive:1",
+"block:0"
+],
+"hair": 1
+},
+{
+"stem": "set-0+celebrate-0-h1",
+"frames": [
+"set:0",
+"celebrate:0"
+],
+"hair": 1
+},
+{
+"stem": "celebrate-1+booked-0-h1",
+"frames": [
+"celebrate:1",
+"booked:0"
+],
+"hair": 1
+},
+{
+"stem": "whistle-0+card-0-h1",
+"frames": [
+"whistle:0",
+"card:0"
+],
+"hair": 1
+},
+{
+"stem": "point-0+header-0-h1",
+"frames": [
+"point:0",
+"header:0"
+],
+"hair": 1
+},
+{
+"stem": "header-1+header-2-h1",
+"frames": [
+"header:1",
+"header:2"
+],
+"hair": 1
+},
+{
+"stem": "volley-0+volley-1-h1",
+"frames": [
+"volley:0",
+"volley:1"
+],
+"hair": 1
+},
+{
+"stem": "volley-2+poke-0-h1",
+"frames": [
+"volley:2",
+"poke:0"
+],
+"hair": 1
+},
+{
+"stem": "catch-0+catch-1-h1",
+"frames": [
+"catch:0",
+"catch:1"
+],
+"hair": 1
+},
+{
+"stem": "parry-0+parry-1-h1",
+"frames": [
+"parry:0",
+"parry:1"
+],
+"hair": 1
+},
+{
+"stem": "getup-0+getup-1-h1",
+"frames": [
+"getup:0",
+"getup:1"
+],
+"hair": 1
+},
+{
+"stem": "kneeslide-0+kneeslide-1-h1",
+"frames": [
+"kneeslide:0",
+"kneeslide:1"
+],
+"hair": 1
+},
+{
+"stem": "runcheer-0+runcheer-1-h1",
+"frames": [
+"runcheer:0",
+"runcheer:1"
+],
+"hair": 1
+},
+{
+"stem": "runcheer-2+runcheer-3-h1",
+"frames": [
+"runcheer:2",
+"runcheer:3"
+],
+"hair": 1
+},
+{
+"stem": "hug-0+hug-1-h1",
+"frames": [
+"hug:0",
+"hug:1"
+],
+"hair": 1
+},
+{
+"stem": "dismay-0+kneel-0-h1",
+"frames": [
+"dismay:0",
+"kneel:0"
+],
+"hair": 1
+},
+{
+"stem": "appeal-0-h1",
+"frames": [
+"appeal:0"
+],
+"hair": 1
+},
+{
+"stem": "slide-0+slide-1-h1",
+"frames": [
+"slide:0",
+"slide:1"
+],
+"wide": true,
+"hair": 1
+},
+{
+"stem": "dive-0-h1",
+"frames": [
+"dive:0"
+],
+"wide": true,
+"hair": 1
+},
+{
+"stem": "dive-1-h1",
+"frames": [
+"dive:1"
+],
+"wide": true,
+"hair": 1
+},
+{
+"stem": "dive-2-h1",
+"frames": [
+"dive:2"
+],
+"wide": true,
+"hair": 1
+},
+{
+"stem": "idle-0+walk-0-h2",
+"frames": [
+"idle:0",
+"walk:0"
+],
+"hair": 2
+},
+{
+"stem": "walk-1+walk-2-h2",
+"frames": [
+"walk:1",
+"walk:2"
+],
+"hair": 2
+},
+{
+"stem": "walk-3+run-0-h2",
+"frames": [
+"walk:3",
+"run:0"
+],
+"hair": 2
+},
+{
+"stem": "run-1+run-2-h2",
+"frames": [
+"run:1",
+"run:2"
+],
+"hair": 2
+},
+{
+"stem": "run-3+run-4-h2",
+"frames": [
+"run:3",
+"run:4"
+],
+"hair": 2
+},
+{
+"stem": "run-5+kick-0-h2",
+"frames": [
+"run:5",
+"kick:0"
+],
+"hair": 2
+},
+{
+"stem": "kick-1+kick-2-h2",
+"frames": [
+"kick:1",
+"kick:2"
+],
+"hair": 2
+},
+{
+"stem": "kick-3+shoot-0-h2",
+"frames": [
+"kick:3",
+"shoot:0"
+],
+"hair": 2
+},
+{
+"stem": "shoot-1+shoot-2-h2",
+"frames": [
+"shoot:1",
+"shoot:2"
+],
+"hair": 2
+},
+{
+"stem": "shoot-3+receive-0-h2",
+"frames": [
+"shoot:3",
+"receive:0"
+],
+"hair": 2
+},
+{
+"stem": "receive-1+block-0-h2",
+"frames": [
+"receive:1",
+"block:0"
+],
+"hair": 2
+},
+{
+"stem": "set-0+celebrate-0-h2",
+"frames": [
+"set:0",
+"celebrate:0"
+],
+"hair": 2
+},
+{
+"stem": "celebrate-1+booked-0-h2",
+"frames": [
+"celebrate:1",
+"booked:0"
+],
+"hair": 2
+},
+{
+"stem": "whistle-0+card-0-h2",
+"frames": [
+"whistle:0",
+"card:0"
+],
+"hair": 2
+},
+{
+"stem": "point-0+header-0-h2",
+"frames": [
+"point:0",
+"header:0"
+],
+"hair": 2
+},
+{
+"stem": "header-1+header-2-h2",
+"frames": [
+"header:1",
+"header:2"
+],
+"hair": 2
+},
+{
+"stem": "volley-0+volley-1-h2",
+"frames": [
+"volley:0",
+"volley:1"
+],
+"hair": 2
+},
+{
+"stem": "volley-2+poke-0-h2",
+"frames": [
+"volley:2",
+"poke:0"
+],
+"hair": 2
+},
+{
+"stem": "catch-0+catch-1-h2",
+"frames": [
+"catch:0",
+"catch:1"
+],
+"hair": 2
+},
+{
+"stem": "parry-0+parry-1-h2",
+"frames": [
+"parry:0",
+"parry:1"
+],
+"hair": 2
+},
+{
+"stem": "getup-0+getup-1-h2",
+"frames": [
+"getup:0",
+"getup:1"
+],
+"hair": 2
+},
+{
+"stem": "kneeslide-0+kneeslide-1-h2",
+"frames": [
+"kneeslide:0",
+"kneeslide:1"
+],
+"hair": 2
+},
+{
+"stem": "runcheer-0+runcheer-1-h2",
+"frames": [
+"runcheer:0",
+"runcheer:1"
+],
+"hair": 2
+},
+{
+"stem": "runcheer-2+runcheer-3-h2",
+"frames": [
+"runcheer:2",
+"runcheer:3"
+],
+"hair": 2
+},
+{
+"stem": "hug-0+hug-1-h2",
+"frames": [
+"hug:0",
+"hug:1"
+],
+"hair": 2
+},
+{
+"stem": "dismay-0+kneel-0-h2",
+"frames": [
+"dismay:0",
+"kneel:0"
+],
+"hair": 2
+},
+{
+"stem": "appeal-0-h2",
+"frames": [
+"appeal:0"
+],
+"hair": 2
+},
+{
+"stem": "slide-0+slide-1-h2",
+"frames": [
+"slide:0",
+"slide:1"
+],
+"wide": true,
+"hair": 2
+},
+{
+"stem": "dive-0-h2",
+"frames": [
+"dive:0"
+],
+"wide": true,
+"hair": 2
+},
+{
+"stem": "dive-1-h2",
+"frames": [
+"dive:1"
+],
+"wide": true,
+"hair": 2
+},
+{
+"stem": "dive-2-h2",
+"frames": [
+"dive:2"
+],
+"wide": true,
+"hair": 2
+},
+{
+"stem": "idle-0+walk-0-gk",
+"frames": [
+"idle:0",
+"walk:0"
+],
+"gk": true,
+"hair": 0
+},
+{
+"stem": "walk-1+walk-2-gk",
+"frames": [
+"walk:1",
+"walk:2"
+],
+"gk": true,
+"hair": 0
+},
+{
+"stem": "walk-3+run-0-gk",
+"frames": [
+"walk:3",
+"run:0"
+],
+"gk": true,
+"hair": 0
+},
+{
+"stem": "run-1+run-2-gk",
+"frames": [
+"run:1",
+"run:2"
+],
+"gk": true,
+"hair": 0
+},
+{
+"stem": "run-3+run-4-gk",
+"frames": [
+"run:3",
+"run:4"
+],
+"gk": true,
+"hair": 0
+},
+{
+"stem": "run-5+kick-0-gk",
+"frames": [
+"run:5",
+"kick:0"
+],
+"gk": true,
+"hair": 0
+},
+{
+"stem": "kick-1+kick-2-gk",
+"frames": [
+"kick:1",
+"kick:2"
+],
+"gk": true,
+"hair": 0
+},
+{
+"stem": "kick-3+shoot-0-gk",
+"frames": [
+"kick:3",
+"shoot:0"
+],
+"gk": true,
+"hair": 0
+},
+{
+"stem": "shoot-1+shoot-2-gk",
+"frames": [
+"shoot:1",
+"shoot:2"
+],
+"gk": true,
+"hair": 0
+},
+{
+"stem": "shoot-3+receive-0-gk",
+"frames": [
+"shoot:3",
+"receive:0"
+],
+"gk": true,
+"hair": 0
+},
+{
+"stem": "receive-1+block-0-gk",
+"frames": [
+"receive:1",
+"block:0"
+],
+"gk": true,
+"hair": 0
+},
+{
+"stem": "set-0+celebrate-0-gk",
+"frames": [
+"set:0",
+"celebrate:0"
+],
+"gk": true,
+"hair": 0
+},
+{
+"stem": "celebrate-1+booked-0-gk",
+"frames": [
+"celebrate:1",
+"booked:0"
+],
+"gk": true,
+"hair": 0
+},
+{
+"stem": "whistle-0+card-0-gk",
+"frames": [
+"whistle:0",
+"card:0"
+],
+"gk": true,
+"hair": 0
+},
+{
+"stem": "point-0+header-0-gk",
+"frames": [
+"point:0",
+"header:0"
+],
+"gk": true,
+"hair": 0
+},
+{
+"stem": "header-1+header-2-gk",
+"frames": [
+"header:1",
+"header:2"
+],
+"gk": true,
+"hair": 0
+},
+{
+"stem": "volley-0+volley-1-gk",
+"frames": [
+"volley:0",
+"volley:1"
+],
+"gk": true,
+"hair": 0
+},
+{
+"stem": "volley-2+poke-0-gk",
+"frames": [
+"volley:2",
+"poke:0"
+],
+"gk": true,
+"hair": 0
+},
+{
+"stem": "catch-0+catch-1-gk",
+"frames": [
+"catch:0",
+"catch:1"
+],
+"gk": true,
+"hair": 0
+},
+{
+"stem": "parry-0+parry-1-gk",
+"frames": [
+"parry:0",
+"parry:1"
+],
+"gk": true,
+"hair": 0
+},
+{
+"stem": "getup-0+getup-1-gk",
+"frames": [
+"getup:0",
+"getup:1"
+],
+"gk": true,
+"hair": 0
+},
+{
+"stem": "kneeslide-0+kneeslide-1-gk",
+"frames": [
+"kneeslide:0",
+"kneeslide:1"
+],
+"gk": true,
+"hair": 0
+},
+{
+"stem": "runcheer-0+runcheer-1-gk",
+"frames": [
+"runcheer:0",
+"runcheer:1"
+],
+"gk": true,
+"hair": 0
+},
+{
+"stem": "runcheer-2+runcheer-3-gk",
+"frames": [
+"runcheer:2",
+"runcheer:3"
+],
+"gk": true,
+"hair": 0
+},
+{
+"stem": "hug-0+hug-1-gk",
+"frames": [
+"hug:0",
+"hug:1"
+],
+"gk": true,
+"hair": 0
+},
+{
+"stem": "dismay-0+kneel-0-gk",
+"frames": [
+"dismay:0",
+"kneel:0"
+],
+"gk": true,
+"hair": 0
+},
+{
+"stem": "appeal-0-gk",
+"frames": [
+"appeal:0"
+],
+"gk": true,
+"hair": 0
+},
+{
+"stem": "slide-0+slide-1-gk",
+"frames": [
+"slide:0",
+"slide:1"
+],
+"wide": true,
+"gk": true,
+"hair": 0
+},
+{
+"stem": "dive-0-gk",
+"frames": [
+"dive:0"
+],
+"wide": true,
+"gk": true,
+"hair": 0
+},
+{
+"stem": "dive-1-gk",
+"frames": [
+"dive:1"
+],
+"wide": true,
+"gk": true,
+"hair": 0
+},
+{
+"stem": "dive-2-gk",
+"frames": [
+"dive:2"
+],
+"wide": true,
+"gk": true,
+"hair": 0
+}
+]
+}

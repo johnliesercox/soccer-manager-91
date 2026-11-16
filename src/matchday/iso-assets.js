@@ -73,17 +73,35 @@
     sheets[st] = sheets[st] || {}; sheets[st][spr] = Object.assign({ index: idx }, parts); cache.clear(); texCache.clear();
   }
   // load from the inlined data (build) or from files; resolves when done, never rejects (missing assets = fallback)
+  // per style: how many sheet sets the build carries and how many have landed (decoded or failed), so a renderer can wait
+  // for its own style and draw nothing generated in the meantime
+  const styleDone = {};
+  const noteStyle = st => { if (!styleDone[st]){ let resolve; const promise = new Promise(r => { resolve = r; }); styleDone[st] = { expected: 0, done: 0, resolve, promise }; } return styleDone[st]; };
+  const expects = st => !!(MD.isoAssetData && Object.keys(MD.isoAssetData).some(k => k.split('/')[0]===st));
+  const isReady = st => !expects(st) || (styleDone[st] && styleDone[st].done >= styleDone[st].expected && styleDone[st].expected > 0) || false;
+  const styleReady = st => expects(st)? noteStyle(st).promise : Promise.resolve();
   async function load(baseUrl){
-    const data = MD.isoAssetData || null; const jobs = [];
-    const list = data? Object.keys(data) : [];
+    const data = MD.isoAssetData || null;
+    // the style the plain Iso view draws is decoded first, the comparison styles after it
+    const first = MD.isoDefaultStyle || 'B';
+    const list = data? Object.keys(data).sort((a, b) => (a.split('/')[0]===first? 0 : 1) - (b.split('/')[0]===first? 0 : 1)) : [];
+    for (const key of list) noteStyle(key.split('/')[0]).expected++;
+    const jobs = []; const firstJobs = [];
+    // a field may be a '@style/spr/field[/name]' reference to another style's data (a style that inherits its stadium
+    // art, say), so the build carries one copy; resolved here, images decoded once and shared
+    const deref = v => { let guard = 0; while (typeof v === 'string' && v[0]==='@' && guard++ < 8){ const [st, spr, ...path] = v.slice(1).split('/'); let x = data[st+'/'+spr]; for (const k of path) x = x? x[k] : undefined; v = x; } return v; };
+    const imgCache = new Map(); const loadShared = src => { if (!src) return null; if (!imgCache.has(src)) imgCache.set(src, loadImage(src)); return imgCache.get(src); };
     for (const key of list){                              // key: "B/16"
       const [st, sprS] = key.split('/'); const spr = +sprS; const d = data[key];
       jobs.push((async () => { try {
-        const [img, patterns, keepers, crowd, grass, overrides, overridesKeepers, stand] = await Promise.all([loadImage(d.players), loadImage(d.patterns), loadImage(d.keepers), loadImage(d.crowd), loadImage(d.grass), d.overrides? loadImage(d.overrides) : null, d.overridesKeepers? loadImage(d.overridesKeepers) : null, d.stand? loadImage(d.stand) : null]);
+        const f = k => deref(d[k]);
+        const [img, patterns, keepers, crowd, grass, overrides, overridesKeepers, stand] = await Promise.all([loadShared(f('players')), loadShared(f('patterns')), loadShared(f('keepers')), loadShared(f('crowd')), loadShared(f('grass')), loadShared(f('overrides')), loadShared(f('overridesKeepers')), loadShared(f('stand'))]);
         // painted pieces load one by one so a single bad texture costs only that piece
-        const pieces = {}; const names = Object.keys(d.pieces || {});
-        await Promise.all(names.map(async n => { try { const image = await loadImage(d.pieces[n].image); pieces[n] = { image, meta: d.pieces[n].meta }; } catch(e){ /* generated art for this piece */ } }));
-        register(st, spr, { img, patterns, keepers, crowd, grass, overrides, overridesKeepers, stand, standMeta: d.standMeta, pieces, manifest: d.manifest }); } catch(e){ /* fallback */ } })());
+        const pieces = {}; const pd = d.pieces || {}; const names = Object.keys(pd);
+        await Promise.all(names.map(async n => { try { const p = deref(pd[n]); const image = await loadShared(p.image); pieces[n] = { image, meta: p.meta }; } catch(e){ /* generated art for this piece */ } }));
+        register(st, spr, { img, patterns, keepers, crowd, grass, overrides, overridesKeepers, stand, standMeta: f('standMeta'), pieces, manifest: f('manifest') }); } catch(e){ /* fallback */ }
+        finally { const sd = noteStyle(st); sd.done++; if (sd.done >= sd.expected) sd.resolve(); } })());
+      if (st===first){ firstJobs.push(jobs[jobs.length-1]); if (firstJobs.length===list.filter(k => k.split('/')[0]===first).length) await Promise.all(firstJobs); }   // the default style lands before the rest start decoding
     }
     if (!data && baseUrl){
       for (const st of ['A','B']) for (const spr of [16, 12]) jobs.push((async () => { try { const m = await (await root.fetch(`${baseUrl}/${st}/players-${spr}.json`)).json(); const [img, patterns, keepers, crowd, grass] = await Promise.all([loadImage(`${baseUrl}/${st}/players-${spr}.png`), loadImage(`${baseUrl}/${st}/patterns-${spr}.png`), loadImage(`${baseUrl}/${st}/keepers-${spr}.png`), loadImage(`${baseUrl}/${st}/crowd-${spr}.png`), loadImage(`${baseUrl}/${st}/grass-${spr}.png`)]); register(st, spr, { img, patterns, keepers, crowd, grass, manifest: m }); } catch(e){ /* fallback */ } })());
@@ -152,8 +170,22 @@
     return best;
   }
   const standTexture = spr => pieceTexture(spr, 'far');
+  // where a painted piece has paint: a coarse grid of its alpha (MASK_N squared cells), made once per piece, so that effects laid
+  // over it (the camera flashes of a celebration) land on the stand and never on its transparent corners. Null where no
+  // canvas can be read, in which case the caller draws nothing.
+  const MASK_N = 48;
+  function pieceMask(piece){
+    if (!piece || !piece.image) return null; if (piece.mask!==undefined) return piece.mask;
+    let mask = null;
+    try {
+      const c = createCanvas(MASK_N, MASK_N); const g = c.getContext('2d'); g.drawImage(piece.image, 0, 0, MASK_N, MASK_N);
+      const d = g.getImageData(0, 0, MASK_N, MASK_N).data; mask = new Uint8Array(MASK_N*MASK_N); for (let i=0;i<mask.length;i++) mask[i] = d[i*4+3] > 160? 1 : 0;
+    } catch(e){ mask = null; }
+    piece.mask = mask; return mask;
+  }
+  const maskAt = (mask, u, v) => mask[Math.min(MASK_N-1, Math.floor(v*MASK_N))*MASK_N + Math.min(MASK_N-1, Math.floor(u*MASK_N))]===1;
 
-  MD.isoAssets = { MATS, load, register, has, get, crowdStrip, grass, standTexture, pieceTexture, available, paletteFor, toneRGB,
+  MD.isoAssets = { MATS, load, register, has, get, crowdStrip, grass, standTexture, pieceTexture, pieceMask, maskAt, MASK_N, available, paletteFor, toneRGB,
     setStyle(s){ style = s; cache.clear(); texCache.clear(); }, getStyle(){ return style; },
-    setCanvasFactory(f){ createCanvas = f; cache.clear(); texCache.clear(); }, cacheSize(){ return cache.size; }, clear(){ cache.clear(); texCache.clear(); } };
+    setCanvasFactory(f){ createCanvas = f; cache.clear(); texCache.clear(); }, cacheSize(){ return cache.size; }, clear(){ cache.clear(); texCache.clear(); }, styleReady, isReady, expects };
 })(typeof window!=='undefined'? window : globalThis);

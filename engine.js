@@ -312,12 +312,37 @@ function playMatch(state, home, away, opts={}){
   };
   for (const x of xiH) book(x,'H'); for (const x of xiA) book(x,'A');
   cards.sort((a,b)=>a.min-b.min);
+  reconcileRecord(scorers, cards);
   // a suspended player serves his ban while the club plays without him
   const onPitch = new Set([...xiH,...xiA].map(x=>x.p.id));
   for (const c of [home, away]){ c.matches = (c.matches||0)+1; for (const p of squadOf(state,c)) if (p.ban>0 && !onPitch.has(p.id)) p.ban--; }
   const leaguePos = home.leaguePos||8;
   const att = opts.neutral? opts.finalAtt : attendanceFor(state, home, away, leaguePos, opts.demandMult||1);
   return { home, away, gH, gA, scorers, extra, att, injuries, cards, bans, xiH, xiA, xgH, xgA };
+}
+
+// The record keeps time. Scorers' minutes and cards' minutes are drawn independently of each other, so a man could be
+// booked a second time before his first booking, or score after he had been sent off. Nothing is redrawn here (every
+// result, scorer, booking and statistic stays exactly as it was, and no random number is consumed, so a save made
+// before this change plays on identically): the minutes are moved by arithmetic on the numbers already drawn.
+function reconcileRecord(scorers, cards){
+  const redOf = {}, yellowOf = {};
+  for (const c of cards){ if (c.type==='R') redOf[c.p.id] = c; else if (c.type==='Y') yellowOf[c.p.id] = c; }
+  // a second booking comes after the first
+  for (const id in redOf){
+    const r = redOf[id], y = yellowOf[id]; if (!y) continue;
+    if (r.min < y.min){ const t = r.min; r.min = y.min; y.min = t; }
+    if (r.min === y.min){ if (r.min < 90) r.min++; else y.min--; }
+  }
+  // nobody scores after he has been sent off
+  for (const s of scorers){
+    const r = redOf[s.p.id]; if (!r || s.min < r.min) continue;
+    if (s.et){ r.min = Math.min(120, s.min + 1); if (r.min === s.min) s.min--; }        // an extra-time goal stays in extra time: the dismissal follows it
+    else if (r.min >= 2){ s.min = 1 + (s.min % (r.min - 1)); }                          // the goal moves to before the dismissal (1 .. r.min-1)
+    else { r.min = Math.min(90, s.min + 1); if (r.min === s.min) s.min--; }              // sent off in the first minute: the dismissal follows the goal instead
+    const y = yellowOf[s.p.id]; if (y && y.min >= r.min) y.min = Math.max(1, r.min - 1); // and the first booking stays before the second
+  }
+  scorers.sort((a,b)=>a.min-b.min); cards.sort((a,b)=>a.min-b.min);
 }
 
 function pickScorer(xi){
@@ -462,7 +487,7 @@ function playEuroWeek(state, results){
       else if (gA!==t.g1[1]) winner = gA>t.g1[1]? A : B;   // away goals: A scored gA away, B scored g1[1] away
       else {
         const eH = poisson(m.xgH*0.3), eA = poisson(m.xgA*0.3);
-        if (eH!==eA){ gH+=eH; gA+=eA; aggA+=eA; aggB+=eH; winner = aggA>aggB? A : B; m.extra='aet'; creditExtraTime(m.scorers, m.xiH, m.xiA, eH, eA); m.scorers.sort((a,b)=>a.min-b.min); }
+        if (eH!==eA){ gH+=eH; gA+=eA; aggA+=eA; aggB+=eH; winner = aggA>aggB? A : B; m.extra='aet'; creditExtraTime(m.scorers, m.xiH, m.xiA, eH, eA); m.scorers.sort((a,b)=>a.min-b.min); reconcileRecord(m.scorers, m.cards); }
         else { const hp = rand()<0.5; winner = hp? home : away; m.extra = hp? 'pens-H':'pens-A'; }
       }
       m.gH = gH; m.gA = gA; m.agg = { a:aggA, b:aggB }; t.g2 = [gH, gA]; m.winner = winner.id; results.push(m);

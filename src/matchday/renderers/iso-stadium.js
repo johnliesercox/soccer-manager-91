@@ -50,28 +50,53 @@
       const x = Math.round(a.sx - T.anchor.x*f), y = Math.round(a.sy - T.anchor.y*f), w = Math.round(tex.image.width*f), h = Math.round(tex.image.height*f);
       if (!inClip(clip, x, y, w, h)) continue;
       if (!bounce){ ctx.drawImage(tex.image, x, y, w, h); continue; }
-      const bands = 10, sh = tex.image.height/bands, dh = h/bands;
+      const bands = 16, sh = tex.image.height/bands, dh = h/bands; const rows = WAVE_ROWS[name] || WAVE_ROWS.other;
       for (let b=0;b<bands;b++){
-        const u = (b + 0.5)/bands; const win = Math.sin(Math.PI*Math.max(0, Math.min(1, (u - 0.1)/0.75)));   // the fans, not the roof edge or the front wall
-        const dy = -Math.round(bounce.amp*win*Math.max(0, Math.sin(bounce.phase + b*0.9 + k*1.3)));
-        ctx.drawImage(tex.image, 0, b*sh, tex.image.width, sh, x, Math.round(y + b*dh) + dy, w, Math.ceil(dh) + 1);
+        const u = (b + 0.5)/bands; const win = trapezoid(u, rows);      // the rows of fans, not the roof or the front wall
+        // a wave running along the stand (each section a little behind the last), the rows out of step with each other
+        const dy = win? -Math.round(bounce.amp*win*Math.max(0, Math.sin(bounce.phase - k*0.8 + b*0.35))) : 0;
+        if (dy) ctx.drawImage(tex.image, 0, b*sh, tex.image.width, sh, x, Math.round(y + b*dh) + dy, w, Math.ceil(dh) + 1);
       }
+      if (bounce.flashes) flashbulbs(ctx, x, y, w, h, k, bounce, FLASH_ROWS[name] || FLASH_ROWS.other, tex, cam.P);
     }
     return true;
   }
+  // which rows of each painted piece hold fans (a share of its height from the top): the main stand's upper rows sit under
+  // its roof, so only its lower half rises; the ends and the near terrace are fans from edge to edge
+  const WAVE_ROWS = { far: [0.44, 0.52, 0.9, 0.96], other: [0.0, 0.08, 0.9, 0.97] };
+  const FLASH_ROWS = { far: [0.5, 0.88], other: [0.08, 0.86] };
+  const trapezoid = (u, r) => u <= r[0] || u >= r[3]? 0 : u < r[1]? (u - r[0])/(r[1] - r[0]) : u > r[2]? (r[3] - u)/(r[3] - r[2]) : 1;
+  // camera flashes in the stand: a few white points a frame, each a twelfth of a second, scattered over the fans with a
+  // hash of the section and the moment (so they are the same on every machine and never need storing)
+  const hash = (a, b, c) => { let v = (a*73856093) ^ (b*19349663) ^ (c*83492791); v = (v ^ (v >>> 13)) * 1274126177; return ((v ^ (v >>> 16)) >>> 0) / 4294967296; };
+  function flashbulbs(ctx, x, y, w, h, k, bounce, rows, tex, P){
+    const AS = MD.isoAssets; const mask = AS.pieceMask(tex); if (!mask) return;
+    const slot = Math.floor(bounce.age*12); const n = Math.round(bounce.flashes*(0.6 + 2.6*hash(k, slot, 1)));
+    const size = Math.max(1, Math.round(P/12));                 // a couple of pixels at the close scale, one at the wide
+    for (let i=0;i<n;i++){
+      const u = hash(k, slot, 10 + i), v = rows[0] + (rows[1] - rows[0])*hash(k, slot, 40 + i);
+      if (!AS.maskAt(mask, u, v)) continue;                      // a transparent corner of the piece: no stand there
+      const fx = Math.round(x + u*w), fy = Math.round(y + v*h); const bright = 0.6 + 0.4*hash(k, slot, 70 + i);
+      ctx.fillStyle = 'rgba(255,255,255,'+(bright*0.55).toFixed(2)+')'; ctx.fillRect(fx - size, fy, size*3, size); ctx.fillRect(fx, fy - size, size, size*3);
+      ctx.fillStyle = 'rgba(255,255,255,'+bright.toFixed(2)+')'; ctx.fillRect(fx, fy, size, size);
+    }
+  }
   // the crowd rising for a goal: the scoring side's sections (the home support in the main stand and the X=0 end, the
-  // away support in the X=105 end), a wave that builds in a third of a second and dies away over seven. Drawn over the
-  // cached ground, before the players.
-  const CROWD_SIDES = { home: ['far', 'left'], away: ['right'] };
+  // away support in the X=105 end), a wave that builds in a third of a second and dies away over eight, with camera
+  // flashes through its first five. Drawn over the cached ground, before the players.
+  const CROWD_SIDES = { home: ['far', 'left', 'near'], away: ['right'] };
+  const WAVE = { amp: 0.3, rise: 0.3, span: 8, flashes: 6 };     // amplitude as a share of a metre at the stand, in seconds
   function drawCrowdReaction(ctx, cam, side, age, intensity, clip){
-    const amp = cam.P*0.12*(intensity||1)*Math.min(1, age/0.3)*Math.max(0, 1 - age/7);
+    const amp = cam.P*WAVE.amp*(intensity||1)*Math.min(1, age/WAVE.rise)*Math.max(0, 1 - age/WAVE.span);
     if (amp < 0.6) return false;
-    const L = DIM.L, W = DIM.W, m = DIM.runoff, sm = DIM.runoff + STAND.gap; const bounce = { amp, phase: age*9 };
+    const flashes = age < WAVE.flashes? (intensity||1)*Math.max(0, 1 - age/WAVE.flashes) : 0;
+    const L = DIM.L, W = DIM.W, m = DIM.runoff, sm = DIM.runoff + STAND.gap; const bounce = { amp, phase: age*7, age, flashes };
     let drew = false;
     for (const name of CROWD_SIDES[side]||[]){
       if (name==='far') drew = paintedRun(ctx, cam, 'far', -m - 2, L + m + 2, along => [along, -(DIM.runoff + STAND.gap), 0], clip, bounce) || drew;
       else if (name==='left') drew = paintedRun(ctx, cam, 'left', -m - 1, W + m - 2, along => [-sm, along, 0], clip, bounce) || drew;
       else if (name==='right') drew = paintedRun(ctx, cam, 'right', -m - 1, W + m - 2, along => [L + sm, along, 0], clip, bounce) || drew;
+      else if (name==='near' && paintedRun(ctx, cam, 'near', -m + 2, L + m - 2, along => [along, W + sm, 0], clip, bounce)){ drew = true; paintedRun(ctx, cam, 'boards', -m, L + m, along => [along, W + m, 0], clip); }   // the hoardings stand in front of it
     }
     return drew;
   }
@@ -187,6 +212,65 @@
     ctx.fillStyle = '#FFF6C8'; ctx.fillRect(Math.round(base.sx - lw/2)+1, Math.round(top.sy - lh)+1, lw-2, Math.max(1, lh-2));
   }
 
+  // ---- the four corners: a filled quarter terrace tucked into each, between the end of one stand and the start of the
+  // next (rows parallel to the diagonal, each a little longer and higher than the one in front, rising at the pace of the
+  // lower of its two neighbours so the taller stand's end face shows above it), with a crush barrier every fourth row, a
+  // low wall at its front and a floodlight pylon behind it. The far corners' pylons are part of the ground (the stands
+  // hide their feet); the near corners' pylons stand in front of the near terrace and are drawn per frame in depth order.
+  const CORNER_T = 0.8, CORNER_ROWS = 12, CORNER_FIRST = 1;
+  const TOWER = { side: 2.6, lit: '#B9BDC2', shade: '#8E9399', top: '#CDD1D5', door: '#3C4148' };
+  const CORNERS = (() => {
+    const m = DIM.runoff, L = DIM.L, W = DIM.W, sm = m + STAND.gap;
+    return [
+      { id: 'A', x0: -m - 2, y0: -m - 1, sx: -1, sy: -1, rise: STAND.rise*0.8, fam: 'far', near: false, tower: 9.5 },      // far stand and the X=0 end
+      { id: 'B', x0: L + m + 2, y0: -m - 1, sx: 1, sy: -1, rise: STAND.rightRise, fam: 'right', near: false, tower: 4.8 },   // far stand and the X=105 end
+      { id: 'C', x0: L + sm, y0: W + sm, sx: 1, sy: 1, rise: Math.min(STAND.rightRise, STAND.nearRise), fam: 'near', near: true, tower: 2.6 },   // the X=105 end and the near terrace
+      { id: 'D', x0: -sm, y0: W + sm, sx: -1, sy: 1, rise: Math.min(STAND.nearRise, STAND.rise), fam: 'left', near: true, tower: 2.6 },         // the near terrace and the X=0 end
+    ];
+  })();
+  const cornerPylonAt = c => ({ X: c.x0 + c.sx*(CORNER_ROWS*CORNER_T + 2.5), Y: c.y0 + c.sy*(CORNER_ROWS*CORNER_T + 2.5) });
+  function cornerTerrace(ctx, cam, rnd, c, jump, clip, colours){
+    const z = r => 0.5 + r*c.rise;
+    const A = (r, zUp) => [c.x0 + c.sx*r*CORNER_T, c.y0, z(r) + (zUp||0)];        // the row's end along the first stand
+    const B = (r, zUp) => [c.x0, c.y0 + c.sy*r*CORNER_T, z(r) + (zUp||0)];        // and along the second
+    // far corners recede from the viewer (back rows first); near corners come towards him (front rows first)
+    const order = []; if (c.near){ for (let r=CORNER_FIRST; r<CORNER_ROWS; r++) order.push(r); } else { for (let r=CORNER_ROWS-1; r>=CORNER_FIRST; r--) order.push(r); }
+    const wall = () => { const a = A(CORNER_FIRST), b = B(CORNER_FIRST); PITCH.poly(ctx, cam, [a, b, [b[0], b[1], 0], [a[0], a[1], 0]], CONCRETE_DARK); };
+    if (c.near) wall();
+    for (const r of order) PITCH.poly(ctx, cam, [A(r), B(r), B(r+1), A(r+1)], r%2? CONCRETE : CONCRETE_DARK);
+    if (!c.near) wall();
+    // the people: a coat and a head each along the row, the kits' colours sprinkled in (the same figures as the generated terraces)
+    const step = 0.3; const bw = Math.max(1, Math.round(cam.P*0.24)), bh = Math.max(2, Math.round(cam.P*0.3)), hw = Math.max(1, Math.round(cam.P*0.14)), hh = Math.max(1, Math.round(cam.P*0.13));
+    const pal = COATS.concat(colours||[]); let drew = false;
+    for (const r of order){
+      const a = A(r, 0.6), b = B(r, 0.6); const len = Math.hypot(b[0]-a[0], b[1]-a[1]); const n = Math.floor(len/step);
+      if (clip){ const pa = PR.project(a[0], a[1], a[2], cam), pb = PR.project(b[0], b[1], b[2], cam); const pad = cam.P*1.2; if (!inClip(clip, Math.min(pa.sx, pb.sx) - pad, Math.min(pa.sy, pb.sy) - bh - hh - pad, Math.abs(pb.sx - pa.sx) + 2*pad, Math.abs(pb.sy - pa.sy) + bh + hh + 2*pad)){ for (let i=0;i<n;i++){ rnd(); rnd(); rnd(); rnd(); rnd(); } continue; } }
+      for (let i=0;i<n;i++){
+        const u = rnd(), pick = rnd(); const col = u < 0.08? BRIGHT[Math.floor(pick*BRIGHT.length)] : pal[Math.floor(pick*pal.length)]; const sk = SKIN[Math.floor(rnd()*SKIN.length)];
+        const gap = rnd() < 0.04; const up = rnd() < 0.6 && jump? 0.35 : 0;
+        if (gap) continue;
+        const f = (i + 0.5)/n; const X = a[0] + (b[0]-a[0])*f, Y = a[1] + (b[1]-a[1])*f;
+        const q = PR.project(X, Y, a[2] + up, cam); const x = Math.round(q.sx - bw/2), y = Math.round(q.sy - bh);
+        if (!inClip(clip, x, y - hh, bw, bh + hh)) continue;
+        ctx.fillStyle = col; ctx.fillRect(x, y, bw, bh); ctx.fillStyle = sk; ctx.fillRect(Math.round(q.sx - hw/2), y - hh, hw, hh); drew = true;
+      }
+      if (r%4===1){ const pa = PR.project(...A(r, 1.0), cam), pb = PR.project(...B(r, 1.0), cam); const rr = new PITCH.Raster(ctx); rr.line(pa.sx, pa.sy, pb.sx, pb.sy, 1); rr.fill(RAIL); }
+    }
+    return drew;
+  }
+
+  // a corner tower at the junction of two stands in a far corner: a plain concrete stair block the height of the lower
+  // neighbour or a little more, which closes the raw ends of the two terraces where they meet
+  function cornerTower(ctx, cam, c){
+    if (!c.tower) return;
+    const a = c.x0, b = c.x0 + c.sx*TOWER.side, u = c.y0, v = c.y0 + c.sy*TOWER.side, h = c.tower;   // footprint between the junction and the terrace behind
+    const xe = Math.max(a, b), xw = Math.min(a, b), ys = Math.max(u, v), yn = Math.min(u, v);         // east/west, south/north edges
+    PITCH.poly(ctx, cam, [[xw, ys, 0], [xe, ys, 0], [xe, ys, h], [xw, ys, h]], TOWER.lit);            // the face towards the viewer (south)
+    PITCH.poly(ctx, cam, [[xe, yn, 0], [xe, ys, 0], [xe, ys, h], [xe, yn, h]], TOWER.shade);          // the east face
+    PITCH.poly(ctx, cam, [[xw, yn, h], [xe, yn, h], [xe, ys, h], [xw, ys, h]], TOWER.top);            // the flat roof
+    PITCH.poly(ctx, cam, [[xw + 0.9, ys, 0], [xw + 1.7, ys, 0], [xw + 1.7, ys, 2.1], [xw + 0.9, ys, 2.1]], TOWER.door);   // a door
+  }
+
   // The whole ground except the goals, for camera cam; clip is an optional canvas-pixel rectangle
   // (the renderer paints tiles). opts.colours are the two kits' primaries for the crowd.
   // Returns true when any spectators landed inside the clip (so a crowd-bounce variant is worth having).
@@ -200,18 +284,23 @@
     // painted pieces, when the style ships them, go over the generated art (holes in a texture show the generated art);
     // a reference render (only) wants the generated geometry alone
     const sm = DIM.runoff + STAND.gap;
-    if (on('pylons')){ pylon(ctx, cam, -m - 6, -m - 10); pylon(ctx, cam, L + m + 6, -m - 10); }
+    if (on('pylons')){ for (const c of CORNERS) if (!c.near){ const q = cornerPylonAt(c); pylon(ctx, cam, q.X, q.Y); if (!only) placedPiece(ctx, cam, 'pylon'+c.id, clip); } }
     if (on('far')){ crowd = terrace(ctx, cam, rnd, 'Y', -m - 2, L + m + 2, STAND.rows, jump, clip, colours) || crowd; }
     if (on('roof')) roof(ctx, cam, -m - 2, L + m + 2);
     if (on('far') && !only) paintedStand(ctx, cam, -m - 2, L + m + 2, clip);
     if (on('dugout')) for (const X0 of DUGOUT.from) drawDugout(ctx, cam, X0, clip);
     if (on('left')){ crowd = terrace(ctx, cam, rnd, 'X-', -m - 1, W + m - 2, STAND.endRows, jump, clip, colours.slice(1)) || crowd; if (!only) paintedRun(ctx, cam, 'left', -m - 1, W + m - 2, along => [-sm, along, 0], clip); }
+    if (on('corners')) for (const c of CORNERS) if (!c.near){ crowd = cornerTerrace(ctx, cam, rnd, c, jump, clip, colours) || crowd; cornerTower(ctx, cam, c); if (!only) placedPiece(ctx, cam, 'corner'+c.id, clip); }   // the far corners: a terrace in the notch and a stair tower at the junction
     if (on('pitch')) PITCH.draw(ctx, cam);
     if (on('right')){ crowd = terrace(ctx, cam, rnd, 'X+', -m - 1, W + m - 2, STAND.endRows, jump, clip, colours.slice(0, 1)) || crowd; if (!only) paintedRun(ctx, cam, 'right', -m - 1, W + m - 2, along => [L + sm, along, 0], clip); }   // nearer the viewer than the pitch, so after it
     if (on('near')){ crowd = terrace(ctx, cam, rnd, 'Y+', -m + 2, L + m - 2, STAND.nearRows, jump, clip, colours) || crowd; if (!only) paintedRun(ctx, cam, 'near', -m + 2, L + m - 2, along => [along, W + sm, 0], clip); }
     if (on('boards')){ boards(ctx, cam); if (!only) paintedRun(ctx, cam, 'boards', -m, L + m, along => [along, W + m, 0], clip); }   // the hoardings stand in front of the near terrace's first row
+    if (on('corners')) for (const c of CORNERS) if (c.near){ crowd = cornerTerrace(ctx, cam, rnd, c, jump, clip, colours) || crowd; cornerTower(ctx, cam, c); if (!only) placedPiece(ctx, cam, 'corner'+c.id, clip); }   // the near corners: a low terrace and a turnstile block, in front of the stands' painted ends
     return crowd;
   }
+  // (no floodlights in the near corners: in this view they would stand between the viewer and the corner flags)
+  const nearPylons = () => [];
+  const drawPylon = (ctx, cam, X, Y) => pylon(ctx, cam, X, Y);
 
   // ---- goals: posts, crossbar and net as world objects ----
   // end 0 is the X=0 goal, end 1 the X=105 goal. The net lies beyond the goal line, away from the pitch.
@@ -227,8 +316,34 @@
       backDepth: PR.depth(Math.min(gx, bx), far) - 0.2,
       frontDepth: PR.depth(Math.max(gx, bx), near) + 0.1 };
   }
-  function drawGoal(ctx, cam, end, part){
+  // a modelled piece (tools/visual-rnd/blender_pieces.py) placed by the world anchor its meta carries: the goal parts, the
+  // corner terraces and towers, the floodlight pylons. True when drawn, so the caller can skip or keep its generated art.
+  function placedPiece(ctx, cam, name, clip){
+    const AS = MD.isoAssets; const tex = AS && AS.pieceTexture && AS.pieceTexture(cam.P, name);
+    if (!tex || !tex.meta.anchorWorld) return false;
+    const T = tex.meta; const f = cam.P/T.P; const a = PR.project(T.anchorWorld[0], T.anchorWorld[1], T.anchorWorld[2], cam);
+    const x = Math.round(a.sx - T.anchor.x*f), y = Math.round(a.sy - T.anchor.y*f), w = Math.round(tex.image.width*f), h = Math.round(tex.image.height*f);
+    if (clip && !inClip(clip, x, y, w, h)) return true;
+    ctx.drawImage(tex.image, x, y, w, h); return true;
+  }
+
+  // the back net's state at this moment: '' when still, '-bulge<lane>' for the four tenths of a second after a goal went in
+  // and '-settle<lane>' for the half second after that (lane 0 by the far post, 1 the middle, 2 by the near post, from
+  // where the ball lies). The goal flash is the clock (the ball reaches the net on the goal's own second) and the ball
+  // must be lying dead beyond that goal line. Only a goal moves the net: a save, a block, the woodwork and a ball over
+  // the bar leave it still.
+  function netState(scene, end){
+    const f = scene && scene.flash, b = scene && scene.ball; if (!f || f.type!=='goal' || !b || b.state!=='dead') return '';
+    if (!(end? b.x > 0.995 : b.x < 0.005)) return '';
+    const age = f.age; if (!(age >= 0 && age < 0.9)) return '';
+    const dy = b.y*DIM.W - DIM.W/2; const lane = dy < -1.18? 0 : dy > 1.18? 2 : 1;
+    return (age < 0.4? '-bulge' : '-settle') + lane;
+  }
+
+  function drawGoal(ctx, cam, end, part, state){
     const g = goalGeometry(end);
+    if (part==='back'){ if ((state && placedPiece(ctx, cam, 'goal'+end+'b'+state)) || placedPiece(ctx, cam, 'goal'+end+'b')) return; }
+    else if (placedPiece(ctx, cam, 'goal'+end+'f')) return;
     const r = new PITCH.Raster(ctx);
     const seg = (a, b, w) => { const p = PR.project(a[0], a[1], a[2], cam), q = PR.project(b[0], b[1], b[2], cam); r.line(p.sx, p.sy, q.sx, q.sy, w); };
     const pw = Math.max(1, Math.round(cam.P*0.14));
@@ -254,5 +369,5 @@
     }
   }
 
-  MD.iso.stadium = { drawGround, drawGoal, goalGeometry, drawDugout, dugoutBox, drawCrowdReaction, CROWD_SIDES, DUGOUT, STAND, COATS, BRIGHT };
+  MD.iso.stadium = { drawGround, drawGoal, netState, goalGeometry, drawDugout, dugoutBox, placedPiece, CORNER_T, CORNER_ROWS, CORNER_FIRST, TOWER, drawCrowdReaction, nearPylons, drawPylon, CORNERS, cornerPylonAt, CROWD_SIDES, WAVE, WAVE_ROWS, DUGOUT, STAND, COATS, BRIGHT };
 })(typeof window!=='undefined'? window : globalThis);

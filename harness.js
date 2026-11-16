@@ -9,6 +9,8 @@ function boot(opts={}){
   const dom = new JSDOM(html, { url: opts.url||'http://localhost/', runScripts:'dangerously', pretendToBeVisual:true, beforeParse(w){
     w.matchMedia = () => ({ matches: !!opts.reduced });
     if (!opts.realCanvas){ const noop = () => {}; const ctx = new Proxy({}, { get: (t, k) => (k==='canvas'? null : noop) }); w.HTMLCanvasElement.prototype.getContext = function(){ return ctx; }; }
+    // jsdom never loads an image: fail them at once so the match viewer does not wait for painted art that cannot arrive
+    if (!opts.realImages){ w.Image = class { set src(v){ this._src = v; setTimeout(() => { if (this.onerror) this.onerror(new Error('no images in the harness')); }, 0); } get src(){ return this._src; } }; }
     w.console.error = (...a) => errors.push(a.join(' '));
     if (opts.capture){ delete w.navigator.sendBeacon; w.fetch = (url, o) => { sent.push({ url, body: o && o.body }); return Promise.resolve({ ok:true, status:200, json:()=>Promise.resolve(opts.fetchReply||{ok:true, rows:[]}), text:()=>Promise.resolve('{}') }); }; }
     if (opts.pre) opts.pre(w);

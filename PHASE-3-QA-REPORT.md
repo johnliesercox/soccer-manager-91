@@ -1,4 +1,4 @@
-# Phase 3 QA report (interim, after Milestone 2A)
+# Phase 3 QA report (interim, updated through Milestone 3D)
 
 Source baseline: commit 9115a15 ("Add source, build script and tests (1.4.0)"), verified to rebuild the live `index.html` byte for byte. Milestones 1, 2 and 2A are on top of it in the working tree (preview build `1.5.0-m2a preview`, not deployed). Test commands: `node test-isometric.js`, plus every existing suite (`test-matchday.js`, `test-playback.js`, `test-matchday-ui.js`, `test-phase25.js`, `test-equivalence.js`, `test-regression.js`, `test-contracts.js`, `test-youth.js`, `test-hof.js`). Run them one at a time: two UI suites running at once share a temporary file and can trip each other.
 
@@ -157,6 +157,42 @@ Stadium corrections made on the way: the X=105 end stand had collapsed into one 
 | 3B.6a | Performance with the taller sheets (headless Chromium): 60 fps at 360x640, 390x664, 844x390 and 1366x768, p95 frame 18 to 19 ms, 0.7 to 1.4 ms of render per frame, 2.7 to 4.9 ms per ground tile, 25 to 38 MB of JS heap after a whole-match tour (17 MB before the match, was 15), load 0.5 s | pass |
 | 3B.7 | Desktop (1366x768) and phone (iPhone 13) recordings of whole matches at 1x through the real UI, in `phase3-m3b/recordings/` | see the checkpoint |
 
+## Milestone 3C (14 November 2026): the contact audit
+
+| # | Check | Result |
+|---|---|---|
+| 3C.1 | `test-contact.js`: 20 matches, 38,700 contacts measured against the drawn sprite's contact point; per-kind pass rates after the fixes: pass 100%, cross 100%, clearance 99%, shot 100%, first-time 99%, header 100%, volley 100%, first touch 100%, catch 98%, parry 97%, sliding block 100%, standing block 100%, goal-line clearance 100%, slide tackle 93%, standing tackle 98% (before: 91, 33, 94, 68, 96, 0, 100, 98, 83, 96, 6, 100, 38, 2, 10) | pass |
+| 3C.2 | Typical ball-to-contact distance after: 0.11 m for kicks and first touches, 0.00 for headers and catches, 0.12 for parries and tackles; facing at the contact within 1 degree for every kind | pass |
+| 3C.3 | Bookings (105 in 40 matches with a foul): the offender within 3 m of the foul 101, the foul shown as a slide 105, the victim down 102, the referee beside the offender when the card is shown 105 | pass |
+| 3C.4 | All twelve suites pass one at a time on the final build; engine equivalence holds | pass |
+| 3C.5 | Performance (headless Chromium): 60 fps at 360x640, 390x664, 844x390 and 1366x768, p95 frame 18 to 20 ms, 0.4 to 1.5 ms of render per frame, 25 to 37 MB heap after a match, load 0.5 s, 5.4 MB | pass |
+| 3C.6 | Engine record defects noted for John's decision (not changed): 40 goals by a player after his own red card and 95 second yellows before the first, over 4,820 matches | noted |
+
+## Milestone 3D (15 November 2026): the record, the camera, the celebration, the crowd
+
+| # | Check | Result |
+|---|---|---|
+| 3D.1 | `test-record.js`: four seeds, 42 weeks each (4,820 matches, 13,459 goals) against the frozen 1.5.0 engine: identical fixtures, scores, scorers, bookings, dismissals, bans, statistics, points and balances; no goal at or after its scorer's dismissal; every second yellow after the first; minutes in range; 35 goal minutes and 100 dismissal minutes moved; deterministic | pass (19,457 checks) |
+| 3D.2 | `test-camera.js` on the desktop stage (904x560, 146 highlights, 139,450 frames at 60 fps): the ball in view 100%; the striker and the ball at the strike 100% of 91; both posts as the shot arrives 100% of 61; the offender and the referee through a booking 100%; the scorer through a celebration 99.4%; both men at a challenge 100%; the man on the ball 100%; no frame without a player; over the pan cap 2 frames; the scale changes only at a cut (24 cuts, 0 elsewhere); celebration frames at the close scale 89% (the rest are the 1.2 s on the net before the cut) | pass |
+| 3D.3 | The same on the phone stage (390x430): ball 100%, strike 100%, arrival 98.4%, booking 99.9%, celebration 97.8%, challenge 100%, man on the ball 100%, 41 frames of 139,450 with no player in view (a loose ball rolling clear for 0.7 s on the narrow stage), over the cap 4 frames, 28 scale cuts, all at a goal | pass |
+| 3D.4 | `test-contact.js` after the timeline fixes (20 matches, 38,879 contacts): every kind at 99 to 100% except the small samples (sliding block 19 of 20, goal-line clearance 14 of 15); slide tackle 100% (was 93%, worst 0.71 m, now 0.13 m at the 95th percentile); no contact by a dismissed man; the three outliers the new fixtures showed (a man kicking a ball 12 m away before a booking, a clearance by a man 8 m away, a sent-off keeper saving) fixed | pass (16 checks) |
+| 3D.4a | Goals from distance (14 seeds, every match of week 1, 1,218 goals): shots from over 30 m were 21% of goals in 3C (101 from over 40 m, the longest 75 m, after a pass back to a deep scorer); now 2.2% (4 from over 40 m, the longest 43 m); the median goal from 14 m, the 90th percentile 23 m | pass |
+| 3D.5 | All fourteen suites pass one at a time on the final build (matchday, playback, matchday-ui, phase25, isometric, highlights, contact, camera, record, contracts, hof, youth, equivalence, regression); the engine equivalence suite passes as before | pass |
+| 3D.6 | Performance (headless Chromium, 360x640, 390x664, 844x390, 1366x768): 58.8 to 60.3 fps, p95 frame 18.3 to 20.1 ms, 0.4 to 1.7 ms of render per ordinary frame and 1.2 to 4.7 ms through a celebration (the wave and the flashes), 3.4 to 5.2 ms per ground tile, 27 to 38 MB of heap after a whole-match tour, load 0.45 to 0.49 s, 5.42 MB | pass |
+| 3D.7 | Browser smoke (desktop and phone): the four views cycle, the match plays, no console errors | pass |
+
+## Milestone 3D correction pass (15 November 2026): restarts, corners, the corners of the ground
+
+| # | Check | Result |
+|---|---|---|
+| 3D.8 | `test-restarts.js`: 165 kick-offs (101 after a goal) over two league weeks: the conceding side restarts 101 of 101; the celebration closed before every restart; a cut at every restart after a goal; everyone but the taker in his own half (0 over the line); the receiving side outside the centre circle (0 inside); the ball on the spot and still until the kick (0 off, 0 moved); nobody drifting before the kick (0 men); a beat on the spot before every kick | pass |
+| 3D.9 | The same suite, 72 corners at all four flags: at the flag on the side the ball went out 72 of 72; the ball inside the one-metre arc from the moment it is dead until the kick (furthest 0.85 m from the flag) and still; the taker within 0.45 m of the ball as he kicks it | pass |
+| 3D.10 | `test-contact.js` on the final build (20 matches, 38,931 contacts): every kind at 96 to 100%, the small samples included (goal-line clearance 14 of 15); slide tackles 100% | pass (16 checks) |
+| 3D.11 | `test-isometric.js` E01: every corner structure stands beyond the run-off; no corner tower rises into the projected pitch at the close scale; floodlights in the far corners only | pass (61 checks) |
+| 3D.12 | `test-highlights.js`: the ball is never teleported between events (the four out-of-time turnovers that moved it 25 to 40 m without an event are gone) | pass |
+| 3D.13 | All fifteen suites pass one at a time on the final build; `test-camera.js` unchanged in substance (ball 100%; the striker and the ball at the strike 100% of 100; both posts at the arrival 100% of 63; bookings 100% desktop and 99.9% phone; celebrations 99.4% and 96.8%; both men at a challenge 100% and 94.3%; the man on the ball 100%; over the pan cap 1 and 3 frames in 139,000) | pass |
+| 3D.14 | Performance (headless Chromium, four viewports): see the checkpoint; the corner structures are painted into the ground tiles and cost nothing per frame | pass |
+
 ## Manual scenarios (Section 14)
 
 Covered so far by the recordings and captures: 1 kick-off, 2 midfield passing, 4 shot saved, 5 goal, 6 corner (desktop recording, 36 s), 8 ends swap (second-half goal at the left end), 12 next-highlight cut. Open: 3 counter-attack framing review, 7 red card, 9 extra time/penalties, 10 hot-seat in ISO, 11 view switching mid-match (passes the UI test), 13 offline mobile, 14 long log desktop (layout unchanged), 15 weak-browser fallback.
@@ -164,7 +200,7 @@ Covered so far by the recordings and captures: 1 kick-off, 2 midfield passing, 4
 ## Known limitations after the Phase 3 art completion
 
 * The near terrace is the right end's painting mirrored (a packed pen of fans seen from behind): the depth preprocessor reads the low flat near terrace as a slab and painted it as one row of giant figures four times over; a dedicated painting can replace it in seconds if a later attempt comes out right.
-* The crowd figures in the painted stands are chunky (a head is about a player's head), in the 16-bit manner; the painted stands do not bounce for a goal (the generated crowd under them does, in any holes).
+* The crowd figures in the painted stands are chunky (a head is about a player's head), in the 16-bit manner. (Since 3D the painted stands rise in a wave for a goal, with camera flashes; the main stand's rows under its roof stay still.)
 * The referee's raised card is a few pixels and is not painted from the W heading (the painter hid the arm behind the body).
 * A cut or seek can paint up to twenty tiles in one frame (about 70 ms on a desktop close camera); neighbours will be pre-painted in Milestone 5.
 * Frame pacing is from headless Chromium; no real-device numbers yet (the preview file is the way to get them).

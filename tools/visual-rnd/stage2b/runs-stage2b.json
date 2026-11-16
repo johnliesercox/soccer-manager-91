@@ -1,0 +1,40 @@
+{
+ "folder": "#inputs/soccer-manager/sm91-stage2b",
+ "option1": {
+  "route": "i",
+  "denoise": 0.6,
+  "prompt": "pixel",
+  "treatment": "crowd",
+  "runs": {
+   "batch-00 far,near,left,right": "run_kRDqA3iCmRZyAWEe",
+   "batch-01 cornerA-D": "run_Q89MiZpwDnGq8zup"
+  }
+ },
+ "option2": {
+  "route": "i",
+  "denoise": 0.8,
+  "prompt": "illustrated",
+  "treatment": "crowd",
+  "runs": {
+   "batch-00 far,near,left,right": "run_4NGsNDpAGyHyy3qf",
+   "batch-01 cornerA-D": "run_9gAYRG1yu6yHFD1t"
+  }
+ },
+ "goal_test": {
+  "route": "i",
+  "denoise": 0.35,
+  "run": "run_HFMnhS1HANmKm3GD"
+ },
+ "sheets": {
+  "sm91-sheet-s2b-o1-00_00001_.png": "run_mGjtZqJoEydUxCkP (7.5 MB)",
+  "sm91-sheet-s2b-o2-00_00001_.png": "run_HcBCSHGx83v4AxRB"
+ },
+ "flotime_ms": {
+  "o1 batch 00": 170491,
+  "o1 batch 01": 106626,
+  "o2 batch 00": 35476,
+  "o2 batch 01": 29300,
+  "goal test": 30727,
+  "sheet o1": 4204
+ }
+}

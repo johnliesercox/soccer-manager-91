@@ -32,6 +32,7 @@
   // tackle or block is a slide or a goal-line clearance, what a reaction is about, whether a keeper was beaten
   const DETAIL_KEYS = ['z','slide','line','kind','beaten','firstTime','intercept','parry','variant'];
   function cueDetail(c){ let d = null; for (const k of DETAIL_KEYS) if (c[k]!==undefined){ (d||(d={}))[k] = c[k]; } return d; }
+  const AHEAD = 0.3;               // metres a controlled ball is shown ahead of its owner's feet
   const ANIM_ALIAS = { pass:'kick', shoot:'shoot', volley:'volley', header:'header', dive:'dive', catch:'catch', getup:'getup', tackle:'slide', block:'block', receive:'receive', set:'set', celebrate:'celebrate', booked:'booked', dismay:'dismay' };
   const movementOf = s => s < 0.5? 'idle' : s < 2.4? 'walk' : s < 4.8? 'jog' : s < 7.2? 'run' : 'sprint';
 
@@ -94,11 +95,13 @@
     for (const e of p.events){
       switch (e.type){
         case EV.SENT_OFF: offSoFar.add(e.playerId); break;
-        case EV.KICK_OFF: case EV.SECOND_HALF: case EV.ET_START: key(e.matchSecond, centre, e.playerId||kicker(e.teamId), e.teamId, 'restart', e.type!==EV.KICK_OFF? { cut:true } : null); break;
+        case EV.KICK_OFF: case EV.SECOND_HALF: case EV.ET_START: key(e.matchSecond, centre, e.playerId||kicker(e.teamId), e.teamId, 'restart', Object.assign({ eventId: e.id }, (e.type!==EV.KICK_OFF || e.matchSecond > 0)? { cut:true } : {})); break;   // every restart from the centre but the first is a cut: everyone is placed for it
         case EV.PASS: case EV.RUN: flight(e, { arc: 1 }, {}, e.type===EV.RUN? e.playerId : e.toPlayerId, e.teamId); break;
         case EV.CROSS: flight(e, { arc: 1.3, cross: true }, { aerial: true, catch: !!e.catch }, e.toPlayerId, e.toTeamId||e.teamId); break;
         case EV.INTERCEPTION: flight(e, { arc: 0.9 }, { intercept: true }, e.toPlayerId, other(e.teamId)); break;
         case EV.DEFLECTION: {
+          // off the woodwork to the keeper's hand: he dives and pushes it on (a parry where the ball reaches him)
+          if (e.keeperId){ flight(e, { arc: 0.5 }, { save: true, parried: true, rebound: true }, e.keeperId, e.teamId); break; }
           // a rebound falls to whoever plays it next (a follow-up shot, a hacked clearance) within a couple of seconds
           let taker = null;
           if (e.rebound){ const nx = p.events.find(x=>x.matchSecond > e.matchSecond && x.from && x.playerId && x.matchSecond - (x.duration||0) <= e.matchSecond + 2.5 && x.matchSecond - (x.duration||0) >= e.matchSecond - 0.01); if (nx) taker = nx.playerId; }
@@ -127,7 +130,7 @@
       const dt = Math.max(0, k.t - pk.t); const dx = (k.x - pk.x)*105, dy = (k.y - pk.y)*68; const d = Math.sqrt(dx*dx + dy*dy); const allow = Math.min(7*dt, 2*dt*dt) + 0.3;   // from a standing start
       if (d > allow){ const u = allow/d; k.x = pk.x + (k.x - pk.x)*u; k.y = pk.y + (k.y - pk.y)*u; }
     }
-    MD.interactions.standOffsets(keys);
+    MD.interactions.standOffsets(keys); MD.interactions.presetControl(keys);
     const cutTimes = keys.filter(k=>k.cut).map(k=>k.t);
     const cutFloor = t => { let f = 0; for (const c of cutTimes){ if (c<=t) f = c; else break; } return f; };
     // possession changes with the eased value each blend starts from, so a quick turnover never jumps
@@ -147,7 +150,7 @@
       const targets = {}, band = {};
       const near = ck.y < 0.5;
       const attackers = teamOf(att).filter(x=>x.role!=='GK' && x.id!==ck.carrier && !offAt(x.id, t));
-      if (ck.carrier){ targets[ck.carrier] = { x: ck.x, y: ck.y }; band[ck.carrier] = B.BAND.RUN; }
+      if (ck.carrier){ targets[ck.carrier] = (kick && kick.carrier===ck.carrier && kick.sox!==undefined)? MD.interactions.standOf(kick) : { x: ck.x, y: ck.y }; band[ck.carrier] = B.BAND.SPRINT; }   // the taker gets out to the flag at whatever pace it takes
       const box = attackers.filter(x=>x.role==='FWD').concat(attackers.filter(x=>x.role==='DEF').slice(0,2)).concat(attackers.filter(x=>x.role==='MID').slice(0,1)).slice(0,5);
       box.forEach((pl,i)=>{ const ax = 0.9 + jitter(p.matchId+'c', i)*0.06, y = 0.36 + i*0.07 + jitter(p.matchId+'cy', i)*0.04; targets[pl.id] = toAbs(att, t, ax, y); band[pl.id] = B.BAND.RUN; });
       const edge = attackers.filter(x=>!box.includes(x)).filter(x=>x.role!=='DEF').slice(0,2);
@@ -157,7 +160,7 @@
       if (gkOf[def]){ targets[gkOf[def]] = toAbs(def, t, 0.025, 0.5 + (near? -0.03 : 0.03)); band[gkOf[def]] = B.BAND.JOG; }
       // whoever meets the corner (an attacker, a defender heading clear, the keeper claiming) waits where it will land
       const met = keys[ck.idx+2];
-      if (kick && met && met.kind==='arrive' && met.carrier){ targets[met.carrier] = { x: met.x, y: met.y }; band[met.carrier] = B.BAND.RUN; }
+      if (kick && met && met.kind==='arrive' && met.carrier){ targets[met.carrier] = MD.interactions.standOf(met); band[met.carrier] = B.BAND.RUN; }
       // nobody takes up a corner position while the ball is still in play: the window opens at the last touch
       let j = ck.idx - 1; while (j > 0 && !keys[j].carrier) j--;
       const deadAt = keys[j].t;
@@ -227,14 +230,29 @@
     const offTimeOf = id => offTime[id]===undefined? null : offTime[id];
     const offTimeIdx = players.map(pl=>offTimeOf(pl.id));
     const offAtIdx = (i, t) => offTimeIdx[i]!==null && t >= offTimeIdx[i];
-    // bookings: the referee walks to the offender and shows the card beside him; the offender stands and takes it
-    const cards = p.events.filter(e=>e.type===EV.CARD && e.playerId!==null && e.playerId!==undefined && index[e.playerId]!==undefined).map(e=>({ from: e.matchSecond - 4.5, to: e.matchSecond + 2.7, playerId: e.playerId }));
-    const cardAt = t => { const i = lastIndex(cards, t, c=>c.from); const c = i>=0? cards[i] : null; return (c && t<=c.to)? c : null; };
-    const ctx = { p, events: p.events, players, index, byId, H, A, other, gkOf, keys, carries, windows, windowAt, cardAt, cutTimes, cutFloor, end, anchorsAt, roleAt, offAt, offAtIdx, offTimeOf, offSpot, dirAt, attackAt, lastIndex };
+    const ctx = { p, events: p.events, players, index, byId, H, A, other, gkOf, keys, carries, windows, windowAt, cutTimes, cutFloor, end, anchorsAt, roleAt, offAt, offAtIdx, offTimeOf, offSpot, dirAt, attackAt, lastIndex };
     ctx.ballAt = t => MD.interactions.ballAt(ctx, t);
+    // bookings: the referee walks to the offender and shows the card beside him; the offender stands and takes it
+    // fouls: the offender runs at the man on the ball and brings him down where the ball is; the victim goes down
+    const fouls = p.events.filter(e=>e.type===EV.FOUL && e.playerId!==null && e.playerId!==undefined && index[e.playerId]!==undefined && e.at).map(e=>{ const b = ctx.ballAt(e.matchSecond - 0.05); return { t: e.matchSecond, from: e.matchSecond - 3.2, to: e.matchSecond + 0.3, x: e.at.x, y: e.at.y, playerId: e.playerId, victimId: (b.carrier && b.carrier!==e.playerId)? b.carrier : null }; });
+    const foulAt = t => { const i = lastIndex(fouls, t, f=>f.from); const f = i>=0? fouls[i] : null; return (f && t<=f.to)? f : null; };
+    const cards = p.events.filter(e=>e.type===EV.CARD && e.playerId!==null && e.playerId!==undefined && index[e.playerId]!==undefined).map(e=>{ const f = fouls.filter(x=>x.playerId===e.playerId && x.t <= e.matchSecond && e.matchSecond - x.t < 8).pop(); return { from: Math.max(e.matchSecond - 4.5, f? f.t + 0.7 : -1), to: e.matchSecond + 2.7, playerId: e.playerId }; });
+    const cardAt = t => { const i = lastIndex(cards, t, c=>c.from); const c = i>=0? cards[i] : null; return (c && t<=c.to)? c : null; };
+    ctx.fouls = fouls; ctx.foulAt = foulAt; ctx.cardAt = cardAt;
     const traj = MD.trajectories.build(ctx);
     MD.interactions.controlTimes(ctx, traj);
     const cues = MD.interactions.actions(ctx);
+    // the moments a renderer may mark with a flash of contact: a header or volley struck, a catch, a parry, a block, a
+    // goal-line clearance, the woodwork; each with where it happens and how high
+    const contacts = [];
+    for (let i=0;i<keys.length;i++){
+      const k = keys[i];
+      if (k.kind==='launch' && (k.technique==='header' || k.technique==='volley')) contacts.push({ t: k.t, x: k.x, y: k.y, z: k.z0||0, kind: k.technique });
+      else if (k.kind==='arrive' && k.save) contacts.push({ t: k.t, x: k.x, y: k.y, z: k.z1||0, kind: k.catch? 'catch' : 'parry' });
+      else if (k.block) contacts.push({ t: k.t, x: k.x, y: k.y, z: k.z1||0, kind: k.line? 'line' : 'block' });
+      else if (k.post) contacts.push({ t: k.t, x: k.x, y: k.y, z: k.z1||0, kind: 'woodwork' });
+    }
+    const contactAt = t => { const i = lastIndex(contacts, t, c=>c.t); if (i < 0) return null; const c = contacts[i]; const age = t - c.t; return age < 0.5? Object.assign({ age }, c) : null; };
 
     // referee signals
     const signals = [];
@@ -267,19 +285,40 @@
     // The displayed ball: a controlled ball sits at its carrier's feet (the planned trajectory is
     // the truth for players; the keyframes only pin the ball at the instants it is struck or
     // arrives), with short blends into and out of those pinned points so nothing ever jumps.
+    // the facing a player is drawn with: his movement facing, or towards the aim of his current action
+    function facingOf(id, q, t){
+      let f = q.facing; const cl = cues[id]; const ci = lastIndex(cl, t, c=>c.from);
+      if (ci>=0 && t<=cl[ci].to){ const c = cl[ci]; if (c.aimX!==undefined && c.action!=='celebrate' && c.action!=='booked'){ const d = Math.hypot((c.aimY - q.y)*B.PY, (c.aimX - q.x)*B.PX); if (d > 0.3) f = Math.atan2((c.aimY - q.y)*B.PY, (c.aimX - q.x)*B.PX); } }
+      return f;
+    }
+    const flashAt = t => { const g = goals.filter(g=>g.matchSecond<=t).pop(); return (g && t - g.matchSecond < 2.5)? { type:'goal', teamId: g.teamId, age: t - g.matchSecond } : null; };
+    // the camera's interest now, with where it will be 0.8 s on (the scene is known, so a camera can lead the play)
+    function interestAt(ball, t, win, flash, noLead){
+      const focusOf = w => (w && w.focusId && w.targets[w.focusId])? Object.assign({ id: w.focusId }, w.targets[w.focusId]) : null;
+      const ci = MD.interactions.cameraInterest(ctx, ball, t, win, flash, focusOf(win));
+      if (noLead) return ci;
+      const t2 = Math.min(duration, t + 0.8); const b2 = ctx.ballAt(t2); const w2 = windowAt(t2);
+      const fl2 = flashAt(t2);
+      const a = MD.interactions.cameraInterest(ctx, b2, t2, w2, fl2, focusOf(w2));
+      ci.ahead = { x: a.x, y: a.y, kind: a.kind };
+      return ci;
+    }
     function displayedBall(ball, s, t){
-      if (ball.state!=='controlled' || !ball.carrier) return ball;
+      if (ball.state!=='controlled' || !ball.carrier || ball.placed) return ball;   // a placed ball stays on its spot
       const i = index[ball.carrier]; if (i===undefined) return ball;
-      const q = s.players[i]; const feet = { x: q.x, y: q.y };
+      const q = s.players[i];
+      // a controlled ball sits a touch ahead of its owner's feet along the facing he is drawn with, so it shows at the front foot
+      const fa = facingOf(ball.carrier, q, t); const feet = { x: q.x + Math.cos(fa)*AHEAD/B.PX, y: q.y + Math.sin(fa)*AHEAD/B.PY };
       const k0 = ball.from, k1 = ball.to;
       const ct = k0? (k0.controlT||k0.t) : t;
       let x = feet.x, y = feet.y;
       const dist = k0? B.dm(feet.x, feet.y, k0.x, k0.y) : 0;
       const inBlend = Math.min(0.9, 0.3 + dist/9);
       if (t - ct < inBlend){ const u = smooth((t - ct)/inBlend); x = lerp(k0.x, feet.x, u); y = lerp(k0.y, feet.y, u); }   // gathering it
-      if (k1 && k1.kind==='launch' && k1.carrier===ball.carrier){
+      // setting it for the kick, or losing it in a challenge: the ball is exactly at the key point when the key comes
+      if (k1 && k1.carrier!==undefined && ((k1.kind==='launch' && k1.carrier===ball.carrier) || k1.tackle || k1.block)){
         const d1 = B.dm(feet.x, feet.y, k1.x, k1.y); const outBlend = Math.min(1.0, 0.3 + d1/9);
-        if (k1.t - t < outBlend){ const u = smooth(1 - (k1.t - t)/outBlend); x = lerp(x, k1.x, u); y = lerp(y, k1.y, u); }   // setting it for the kick
+        if (k1.t - t < outBlend){ const u = smooth(1 - (k1.t - t)/outBlend); x = lerp(x, k1.x, u); y = lerp(y, k1.y, u); }
       }
       return Object.assign({}, ball, { x, y });
     }
@@ -289,10 +328,10 @@
       const s = traj.sample(t);
       const ball = displayedBall(ctx.ballAt(t), s, t);
       const phase = phaseAt(t);
-      const lastGoal = goals.filter(g=>g.matchSecond<=t).pop();
-      const flash = (lastGoal && t - lastGoal.matchSecond < 2.5)? { type:'goal', teamId: lastGoal.teamId, age: t - lastGoal.matchSecond } : null;
+      const flash = flashAt(t);
       const win = windowAt(t);
       // the crowd's moment: the celebration window (or the goal flash before it), for the scoring side
+      const contact = contactAt(t);
       const crowd = (win && win.kind==='celebration')? { teamId: win.teamId, age: t - win.from, intensity: 1 + 0.5*(win.big||0) } : (flash? { teamId: flash.teamId, age: flash.age, intensity: 1 } : null);
       const out = players.map((pl, i)=>{
         const q = s.players[i];
@@ -302,7 +341,7 @@
         let action = 'none', actionPhase = 0, aim = null, actionDetail = null;
         const cl = cues[pl.id]; const ci = lastIndex(cl, t, c=>c.from);
         if (ci>=0 && t<=cl[ci].to){ const c = cl[ci]; action = c.action; actionPhase = (t - c.from)/Math.max(0.01, c.to - c.from); if (c.aimX!==undefined) aim = { x: c.aimX, y: c.aimY }; actionDetail = cueDetail(c); }
-        const speed = q.speed; const movement = off? 'idle' : movementOf(speed);
+        const speed = q.speed; const movement = movementOf(speed);                      // a dismissed man walks off, he does not slide
         let facingAngle = q.facing;
         if (aim && action!=='celebrate' && action!=='booked'){ const d = Math.hypot((aim.y - y)*B.PY, (aim.x - x)*B.PX); if (d > 0.3) facingAngle = Math.atan2((aim.y - y)*B.PY, (aim.x - x)*B.PX); }
         return { id: pl.id, teamId: pl.teamId, name: pl.name, shirtNo: pl.shirtNo, role: roleAt(i, t), x, y, vx: q.vx, vy: q.vy, speedMs: speed, movement, facingAngle, action, actionPhase, actionDetail, anim: ANIM_ALIAS[action]||'idle', aim, intent: q.role, hasBall: ball.carrier===pl.id, sentOff: off };
@@ -314,12 +353,73 @@
         t, phase, phaseLabel: PHASE_LABEL[phase]||phase, clock: clockAt(t), score: scoreAt(t),
         possession: ball.team, attackDir: { [H]: dirAt(H, t), [A]: dirAt(A, t) }, attack: { [H]: attackAt(H, t), [A]: attackAt(A, t) }, formations,
         ball: { x: ball.x, y: ball.y, z: ball.z, inFlight: ball.inFlight, carrierId: ball.carrier, state: ball.state, actionId: ball.from? (ball.from.eventId||null) : null },
-        players: out, ref, setPiece: win? win.kind : null, crowd,
-        cameraInterest: MD.interactions.cameraInterest(ctx, ball, t, win, flash, (win && win.focusId && win.targets[win.focusId])? Object.assign({ id: win.focusId }, win.targets[win.focusId]) : null),
+        players: out, ref, setPiece: win? win.kind : null, crowd, contact,
+        celebration: celebrationCutAt(t), cameraInterest: interestAt(ball, t, win, flash), frame: frameAt(t), frameAt, lastCut: lastCutAt(t),   // frameAt: so the camera can look ahead when it chooses its scale
         flash, live: phase==='firstHalf'||phase==='secondHalf'||phase==='extraTime1'||phase==='extraTime2',
       };
     }
-    return { getSceneAt, duration, keyframes: keys, anchors: anchorSets[0].anchors, anchorSets, phases, windows, formations, trajectory: traj, cutTimes };
+    // ---- what a camera must keep in view at t (Milestone 3D): normalised points, z in metres ----
+    // The ball always; the man about to strike it and both posts in the second before a shot and while it flies at the
+    // goal (and while the keeper deals with it); the taker and the goalmouth while a corner is in the air; the man on
+    // the ball and the man about to challenge him around a tackle; the offender, the man he fouled and the referee
+    // from a foul to the card; the scorer and the nearest of his teammates through a celebration.
+    const posAt = (id, t) => { const i = index[id]; if (i===undefined) return null; const q = traj.sample(t).players[i]; return { x: q.x, y: q.y }; };
+    const goalPosts = gx => [{ x: gx, y: 0.5 - 3.66/B.PY, z: 2.44 }, { x: gx, y: 0.5 + 3.66/B.PY, z: 2.44 }];
+    // Each point has a weight: 'hard' (never out of the inner view: the ball, or the scorer through a celebration),
+    // 'must' (kept in view and counted when the scale is chosen) or 'nice' (kept in view when it costs nothing).
+    // the celebration the camera is in at t, if any: a celebration holds the camera until the restart cuts away, not
+    // just until its window closes half a second before the kick-off
+    const celebrationAt = (t, ball) => {
+      let win = windowAt(t);
+      if (!win && ball.state==='dead'){ const i = lastIndex(windows, t, w=>w.from); const lw = i>=0? windows[i] : null; if (lw && lw.kind==='celebration' && t - lw.to < 1.0) win = lw; }
+      return (win && win.kind==='celebration' && win.focusId)? win : null;
+    };
+    const CELEB_CUT = 1.2;                                       // the net first, then the cut to the scorer
+    function frameAt(t){
+      const ball = ctx.ballAt(t); const win = celebrationAt(t, ball);
+      const celebrating = !!win;
+      const settled = celebrating && t - win.from > CELEB_CUT;
+      const pts = [{ x: ball.x, y: ball.y, z: Math.max(0, ball.z||0)*3, what: 'ball', weight: settled? 'nice' : 'hard' }];
+      const k0 = ball.from, k1 = ball.to;
+      const add = (p, what, weight) => { if (p) pts.push({ x: p.x, y: p.y, z: 0, what, weight: weight||'must' }); };
+      if (ball.carrier) add(posAt(ball.carrier, t), 'carrier');
+      // a shot: from a second before the strike until the keeper, the net, the woodwork or the line has dealt with it
+      const shotNext = !!(k1 && k1.kind==='launch' && k1.shot && k1.t - t < 2.6);   // notice, so the camera has time to compose it
+      const shotNow = !!(ball.inFlight && k0 && k0.shot);
+      if (shotNext || shotNow){
+        const sk = shotNext? k1 : k0; const target = shotNext? keys[keys.indexOf(k1)+1] : k1;
+        const gx = target? (target.x > 0.5? 1 : 0) : (sk.x > 0.5? 1 : 0);
+        add(posAt(sk.carrier, t), 'striker'); for (const g of goalPosts(gx)) pts.push(Object.assign({ what: 'post', weight: 'must' }, g));
+      }
+      if (k0 && (k0.save || k0.post || k0.kind==='goal' || (k0.out && k0.miss)) && t - k0.t < 1.2){ const gx = k0.x > 0.5? 1 : 0; for (const g of goalPosts(gx)) pts.push(Object.assign({ what: 'post', weight: 'must' }, g)); if (k0.carrier) add(posAt(k0.carrier, t), 'keeper'); }
+      // a cross or a corner in the air: where it is going, and the goalmouth if it costs nothing
+      if (ball.inFlight && k0 && k0.cross && k1){ add({ x: k1.x, y: k1.y }, 'landing'); const gx = k1.x > 0.5? 1 : 0; for (const g of goalPosts(gx)) pts.push(Object.assign({ what: 'post', weight: 'nice' }, g)); }
+      // a challenge: the man coming in, from a second before to half a second after
+      if (k1 && (k1.tackle || k1.block) && k1.carrier && k1.t - t < 1.0) add(posAt(k1.carrier, t), 'challenger');
+      if (k0 && (k0.tackle || k0.block) && k0.carrier && t - k0.t < 0.6) add(posAt(k0.carrier, t), 'challenger');
+      // a foul and the card that follows
+      const foul = foulAt(t); const card = cardAt(t);
+      if (foul){ add(posAt(foul.playerId, t), 'offender'); if (foul.victimId) add(posAt(foul.victimId, t), 'victim'); }
+      if (card){ add(posAt(card.playerId, t), 'offender'); const r = traj.sample(t).ref; pts.push({ x: r.x, y: r.y, z: 1.8, what: 'referee' }); }
+      // a celebration: the scorer above all (never out of the inner view once the camera has left the net), where he
+      // is running to (so a run to the supporters or a knee slide has room in front of it), and the two teammates
+      // nearest him when they fit
+      if (celebrating){
+        const sc = posAt(win.focusId, t); add(sc, 'scorer', t - win.from > CELEB_CUT + 0.5? 'hard' : 'must');   // half a second for the camera to reach him after the cut
+        if (sc){
+          const ahead = posAt(win.focusId, Math.min(t + 0.7, win.to)); if (ahead && B.dm(ahead.x, ahead.y, sc.x, sc.y) > 0.5) add(ahead, 'lead', 'nice');
+          const goal = win.targets && win.targets[win.focusId]; if (goal && B.dm(goal.x, goal.y, sc.x, sc.y) < 14) add(goal, 'lead', 'nice');
+          const mates = Object.keys(win.targets).filter(id => id!==win.focusId && win.anim && win.anim[id]).map(id => ({ id, p: posAt(id, t) })).filter(m=>m.p).sort((a,b)=>B.dm(a.p.x,a.p.y,sc.x,sc.y)-B.dm(b.p.x,b.p.y,sc.x,sc.y)).slice(0, 2); for (const m of mates) add(m.p, 'teammate', 'nice');
+        }
+      }
+      return pts;
+    }
+    // the cut to the scorer inside a celebration, for the camera's choice of scale: { cut, end } while the camera is on him
+    const celebrationCutAt = t => { const win = celebrationAt(t, ctx.ballAt(t)); return (win && t - win.from > CELEB_CUT)? { cut: win.from + CELEB_CUT, end: win.to + 1.0 } : null; };
+    // the camera's cuts are the scene's: every restart from the centre spot after the first (a half placed rather than run
+    // to, the kick-off after a goal), where the picture cuts to the centre circle rather than whipping across the pitch
+    const lastCutAt = t => { let c = -1; for (const x of cutTimes){ if (x <= t) c = x; else break; } return c; };
+    return { getSceneAt, frameAt, duration, keyframes: keys, anchors: anchorSets[0].anchors, anchorSets, phases, windows, formations, trajectory: traj, cutTimes };
   }
 
   MD.createScene = createScene; MD.PHASE_LABEL = PHASE_LABEL;

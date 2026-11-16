@@ -1,0 +1,1919 @@
+{
+ "grids": {
+  "dive-2-h2": {
+   "cells": [
+    {
+     "pose": "dive",
+     "frame": 2,
+     "dir": "E",
+     "iou": 0.957,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "dive",
+     "frame": 2,
+     "dir": "SE",
+     "iou": 0.95,
+     "extra": 0.001,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "dive",
+     "frame": 2,
+     "dir": "S",
+     "iou": 0.942,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "dive",
+     "frame": 2,
+     "dir": "SW",
+     "iou": 0.941,
+     "extra": 0.0,
+     "unpainted": 0.011,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "dive",
+     "frame": 2,
+     "dir": "W",
+     "iou": 0.954,
+     "extra": 0.0,
+     "unpainted": 0.006,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "dive",
+     "frame": 2,
+     "dir": "NW",
+     "iou": 0.944,
+     "extra": 0.0,
+     "unpainted": 0.007,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "dive",
+     "frame": 2,
+     "dir": "N",
+     "iou": 0.947,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "dive",
+     "frame": 2,
+     "dir": "NE",
+     "iou": 0.929,
+     "extra": 0.0,
+     "unpainted": 0.004,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    }
+   ],
+   "bad": [],
+   "iouMean": 0.946
+  },
+  "header-1+header-2-gk": {
+   "cells": [
+    {
+     "pose": "header",
+     "frame": 1,
+     "dir": "E",
+     "iou": 0.934,
+     "extra": 0.0,
+     "unpainted": 0.001,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 1,
+     "dir": "SE",
+     "iou": 0.938,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 1,
+     "dir": "S",
+     "iou": 0.943,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 1,
+     "dir": "SW",
+     "iou": 0.915,
+     "extra": 0.014,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 1,
+     "dir": "W",
+     "iou": 0.949,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 1,
+     "dir": "NW",
+     "iou": 0.939,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 1,
+     "dir": "N",
+     "iou": 0.935,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 1,
+     "dir": "NE",
+     "iou": 0.93,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 2,
+     "dir": "E",
+     "iou": 0.949,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 2,
+     "dir": "SE",
+     "iou": 0.941,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 2,
+     "dir": "S",
+     "iou": 0.932,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 2,
+     "dir": "SW",
+     "iou": 0.924,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 2,
+     "dir": "W",
+     "iou": 0.949,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 2,
+     "dir": "NW",
+     "iou": 0.947,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 2,
+     "dir": "N",
+     "iou": 0.934,
+     "extra": 0.0,
+     "unpainted": 0.001,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 2,
+     "dir": "NE",
+     "iou": 0.943,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    }
+   ],
+   "bad": [],
+   "iouMean": 0.938
+  },
+  "header-1+header-2-h1": {
+   "cells": [
+    {
+     "pose": "header",
+     "frame": 1,
+     "dir": "E",
+     "iou": 0.934,
+     "extra": 0.0,
+     "unpainted": 0.001,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 1,
+     "dir": "SE",
+     "iou": 0.936,
+     "extra": 0.001,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 1,
+     "dir": "S",
+     "iou": 0.933,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 1,
+     "dir": "SW",
+     "iou": 0.914,
+     "extra": 0.016,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 1,
+     "dir": "W",
+     "iou": 0.951,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 1,
+     "dir": "NW",
+     "iou": 0.94,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 1,
+     "dir": "N",
+     "iou": 0.937,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 1,
+     "dir": "NE",
+     "iou": 0.931,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 2,
+     "dir": "E",
+     "iou": 0.953,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 2,
+     "dir": "SE",
+     "iou": 0.941,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 2,
+     "dir": "S",
+     "iou": 0.925,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 2,
+     "dir": "SW",
+     "iou": 0.923,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 2,
+     "dir": "W",
+     "iou": 0.948,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 2,
+     "dir": "NW",
+     "iou": 0.946,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 2,
+     "dir": "N",
+     "iou": 0.933,
+     "extra": 0.0,
+     "unpainted": 0.001,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 2,
+     "dir": "NE",
+     "iou": 0.942,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    }
+   ],
+   "bad": [],
+   "iouMean": 0.937
+  },
+  "header-1+header-2-h2": {
+   "cells": [
+    {
+     "pose": "header",
+     "frame": 1,
+     "dir": "E",
+     "iou": 0.931,
+     "extra": 0.0,
+     "unpainted": 0.001,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 1,
+     "dir": "SE",
+     "iou": 0.939,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 1,
+     "dir": "S",
+     "iou": 0.937,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 1,
+     "dir": "SW",
+     "iou": 0.916,
+     "extra": 0.016,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 1,
+     "dir": "W",
+     "iou": 0.949,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 1,
+     "dir": "NW",
+     "iou": 0.941,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 1,
+     "dir": "N",
+     "iou": 0.937,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 1,
+     "dir": "NE",
+     "iou": 0.93,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 2,
+     "dir": "E",
+     "iou": 0.952,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 2,
+     "dir": "SE",
+     "iou": 0.94,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 2,
+     "dir": "S",
+     "iou": 0.929,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 2,
+     "dir": "SW",
+     "iou": 0.924,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 2,
+     "dir": "W",
+     "iou": 0.943,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 2,
+     "dir": "NW",
+     "iou": 0.944,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 2,
+     "dir": "N",
+     "iou": 0.938,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 2,
+     "dir": "NE",
+     "iou": 0.939,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    }
+   ],
+   "bad": [],
+   "iouMean": 0.937
+  },
+  "header-1+header-2": {
+   "cells": [
+    {
+     "pose": "header",
+     "frame": 1,
+     "dir": "E",
+     "iou": 0.932,
+     "extra": 0.0,
+     "unpainted": 0.001,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 1,
+     "dir": "SE",
+     "iou": 0.939,
+     "extra": 0.001,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 1,
+     "dir": "S",
+     "iou": 0.937,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 1,
+     "dir": "SW",
+     "iou": 0.915,
+     "extra": 0.016,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 1,
+     "dir": "W",
+     "iou": 0.948,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 1,
+     "dir": "NW",
+     "iou": 0.938,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 1,
+     "dir": "N",
+     "iou": 0.936,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 1,
+     "dir": "NE",
+     "iou": 0.932,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 2,
+     "dir": "E",
+     "iou": 0.951,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 2,
+     "dir": "SE",
+     "iou": 0.942,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 2,
+     "dir": "S",
+     "iou": 0.929,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 2,
+     "dir": "SW",
+     "iou": 0.925,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 2,
+     "dir": "W",
+     "iou": 0.945,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 2,
+     "dir": "NW",
+     "iou": 0.945,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 2,
+     "dir": "N",
+     "iou": 0.938,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "header",
+     "frame": 2,
+     "dir": "NE",
+     "iou": 0.941,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    }
+   ],
+   "bad": [],
+   "iouMean": 0.937
+  },
+  "kick-3+shoot-0": {
+   "cells": [
+    {
+     "pose": "kick",
+     "frame": 3,
+     "dir": "E",
+     "iou": 0.952,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "kick",
+     "frame": 3,
+     "dir": "SE",
+     "iou": 0.933,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "kick",
+     "frame": 3,
+     "dir": "S",
+     "iou": 0.928,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "kick",
+     "frame": 3,
+     "dir": "SW",
+     "iou": 0.926,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "kick",
+     "frame": 3,
+     "dir": "W",
+     "iou": 0.952,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "kick",
+     "frame": 3,
+     "dir": "NW",
+     "iou": 0.934,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "kick",
+     "frame": 3,
+     "dir": "N",
+     "iou": 0.935,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "kick",
+     "frame": 3,
+     "dir": "NE",
+     "iou": 0.936,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "shoot",
+     "frame": 0,
+     "dir": "E",
+     "iou": 0.945,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "shoot",
+     "frame": 0,
+     "dir": "SE",
+     "iou": 0.929,
+     "extra": 0.001,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "shoot",
+     "frame": 0,
+     "dir": "S",
+     "iou": 0.937,
+     "extra": 0.001,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "shoot",
+     "frame": 0,
+     "dir": "SW",
+     "iou": 0.934,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "shoot",
+     "frame": 0,
+     "dir": "W",
+     "iou": 0.949,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "shoot",
+     "frame": 0,
+     "dir": "NW",
+     "iou": 0.922,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "shoot",
+     "frame": 0,
+     "dir": "N",
+     "iou": 0.926,
+     "extra": 0.001,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "shoot",
+     "frame": 0,
+     "dir": "NE",
+     "iou": 0.927,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    }
+   ],
+   "bad": [],
+   "iouMean": 0.935
+  },
+  "receive-1+block-0-h1": {
+   "cells": [
+    {
+     "pose": "receive",
+     "frame": 1,
+     "dir": "E",
+     "iou": 0.942,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "receive",
+     "frame": 1,
+     "dir": "SE",
+     "iou": 0.931,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "receive",
+     "frame": 1,
+     "dir": "S",
+     "iou": 0.915,
+     "extra": 0.002,
+     "unpainted": 0.001,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "receive",
+     "frame": 1,
+     "dir": "SW",
+     "iou": 0.917,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "receive",
+     "frame": 1,
+     "dir": "W",
+     "iou": 0.936,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "receive",
+     "frame": 1,
+     "dir": "NW",
+     "iou": 0.929,
+     "extra": 0.0,
+     "unpainted": 0.001,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "receive",
+     "frame": 1,
+     "dir": "N",
+     "iou": 0.921,
+     "extra": 0.002,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "receive",
+     "frame": 1,
+     "dir": "NE",
+     "iou": 0.921,
+     "extra": 0.0,
+     "unpainted": 0.001,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "block",
+     "frame": 0,
+     "dir": "E",
+     "iou": 0.943,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "block",
+     "frame": 0,
+     "dir": "SE",
+     "iou": 0.934,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "block",
+     "frame": 0,
+     "dir": "S",
+     "iou": 0.93,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "block",
+     "frame": 0,
+     "dir": "SW",
+     "iou": 0.922,
+     "extra": 0.001,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "block",
+     "frame": 0,
+     "dir": "W",
+     "iou": 0.946,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "block",
+     "frame": 0,
+     "dir": "NW",
+     "iou": 0.936,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "block",
+     "frame": 0,
+     "dir": "N",
+     "iou": 0.935,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "block",
+     "frame": 0,
+     "dir": "NE",
+     "iou": 0.939,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    }
+   ],
+   "bad": [],
+   "iouMean": 0.931
+  },
+  "receive-1+block-0-h2": {
+   "cells": [
+    {
+     "pose": "receive",
+     "frame": 1,
+     "dir": "E",
+     "iou": 0.941,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "receive",
+     "frame": 1,
+     "dir": "SE",
+     "iou": 0.931,
+     "extra": 0.0,
+     "unpainted": 0.001,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "receive",
+     "frame": 1,
+     "dir": "S",
+     "iou": 0.92,
+     "extra": 0.002,
+     "unpainted": 0.003,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "receive",
+     "frame": 1,
+     "dir": "SW",
+     "iou": 0.924,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "receive",
+     "frame": 1,
+     "dir": "W",
+     "iou": 0.937,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "receive",
+     "frame": 1,
+     "dir": "NW",
+     "iou": 0.93,
+     "extra": 0.0,
+     "unpainted": 0.001,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "receive",
+     "frame": 1,
+     "dir": "N",
+     "iou": 0.924,
+     "extra": 0.001,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "receive",
+     "frame": 1,
+     "dir": "NE",
+     "iou": 0.925,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "block",
+     "frame": 0,
+     "dir": "E",
+     "iou": 0.948,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "block",
+     "frame": 0,
+     "dir": "SE",
+     "iou": 0.937,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "block",
+     "frame": 0,
+     "dir": "S",
+     "iou": 0.936,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "block",
+     "frame": 0,
+     "dir": "SW",
+     "iou": 0.925,
+     "extra": 0.001,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "block",
+     "frame": 0,
+     "dir": "W",
+     "iou": 0.946,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "block",
+     "frame": 0,
+     "dir": "NW",
+     "iou": 0.938,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "block",
+     "frame": 0,
+     "dir": "N",
+     "iou": 0.941,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "block",
+     "frame": 0,
+     "dir": "NE",
+     "iou": 0.941,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    }
+   ],
+   "bad": [],
+   "iouMean": 0.934
+  },
+  "receive-1+block-0": {
+   "cells": [
+    {
+     "pose": "receive",
+     "frame": 1,
+     "dir": "E",
+     "iou": 0.943,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "receive",
+     "frame": 1,
+     "dir": "SE",
+     "iou": 0.932,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "receive",
+     "frame": 1,
+     "dir": "S",
+     "iou": 0.921,
+     "extra": 0.002,
+     "unpainted": 0.002,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "receive",
+     "frame": 1,
+     "dir": "SW",
+     "iou": 0.914,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "receive",
+     "frame": 1,
+     "dir": "W",
+     "iou": 0.933,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "receive",
+     "frame": 1,
+     "dir": "NW",
+     "iou": 0.923,
+     "extra": 0.0,
+     "unpainted": 0.001,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "receive",
+     "frame": 1,
+     "dir": "N",
+     "iou": 0.923,
+     "extra": 0.001,
+     "unpainted": 0.001,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "receive",
+     "frame": 1,
+     "dir": "NE",
+     "iou": 0.918,
+     "extra": 0.0,
+     "unpainted": 0.001,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "block",
+     "frame": 0,
+     "dir": "E",
+     "iou": 0.947,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "block",
+     "frame": 0,
+     "dir": "SE",
+     "iou": 0.936,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "block",
+     "frame": 0,
+     "dir": "S",
+     "iou": 0.932,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "block",
+     "frame": 0,
+     "dir": "SW",
+     "iou": 0.923,
+     "extra": 0.001,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "block",
+     "frame": 0,
+     "dir": "W",
+     "iou": 0.943,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "block",
+     "frame": 0,
+     "dir": "NW",
+     "iou": 0.934,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "block",
+     "frame": 0,
+     "dir": "N",
+     "iou": 0.928,
+     "extra": 0.003,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "block",
+     "frame": 0,
+     "dir": "NE",
+     "iou": 0.939,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    }
+   ],
+   "bad": [],
+   "iouMean": 0.931
+  },
+  "shoot-3+receive-0-h2": {
+   "cells": [
+    {
+     "pose": "shoot",
+     "frame": 3,
+     "dir": "E",
+     "iou": 0.953,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "shoot",
+     "frame": 3,
+     "dir": "SE",
+     "iou": 0.935,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "shoot",
+     "frame": 3,
+     "dir": "S",
+     "iou": 0.926,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "shoot",
+     "frame": 3,
+     "dir": "SW",
+     "iou": 0.924,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "shoot",
+     "frame": 3,
+     "dir": "W",
+     "iou": 0.95,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "shoot",
+     "frame": 3,
+     "dir": "NW",
+     "iou": 0.933,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "shoot",
+     "frame": 3,
+     "dir": "N",
+     "iou": 0.926,
+     "extra": 0.001,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "shoot",
+     "frame": 3,
+     "dir": "NE",
+     "iou": 0.931,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "receive",
+     "frame": 0,
+     "dir": "E",
+     "iou": 0.937,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "receive",
+     "frame": 0,
+     "dir": "SE",
+     "iou": 0.924,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "receive",
+     "frame": 0,
+     "dir": "S",
+     "iou": 0.923,
+     "extra": 0.004,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "receive",
+     "frame": 0,
+     "dir": "SW",
+     "iou": 0.916,
+     "extra": 0.001,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "receive",
+     "frame": 0,
+     "dir": "W",
+     "iou": 0.943,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "receive",
+     "frame": 0,
+     "dir": "NW",
+     "iou": 0.921,
+     "extra": 0.001,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "receive",
+     "frame": 0,
+     "dir": "N",
+     "iou": 0.915,
+     "extra": 0.006,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "receive",
+     "frame": 0,
+     "dir": "NE",
+     "iou": 0.934,
+     "extra": 0.001,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    }
+   ],
+   "bad": [],
+   "iouMean": 0.931
+  },
+  "shoot-3+receive-0": {
+   "cells": [
+    {
+     "pose": "shoot",
+     "frame": 3,
+     "dir": "E",
+     "iou": 0.95,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "shoot",
+     "frame": 3,
+     "dir": "SE",
+     "iou": 0.934,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "shoot",
+     "frame": 3,
+     "dir": "S",
+     "iou": 0.922,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "shoot",
+     "frame": 3,
+     "dir": "SW",
+     "iou": 0.92,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "shoot",
+     "frame": 3,
+     "dir": "W",
+     "iou": 0.947,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "shoot",
+     "frame": 3,
+     "dir": "NW",
+     "iou": 0.929,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "shoot",
+     "frame": 3,
+     "dir": "N",
+     "iou": 0.924,
+     "extra": 0.001,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "shoot",
+     "frame": 3,
+     "dir": "NE",
+     "iou": 0.929,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "receive",
+     "frame": 0,
+     "dir": "E",
+     "iou": 0.933,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "receive",
+     "frame": 0,
+     "dir": "SE",
+     "iou": 0.922,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "receive",
+     "frame": 0,
+     "dir": "S",
+     "iou": 0.92,
+     "extra": 0.004,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "receive",
+     "frame": 0,
+     "dir": "SW",
+     "iou": 0.916,
+     "extra": 0.001,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "receive",
+     "frame": 0,
+     "dir": "W",
+     "iou": 0.942,
+     "extra": 0.0,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "receive",
+     "frame": 0,
+     "dir": "NW",
+     "iou": 0.919,
+     "extra": 0.001,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "receive",
+     "frame": 0,
+     "dir": "N",
+     "iou": 0.912,
+     "extra": 0.005,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    },
+    {
+     "pose": "receive",
+     "frame": 0,
+     "dir": "NE",
+     "iou": 0.931,
+     "extra": 0.001,
+     "unpainted": 0.0,
+     "ball": null,
+     "parts": [],
+     "flag": null
+    }
+   ],
+   "bad": [],
+   "iouMean": 0.928
+  }
+ },
+ "reroll": []
+}

@@ -25,7 +25,7 @@
   // uncovers new tiles at the edge; a crowd-bounce variant is rendered only for tiles that hold spectators.
   const TILE = 256;
   function buildWorld(createCanvas, P, seed, colours){
-    const tiles = new Map(); const MAX = P >= 16? 48 : 36;             // 12 MB on a desktop, 9 MB on a phone, at most
+    const tiles = new Map(); const MAX = P >= 16? 40 : 30;             // 10 MB on a desktop, 7.5 MB on a phone, at most (two scales may be live)
     function get(tx, ty, jump){
       const base = tx+':'+ty; const key = (jump? 'j' : 's') + base;
       let t = tiles.get(key); if (t){ tiles.delete(key); tiles.set(key, t); return t; }
@@ -62,14 +62,20 @@
     if (snap) st.anim = {};
     const mode = info.cameraMode||'follow';
     const cam = ISO.camera.update(st, scene, w, h, mode, dt, snap, info.followP);
+    // a cut inside a highlight (the restart after a goal, the cut to the scorer) dips through black like the cut into one
+    if (st.snapped && (st.cutKind==='scene' || st.cutKind==='celebration') && !info.reducedMotion) st.dipAt = now;
     const teams = info.teams; const home = teams.home, away = teams.away;
     ctx.imageSmoothingEnabled = false;
     ctx.fillStyle = OUTSIDE; ctx.fillRect(0, 0, w, h);
     // the ground
-    const crowdUp = !!(scene.flash && scene.flash.age < 2.4 && Math.floor(scene.flash.age*6)%2===0);
+    // the generated crowd (the near terrace and any gap in the painted stands) jumps: fast through the goal flash, then
+    // on the beat through the first five seconds of the celebration
+    const crowdUp = !!((scene.flash && scene.flash.age < 2.4 && Math.floor(scene.flash.age*6)%2===0) || (scene.crowd && !info.reducedMotion && scene.crowd.age >= 2.4 && scene.crowd.age < 5 && Math.floor(scene.crowd.age*5)%2===0));
     const world = info.world && Math.abs(info.world.P - cam.P) < 1e-6? info.world : null;
     if (world) drawWorld(ctx, w, h, cam, world, crowdUp);
     else ISO.stadium.drawGround(ctx, cam, info.seed||1, crowdUp, null, { colours: [home.kit.primary, away.kit.primary] });
+    // the goals' shadows lie on the grass under everything that stands on it (a modelled piece; styles without one draw none)
+    for (const end of [0, 1]) ISO.stadium.placedPiece(ctx, cam, 'goal'+end+'s');
     // the scoring side's supporters rise (painted stands; the generated crowd under them still jumps in any hole)
     if (scene.crowd && !info.reducedMotion) ISO.stadium.drawCrowdReaction(ctx, cam, scene.crowd.teamId===home.id? 'home' : 'away', scene.crowd.age, scene.crowd.intensity, { x: 0, y: 0, w, h });
     // actors
@@ -83,7 +89,8 @@
       if (s.ring && info.possessionRing!==false) ring(ctx, s.sx, s.sy, Math.round(rx*1.6), Math.max(2, Math.round(ry*1.6)), 'rgba(255,255,255,0.55)');
     }
     for (const it of items){
-      if (it.kind==='goal'){ ISO.stadium.drawGoal(ctx, cam, it.end, it.part); continue; }
+      if (it.kind==='goal'){ ISO.stadium.drawGoal(ctx, cam, it.end, it.part, ISO.stadium.netState(scene, it.end)); continue; }
+      if (it.kind==='pylon'){ ISO.stadium.drawPylon(ctx, cam, it.X, it.Y); continue; }
       if (it.kind==='ball'){
         const half = cam.P >= 14? (cam.P >= 26? 8 : 4) : 3;
         if (it.z > 0.15){ ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(it.sx - 1, it.sy + half, 2, Math.max(1, it.gsy - it.sy - half)); }   // a faint trail down to the shadow
@@ -92,6 +99,21 @@
       const sp = it.sprite; const bx = it.sx - (sp.width>>1), by = it.sy - sp.feet;
       ctx.drawImage(sp, bx, by);
       it.box = { x: bx, y: by, w: sp.width, h: sp.height };
+    }
+    // a flash of contact: a header or volley struck, a catch, a parry, a block, the woodwork (two frames of a small burst,
+    // then a fading ring), so the moment reads at gameplay scale
+    if (scene.contact && scene.contact.age < 0.3 && !info.reducedMotion){
+      const c = scene.contact; const m = PR.toMetres(c.x, c.y); const pt = PR.project(m.X, m.Y, Math.max(0, c.z||0)*PR.BALL_Z_M, cam);
+      const r = Math.max(4, cam.P*0.45); const u = c.age/0.3;
+      ctx.save(); ctx.translate(Math.round(pt.sx), Math.round(pt.sy)); ctx.strokeStyle = 'rgba(255,255,255,'+(0.95*(1-u)).toFixed(2)+')'; ctx.lineWidth = Math.max(1, Math.round(cam.P/14));
+      if (c.age < 0.14){ ctx.beginPath(); for (let i=0;i<4;i++){ const a = i*Math.PI/2 + Math.PI/4; ctx.moveTo(Math.cos(a)*r*0.35, Math.sin(a)*r*0.35); ctx.lineTo(Math.cos(a)*r, Math.sin(a)*r); } ctx.stroke(); }
+      ctx.beginPath(); ctx.arc(0, 0, r*(0.5 + 0.9*u), 0, Math.PI*2); ctx.stroke(); ctx.restore();
+    }
+    // the card: a plain yellow or red rectangle held up above the referee, big enough to be read on a phone
+    if (scene.ref && (scene.ref.signal==='yellow' || scene.ref.signal==='red')){
+      const it = items.find(x=>x.kind==='ref');
+      if (it && it.box){ const w = Math.max(4, Math.round(cam.P*0.32)), h = Math.max(5, Math.round(cam.P*0.46)); const x = it.sx + Math.round(cam.P*0.22), y = it.box.y - h + Math.round(cam.P*0.2);
+        ctx.fillStyle = '#141414'; ctx.fillRect(x - 1, y - 1, w + 2, h + 2); ctx.fillStyle = scene.ref.signal==='red'? '#e0261c' : '#f5d327'; ctx.fillRect(x, y, w, h); }
     }
     // tags
     const font = px => `700 ${Math.round(px)}px "Courier New",Courier,monospace`;
@@ -111,7 +133,9 @@
       ctx.fillStyle = '#FFFFFF'; ctx.font = font(size*0.42); ctx.strokeText(team.short.toUpperCase(), cx, cy+size*0.75); ctx.fillText(team.short.toUpperCase(), cx, cy+size*0.75);
       ctx.restore();
     }
-    if (info.sinceCut!==undefined && info.sinceCut < 0.3){ ctx.save(); ctx.globalAlpha = 1 - info.sinceCut/0.3; ctx.fillStyle = '#000'; ctx.fillRect(0,0,w,h); ctx.restore(); }
+    const dip = st.dipAt!==undefined? (now - st.dipAt)/1000 : 9;
+    const fadeIn = Math.min(info.sinceCut!==undefined? info.sinceCut/0.3 : 1, dip/0.25);
+    if (fadeIn < 1){ ctx.save(); ctx.globalAlpha = 1 - Math.max(0, fadeIn); ctx.fillStyle = '#000'; ctx.fillRect(0,0,w,h); ctx.restore(); }
     if (info.fastForward){ ctx.save(); ctx.globalAlpha = 0.9; ctx.font = font(12); const label = '▶▶ NEXT HIGHLIGHT'; const bw = textW(ctx, label) + 16, bh = 20; ctx.fillStyle = '#111'; ctx.fillRect(Math.round(w/2 - bw/2), 6, Math.round(bw), bh); ctx.fillStyle = '#FFD200'; ctx.fillText(label, w/2, 6+bh/2+1); ctx.restore(); }
     return { cam, items };
   }
@@ -119,9 +143,14 @@
   // ---- the renderer object ----
   // the sheets are decoded once per page; a renderer mounted while that is still in flight repaints its tiles when it lands
   let assetLoadP = null;
+  function holdingFrame(ctx, w, h){
+    ctx.fillStyle = OUTSIDE; ctx.fillRect(0, 0, w, h);
+    ctx.save(); ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.font = '700 13px "Courier New",Courier,monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('Preparing the ground...', Math.round(w/2), Math.round(h/2)); ctx.restore();
+  }
   function assetLoad(url){ if (!assetLoadP){ assetLoadP = MD.isoAssets.load(url); assetLoadP.done = false; assetLoadP.then(() => { assetLoadP.done = true; }, () => { assetLoadP.done = true; }); } return assetLoadP; }
   function create(options){
     const opts = Object.assign({}, options||{});
+    if (!opts.style && MD.isoDefaultStyle) opts.style = MD.isoDefaultStyle;   // a build may name the style the plain Iso view draws with (ISO_DEFAULT in build.py)
     let container = null, canvas = null, ctx = null, teams = null, seed = 1, ro = null, lastW = 0, lastH = 0, lastTs = 0, lastFrame = null, lastScene = null, selected = null;
     const worlds = new Map();                                   // P -> world image (at most two: follow and whole)
     let cameraMode = opts.camera || (function(){ try { return root.localStorage.getItem(CAM_KEY) || 'close'; } catch(e){ return 'close'; } })();   // the close camera is the default (Phase 3 art direction)
@@ -129,8 +158,15 @@
     const nowMs = () => (root.performance && root.performance.now)? root.performance.now() : Date.now();
     const makeCanvas = (w, h) => { const c = root.document.createElement('canvas'); c.width = w; c.height = h; return c; };
     // pixels per metre when following: wider stages get bigger figures (a desktop shows 16, a phone 12)
-    // pixels per metre: 'follow' shows more pitch (16 on a desktop, 12 on a phone), 'close' sits nearer the play (24 / 16)
-    const followP = () => opts.followP || (cameraMode==='close'? (canvas && canvas.width >= 700? 24 : 16) : (canvas && canvas.width >= 700? 16 : ISO.camera.FOLLOW_P));
+    // pixels per metre: 'follow' shows more pitch (16 on a desktop, 12 on a phone); 'close' sits nearer the play (24 / 16)
+    // and drops to the wider scale for a highlight that needs it (chosen by the camera at the cut)
+    const wideP = () => (canvas && canvas.width >= 700? 16 : ISO.camera.FOLLOW_P), closeP = () => (canvas && canvas.width >= 700? 24 : 16);
+    const followP = (scene, hud) => {
+      if (opts.followP) return opts.followP;
+      if (cameraMode!=='close') return wideP();
+      const snapNow = !!(hud && ((hud.sinceCut!==undefined && hud.sinceCut < 0.02) || hud.reducedMotion));
+      return scene? ISO.camera.chooseP(state, scene, hud && hud.segment, canvas.width, canvas.height, closeP(), wideP(), snapNow) : closeP();
+    };
     function worldFor(P){
       let wld = worlds.get(P); if (wld) return wld;
       if (worlds.size >= 2){ const k = worlds.keys().next().value; worlds.get(k).dispose(); worlds.delete(k); }
@@ -165,24 +201,34 @@
         lastW = cw; lastH = ch; canvas.width = cw; canvas.height = ch; state.cx = undefined;
         for (const wld of worlds.values()) wld.dispose(); worlds.clear();   // the whole-pitch scale depends on the stage size
       },
+      // the painted art of the style is still decoding: nothing generated is shown in its place, a plain holding frame
+      // is drawn instead (the match screen waits for ready() before it starts the clock, so nothing is missed)
+      ready(){ if (!MD.isoAssets || opts.style==='none' || !MD.isoAssets.expects(opts.style || 'B')) return Promise.resolve(); assetLoad(opts.assetUrl); return MD.isoAssets.styleReady(opts.style || 'B'); },
+      isReady(){ return !MD.isoAssets || opts.style==='none' || MD.isoAssets.isReady(opts.style || 'B'); },
       render(scene, hud){
         if (!ctx) return;
+        if (!r.isReady()){ holdingFrame(ctx, canvas.width, canvas.height); r.lastHud = hud; lastScene = scene; return; }
         const ts = nowMs(); const dt = lastTs? Math.min(0.1, (ts - lastTs)/1000) : 1/60; lastTs = ts;
         r.lastHud = hud; lastScene = scene;
-        const P = cameraMode==='whole'? PR.fit(canvas.width, canvas.height, DIM.runoff + 1.5).P : followP();
+        const P = cameraMode==='whole'? PR.fit(canvas.width, canvas.height, DIM.runoff + 1.5).P : followP(scene, hud);
         const world = worldFor(P);
-        lastFrame = drawFrame(ctx, canvas.width, canvas.height, scene, { teams, seed, world, state, dtReal: dt, nowMs: ts, cameraMode, selected, followP: followP(), fastForward: !!(hud && hud.fastForward), sinceCut: hud? hud.sinceCut : undefined, snap: !!(hud && hud.reducedMotion), reducedMotion: !!(hud && hud.reducedMotion) });
+        lastFrame = drawFrame(ctx, canvas.width, canvas.height, scene, { teams, seed, world, state, dtReal: dt, nowMs: ts, cameraMode, selected, followP: P, fastForward: !!(hud && hud.fastForward), sinceCut: hud? hud.sinceCut : undefined, snap: !!(hud && hud.reducedMotion), reducedMotion: !!(hud && hud.reducedMotion) });
       },
       cameraModes: ['follow', 'close', 'whole'],
       setCamera(mode){ cameraMode = mode==='whole'? 'whole' : mode==='close'? 'close' : 'follow'; try { root.localStorage.setItem(CAM_KEY, cameraMode); } catch(e){} state.cx = undefined; if (lastScene) r.render(lastScene, r.lastHud||{}); return cameraMode; },
       getCamera(){ return cameraMode; },
+      debugItems(){ return (lastFrame && lastFrame.items)? lastFrame.items.map(it => ({ kind: it.kind, id: it.pl? it.pl.id : it.key, box: it.box||null, sx: it.sx, sy: it.sy })) : []; },   // for tooling: what was drawn where
       lastFrame(){ return lastFrame; },   // the camera and the drawn items of the last frame (for tools and tests)
       dispose(){ if (ro){ ro.disconnect(); ro = null; } if (canvas){ canvas.removeEventListener('click', onTap); if (canvas.parentNode) canvas.parentNode.removeChild(canvas); } for (const wld of worlds.values()) wld.dispose(); worlds.clear(); SP.clear(); canvas = ctx = container = lastFrame = lastScene = null; state.anim = {}; },
     };
     return r;
   }
-  MD.renderers.isometric = { id:'isometric', name:'Isometric', short:'Iso', create, drawFrame, buildWorld, drawWorld, TILE };
+  MD.renderers.isometric = { id:'isometric', name:'Isometric', short:'Iso', create, drawFrame, buildWorld, drawWorld, TILE, preload(url){ return MD.isoAssets? assetLoad(url) : Promise.resolve(); } };   // preload: decode the sheets while the player is still in the menus
   // the two visual directions and the procedural art, selectable as views while the look is being chosen
   MD.renderers['isometric-a'] = { id:'isometric-a', name:'Iso A', short:'Iso A', create: o => Object.assign(create(Object.assign({ style:'A' }, o||{})), { id:'isometric-a' }), drawFrame };
   MD.renderers['isometric-proc'] = { id:'isometric-proc', name:'Iso M2', short:'Iso M2', create: o => Object.assign(create(Object.assign({ style:'none' }, o||{})), { id:'isometric-proc' }), drawFrame };
+  // the visual R&D styles (tools/visual-rnd): C = Option A (enhanced Floyo), D = Option B (Blender direct), E = Option E
+  // (Blender geometry painted through Floyo, the production set), F = an R&D variant. Each is shown only when the build
+  // inlines the style, and only under ?dev or in a review build (ISO_DEFAULT) where the plain Iso view draws the default
+  for (const [st, nm] of [['C', 'Iso C'], ['D', 'Iso D'], ['E', 'Iso E'], ['F', 'Iso F']]) MD.renderers['isometric-'+st.toLowerCase()] = { id:'isometric-'+st.toLowerCase(), name:nm, short:nm, create: o => Object.assign(create(Object.assign({ style:st }, o||{})), { id:'isometric-'+st.toLowerCase() }), drawFrame };
 })(typeof window!=='undefined'? window : globalThis);

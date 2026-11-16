@@ -14,8 +14,10 @@ Live at https://johnliesercox.github.io/soccer-manager-91/
 | `engine.js` | The game engine: clubs, players, the season, the match simulation. Also loads in Node for the tests. |
 | `ui.html` | The screens and styles, with two slots (`/*ENGINE*/` and `/*MATCHDAY*/`) that the build fills in. |
 | `src/matchday/` | The animated match viewer: capture, timeline, behaviour, trajectories, interactions, scene, playback, sprites, audio, the viewer UI and the renderers (Pixels, Markers, Board and the isometric view in progress). |
-| `tools/iso-art.js`, `tools/iso_paint.py`, `tools/floyo/`, `assets/matchday/isometric/` | The isometric art: the generator and its sprite sheets, the painted override sheets and stadium textures made through Floyo (`tools/floyo/README.md` is the reproducible process), and `tools/iso_pack.py`, which keeps the sheets as lossless palette PNGs; `build.py` inlines them (`ISO_STYLES=B` by default). See `ART-PIPELINE.md`. |
+| `tools/iso-art.js`, `tools/iso_paint.py`, `tools/floyo/`, `assets/matchday/isometric/` | The isometric art: the generator and its sprite sheets, the painted override sheets and stadium textures made through Floyo (`tools/floyo/README.md` and `tools/visual-rnd/README.md` are the reproducible process), and `tools/iso_pack.py`, which keeps the sheets as lossless palette PNGs; `build.py` inlines them (`ISO_STYLES=E` by default from 1.6.0; `ISO_STYLES=B` rebuilds the 1.5.0 look). See `ART-PIPELINE.md`. |
 | `build.py` | Inlines `engine.js` and the matchday modules into `ui.html` and writes `index.html` (and `soccer-manager-91.html`, a copy without the app links that opens straight from disk). |
+| `tools/visual-rnd/` | The graphics kit of Phase 3: the Blender figures and stadium pieces in the game's projection, the Floyo route graphs, the production references (`stage1/`, `stage2/`, `stage2b/`) and the comparison styles C, D, F under `assets/matchday/isometric/` (each an `inherit` that only ships when named in `ISO_STYLES`). `PHASE-3-VISUAL-RND.md` and `PHASE-3-OPTION-E-CHECKPOINT.md` are the write-ups. |
+| `legacy/` | Earlier engines (`engine.v104.js`, `v112`, `v150`) that the regression test loads old saves with, and `legacy/release-1.5.0/`, the exact files the site served as 1.5.0, for `tools/save-compat.js` and for a rollback (`ROLLBACK.md`). |
 | `test-*.js`, `harness.js`, `sim.js` | The automated tests and the headless harness they use. |
 | `legacy/` | Old engine snapshots that the migration tests load. |
 | `ARCHITECTURE_MATCHDAY.md`, `PHASE-3-ARCHITECTURE.md`, `PHASE-3-QA-REPORT.md`, `ART-PIPELINE.md` | How the match viewer fits together, the isometric renderer, its QA matrix, and the art pipeline. |
@@ -26,7 +28,10 @@ Live at https://johnliesercox.github.io/soccer-manager-91/
 python3 build.py
 ```
 
-That rewrites `index.html`. To run the tests (Node 18 or later; the first time run `npm install` to fetch the headless canvas and DOM):
+That rewrites `index.html` (and `soccer-manager-91.html`). From 1.6.0 the plain command is the release build: style E alone,
+the painted art, about 7.1 MB. `ISO_STYLES=B python3 build.py` makes the 1.5.0 look; `ISO_STYLES=B,E ISO_DEFAULT=E` a
+review build with both (the View button then offers the other style). Nothing but `ISO_STYLES` and `ISO_DEFAULT` changes
+what the build contains. To run the tests (Node 18 or later; the first time run `npm install` to fetch the headless canvas and DOM):
 
 ```
 node test-matchday.js
@@ -35,16 +40,24 @@ node test-matchday-ui.js
 node test-phase25.js
 node test-isometric.js
 node test-highlights.js
+node test-contact.js
+node test-camera.js
+node test-record.js
+node test-restarts.js
 node test-contracts.js
 node test-hof.js
 node test-youth.js
 node test-equivalence.js
 node test-regression.js
+node test-deadball.js
+node test-locomotion.js
 ```
+
+To look at a particular match again, open the game with `?seed=1991&club=3` on the address (the same seed and club index give the same season every time) and, if you want, `&t=1640` to open the first match watched at that match second. In the match, with a keyboard, `,` and `.` step fifteen seconds back and forward, and `g`, `c`, `k`, `h`, `w` jump to five seconds before the next goal, card, save, header or volley, or shot against the woodwork (`s` still skips to the next highlight, space pauses, `1`, `2`, `4` set the speed).
 
 To re-render the generated isometric art (about six minutes for both styles at three scales): `node tools/iso-art.js --style both --spr 24,16,12`, then `python3 tools/iso_pack.py assets/matchday/isometric/B`. The painted sheets and textures are converted from the Floyo outputs with `tools/iso_paint.py` (see `tools/floyo/README.md`); re-rendering the generator does not touch them.
 
-Each prints a final "PASSED" or "errors: none" line.
+Each prints a final "PASSED" or "errors: none" line. `test-equivalence.js` and `test-record.js` compare the engine with the frozen copies in `legacy/` (`engine.v112.js`, `engine.v150.js`), so that folder has to be present.
 
 ## Putting it online with GitHub Pages
 
@@ -56,7 +69,10 @@ Open it on your phone. In Safari tap Share > **Add to Home Screen**; in Chrome o
 
 ## Releasing an update
 
-Upload the new files over the old ones (same drag and drop) and commit. Players get the new version the next time they open the game online; their saves carry over because the game migrates old save formats. The `VERSION` string in `sw.js` is bumped with every release so offline installs refresh too.
+1. Set `APP_VERSION` in `ui.html` and add the release's entry at the top of `CHANGELOG` (the What's new screen), set `VERSION` in `sw.js` to `sm91-v<version>`, run `python3 build.py`.
+2. Run the suites (the list above) and `node tools/save-compat.js legacy/release-1.5.0 .`, which plays games on the last release and resumes them on the new build.
+3. Tag the commit that is live before uploading anything (GitHub: Releases, "Draft a new release", a new tag such as `v1.5.0` on `main`), so there is always a named copy to go back to. `ROLLBACK.md` says how.
+4. Upload the new files over the old ones (same drag and drop) and commit. Players get the new version the next time they open the game online; their saves carry over because the game migrates old save formats and never clears storage. The `VERSION` string in `sw.js` makes installed phones refresh their offline copy too.
 
 ## Feedback link
 
@@ -64,6 +80,8 @@ In `ui.html`, near the top of the script, set `const FEEDBACK_URL = '';` to a Go
 
 ## Version history
 
+* **1.6 (Phase 3, Option E): painted matchday.** Blender figures and ground painted through Floyo (Qwen Image 2512 with the Fun ControlNet Union, depth map only) as style E: every pose and frame in three hair styles, keepers and referee, painted stands, terraces and corners with a modelled crowd, Blender goals with sagging nets, a shadow and a net that bulges on a goal. Dead balls behind the goal line give goal kicks and corners; players run when they move. `test-deadball.js` and `test-locomotion.js` keep both. `PHASE-3-ARCHITECTURE.md` and `PHASE-3-OPTION-E-CHECKPOINT.md` are the record.
+* **1.5 (Phase 3): isometric matchday.** The raised-corner view with painted stands, dugouts and boards, highlights chosen for variety, emotion and commentary.
 * **1.4 (Phase 2.5): believable football.** A deterministic role planner (`src/matchday/behaviour.js`), bounded trajectories in metres per second (`trajectories.js`) and explicit ball-action beats (`interactions.js`) feed the shared scene that every renderer draws. Results are untouched. Desktop two-column match screen. `ARCHITECTURE_MATCHDAY.md` carries the Phase 3 handover contract.
 * **1.3: pixel stadium.** Pixel-art players generated in code and recoloured per kit, a referee, stands and a crowd, with a camera that follows the ball.
 * **1.2: matchday.** Watch your match on an animated top-down pitch, or take the instant result. The viewer never changes a result.

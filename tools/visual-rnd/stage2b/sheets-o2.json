@@ -1,0 +1,20 @@
+{
+ "spacing": 24,
+ "sheets": [
+  {
+   "index": 0,
+   "prefix": "sm91-sheet-s2b-o2-00",
+   "names": [
+    "sm91-qs-far-i-s2b-o2_00001_.png",
+    "sm91-qs-near-i-s2b-o2_00001_.png",
+    "sm91-qs-left-i-s2b-o2_00001_.png",
+    "sm91-qs-right-i-s2b-o2_00001_.png",
+    "sm91-qs-cornerA-i-s2b-o2_00001_.png",
+    "sm91-qs-cornerB-i-s2b-o2_00001_.png",
+    "sm91-qs-cornerC-i-s2b-o2_00001_.png",
+    "sm91-qs-cornerD-i-s2b-o2_00001_.png",
+    "sm91-qs-goal0-i-s2b_00001_.png"
+   ]
+  }
+ ]
+}

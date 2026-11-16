@@ -1,0 +1,63 @@
+{
+ "stage1": {
+  "batch4": {
+   "00": "run_4Go62EjU3chwENKY",
+   "01": "run_PecTm9svC9JUMZPg",
+   "02": "run_CSqN3ZzKrJQkEFPy",
+   "03": "run_gwVyY8SxfvpoDF1x",
+   "04": "run_kdBH3sozhtRrbneU",
+   "05": "run_dN6mtBGGtz6Z9hbn",
+   "06": "run_tM8ySAM6tL9Yuta4",
+   "07": "run_wNNzjfi9oec61oZB",
+   "08": "run_81DiXvKDZfL8ee6M"
+  },
+  "batch8": {
+   "00": "run_AtYdADSsitQFGQHi",
+   "01": "run_vwmbPVPvPbzdTu9X",
+   "02": "run_vntMmNDfE4bHa55y",
+   "03": "run_DhyyZMs5m61LdoFC",
+   "04": "run_e7ST9eV1XQHN2sdx",
+   "05": "run_htoTRR7EN82hPhT1",
+   "06": "run_ehabStm8VxjWjwcE",
+   "07": "run_bDdkshbY2fiA137M",
+   "08": "run_k6EmdKZGVLpjpTPt",
+   "09": "run_VFnpHa2TcFdWCUK1",
+   "10": "run_DbkNBCm1jGRufgND"
+  },
+  "single": {
+   "kick-3+shoot-0-gk": "run_QV9QMbbrVwY3iMPv (batch8 08 completed without this chain's output; re-run alone)"
+  }
+ },
+ "stage2": {
+  "far-d": "run_fzDpmsSvSNHhXfqX",
+  "batch00 far-i near-d near-i": "run_soudGU3ZBkYZBPPM",
+  "batch01 left right": "run_np4oZ7mJPKG26WHp",
+  "batch02 cornerA cornerB": "run_P2Xr234x9tKEm4QQ",
+  "batch03 cornerC cornerD": "run_5eED5oLwokh7aoHX"
+ },
+ "note": "stage1 batch4 NN = manifest grids 4N..4N+3 (first 36 grids); batch8 NN = grids 36+8N..; graphs in tools/visual-rnd via make_runs_rnd.py + batch_runs.py, seed 19910502, tag s1",
+ "flotime": {
+  "plan_ms_before": 10242610,
+  "plan_ms_after_all_but_last": 9355181,
+  "note": "about 15 min of plan FloTime for 140 paintings; run totals are higher because cold workers count model loading"
+ },
+ "sheets": {
+  "note": "Contact sheets (sheet_runs.py, core ImageStitch, 24 px red dividers); split with split_sheets.py and stage1/sheets.json. ~6 s FloTime each.",
+  "test": "run_9574pMX7GtQnzjC9",
+  "sm91-sheet-00": "run_ajPYvf7qT7Sc4HK3",
+  "sm91-sheet-01": "run_VbP9gBxE72LZ5Zd2",
+  "sm91-sheet-02": "run_Sz2XMfMLbSjc59hx",
+  "sm91-sheet-03": "run_GcHVku5Xrk5wnXHB",
+  "sm91-sheet-04": "run_wtF2rNk7VYj2TzpB",
+  "sm91-sheet-05": "run_k1THi3FCMLJe5FTh",
+  "sm91-sheet-06": "run_1j3YseXBmYQJwa24",
+  "sm91-sheet-07": "run_96AxtMDMs4gEN1JP",
+  "sm91-sheet-08": "run_xv6EhgeoM8AvzKNL"
+ },
+ "rerolls": {
+  "note": "Second roll (seed 19910509, tag -s1-r2) of the grids the audit flagged after the shadow and ball checks were added; graphs in scratch rnd-reroll/, prompts without the word ball. Only the flagged cells are taken from the re-roll (ingest --cells-from-rerolls).",
+  "r2 (dive-2-h2, kick-3+shoot-0, receive-1+block-0 x3)": "run_fQAGQEiZma3Z9vDS",
+  "r2b (header-1+header-2 x4, shoot-3+receive-0, -h2)": "run_aXX9D6VQx8C756g9",
+  "sheet sm91-sheet-r2-00": "run_a3D2H4nCh1dwTfrz"
+ }
+}
