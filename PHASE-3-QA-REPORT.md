@@ -76,7 +76,7 @@ One scene change outside the renderer: `behaviour.js` no longer sends defenders 
 | 1366x768 | 904x619 | 16 | 60.3 | 19.1 ms | 0.9 ms | 3.6 ms | 48 tiles, 12 MB |
 | 1920x1080 | 1164x756 | 16 | 60.3 | 20.2 ms | 1.9 ms | 3.5 ms | 48 tiles, 12 MB |
 
-The Milestone 1 world image (20 MB phone, 35 MB desktop, 35 to 67 ms to build) is gone: the ground is painted in 256 px tiles on demand with a least-recently-used cap, so a match typically holds far less than the cap. E01 Pass in headless Chromium; E02 (real Android) Open: the preview file is the way to measure it; E03 (no growth over opens and toggles) Open (M5), tile sets and the sprite cache are released on dispose; E04 scene generation untouched (about 320 ms); E05 to E09 Open (M5/M6).
+The Milestone 1 world image (20 MB phone, 35 MB desktop, 35 to 67 ms to build) is gone: the ground is painted in 256 px tiles on demand with a least-recently-used cap, so a match typically holds far less than the cap. E01 Pass in headless Chromium; E02 (real Android) measured on 17 November and still open (see "E02 on John's phone"); E03 (no growth over opens and toggles) Open (M5), tile sets and the sprite cache are released on dispose; E04 scene generation untouched (about 320 ms); E05 to E09 Open (M5/M6).
 
 ## Milestone 2A additions (art assets)
 
@@ -89,7 +89,7 @@ The Milestone 1 world image (20 MB phone, 35 MB desktop, 35 to 67 ms to build) i
 | E06 | Fallback: no style selected, or a missing sheet, draws the procedural art | Pass | `isoAssets.get` returns null, actors fall back |
 | E07 | Clean checkout rebuilds the sheets and the game | Pass | `node tools/iso-art.js`, `python3 build.py` |
 | E01 | 60 fps desktop with assets | Pass (headless) | 60.5 fps, 0.8 ms render, 3.8 ms per tile at 1366x768 |
-| E02 | Real Android | Open | the measuring screen in the 1.7.0 preview, on John's Samsung Galaxy |
+| E02 | Real Android | Open: measured 17 November, the average is met and the slow frames are not | John's Samsung Galaxy, 49.9 frames a second, slowest 5% at 33.4 ms against 33.3; see "E02 on John's phone" below |
 | D02 | A shot in flight whips the camera to the goal on a phone (close camera) | Pass | `test-isometric.js` D02 shot cap; phone goalmouth captures show both posts, the keeper and the ball |
 | B12 | A painted override cell replaces the generated cell and keeps its feet anchor | Pass | `test-isometric.js` (run frame, style B, 16 px/m) |
 | B13 | The painted far-stand texture registers with its metres and anchor and tiles in the far stand | Pass / Manual | `test-isometric.js`; far-wing captures and recording |
@@ -259,7 +259,32 @@ The drawing figure for the slowest 5% is higher than before (3.6 ms at 1366x768)
 
 On the final build of 17 November (`index.html` 7,108,283 bytes): all 20 suites pass one at a time (the 18 of Milestone 4, `test-situations.js` with 20 checks and `test-ahead.js` with 14), `tools/soak-audit.js` passes 44 of 44, `tools/viewport-audit.js` passes at all five sizes, and `tools/save-compat.js` passes 19 of 19 from 1.6.0 to this build and 19 of 19 back.
 
-**E02 (a real mid-range Android) is still open**: it is John's Samsung Galaxy with the measuring screen in the 1.7.0 preview. Quality tiers (brief 10.3) are built only if that falls below 30 frames a second.
+### E02 on John's phone (17 November)
+
+John ran the measuring screen in the 1.7.0 preview (`index.html` md5 `56337bd2d3f0b8491f1ceee6b7a72165`, opened from a file) on his Samsung Galaxy: Chrome 157, a screen of 384x692 CSS px at a pixel ratio of 3.75 (reported as 3.8), stage 360x465, isometric view, close camera, one minute of play at normal speed from kick-off. The model of the phone is not in the figures (Chrome hides it) and is still to be recorded. The second column is headless Chromium at the same screen size with the processor slowed six times (`tools/phone-probe.js . 6`), which lands close enough to the phone to stand in for it while the cause is worked on.
+
+| | John's phone | Headless, slowed 6x |
+|---|---|---|
+| Frames a second, average | 49.9 | 51.0 |
+| Typical frame | 16.7 ms | 16.7 ms |
+| Slowest 5% | 33.4 ms | 33.4 ms |
+| Slowest 1% | 83.4 ms | 83.3 ms |
+| Worst frame | 341.6 ms | 366.6 ms |
+| Slower than 30 a second | 175 of 2,994 (5.8%) | 157 of 3,058 (5.1%) |
+| Slower than 20 a second | 92 (3.1%) | 86 (2.8%) |
+| Drawing a frame: average, slowest 5%, worst | 8.5, 36.8, 241.3 ms | 6.5, 24.3, 354.5 ms |
+| Ground tiles held, memory | 74, 37.8 MB | 74 |
+
+**Reading.** The brief asks for a consistent 30 frames a second or better with the slowest 5% of frames at 33.3 ms or less. The average is well clear of 30. The slowest 5% sit on one doubled frame of a 60 Hz screen (33.33 ms, shown as 33.4), which is on the line and not under it, and behind that 3.1% of frames took 50 ms or more and the worst a third of a second. Those are stutters a viewer can see, so the row stays open and is not argued into a pass on the rounding.
+
+**Cause, from the slowed run** (`tools/phone-probe.js` logs every frame; `tools/phone-probe-report.py` sorts them):
+
+* Painting a ground tile is the slow frame. 141 tiles were painted in the minute, one a frame since Milestone 5, at about 45 ms each at this speed (a few milliseconds on the desktop). Of the 119 drawings that took over 33.3 ms, 118 were frames that painted a tile. A frame that paints nothing takes 3.5 ms on average.
+* Inside a tile the time goes on the terraces (51%) and the pitch with its markings (38%): each tile paints the whole ground and lets the canvas throw away what falls outside it.
+* The worst stall was three frames within a second that painted 3, 3 and 6 tiles, nine seconds into a highlight: a move of the camera that the working ahead did not see coming.
+* The players' pictures are recoloured for the two kits as they are first needed: 2,384 of them over the first 35 seconds, on 712 frames. That lowers the average early in a match (a few milliseconds a frame) and is not what makes the slow frames.
+
+Working ahead (Milestone 5) took the painting off the frame of a cut, which was the fault on the desktop, but a whole tile in one frame is still too much for a phone. The remedy keeps the picture as it is: paint only what lies inside a tile, and spread a tile over several frames. Lower detail (brief 10.3) is the fallback if that is not enough. Not yet done: it is scoped with John first.
 
 ## Manual scenarios (Section 14)
 
@@ -274,4 +299,4 @@ Covered so far by the recordings and captures: 1 kick-off, 2 midfield passing, 4
 * The crowd figures in the painted stands are chunky (a head is about a player's head), in the 16-bit manner. (Since 3D the painted stands rise in a wave for a goal, with camera flashes; the main stand's rows under its roof stay still.)
 * The referee's raised card is a few pixels and is not painted from the W heading (the painter hid the arm behind the body).
 * Since Milestone 5 a cut paints no ground on its own frame and does not stop to choose its scale. What is left: the first frame of a match paints its whole screen (before the clock starts), a seek paints the screen it lands on, and on the largest desktop stage a fast pan just after a cut can paint up to five tiles in one frame.
-* Frame pacing is from headless Chromium; no real-device numbers yet. The measuring screen (What's new > Measure the match frame rate) is the way to get them: E02 waits on John's phone.
+* On John's phone (17 November) the match averages 49.9 frames a second, but 5.8% of frames are slower than 30 a second and 3.1% slower than 20, nearly all of them frames that paint a ground tile (see "E02 on John's phone"). The desktop figures are from headless Chromium.
