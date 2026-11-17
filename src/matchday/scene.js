@@ -50,7 +50,7 @@
     const byId = {}; for (const pl of players) byId[pl.id] = pl;
     const gkOf = {}; for (const pl of players) if (pl.role==='GK' && !gkOf[pl.teamId]) gkOf[pl.teamId] = pl.id;
     const teamOf = id => players.filter(x=>x.teamId===id);
-    const dirAt = (teamId, t) => (teamId===H? (t >= P.regulation.half? -1 : 1) : (t >= P.regulation.half? 1 : -1));
+    const dirAt = (teamId, t) => (teamId===H? MD.homeDirAt(p, t) : -MD.homeDirAt(p, t));
     const toAbs = (teamId, t, ax, y) => ({ x: dirAt(teamId, t)===1? ax : 1-ax, y });
     const end = p.official.extra? P.extraTime.end : P.regulation.end;
 

@@ -1,6 +1,6 @@
 # Phase 3: Isometric Matchday, architecture notes
 
-Status: **Milestones 1 to 3D released as 1.5.0; the visual R&D and the Option E checkpoint approved (16 November 2026); the correction and polish pass (dead balls, locomotion, the crowd's second generation, the modelled goals) approved; version 1.6.0 prepared with style E as the only shipped isometric art, all 17 suites and the saved-game update check passing, deployed 16 November 2026.** Milestone 4 (touch selection, still frames, the five viewports) is version 1.7.0; phone landscape is left open by John's decision. `ARCHITECTURE_MATCHDAY.md` remains the authority for everything up to the renderer contract; this file covers only what the isometric renderer adds.
+Status: **Milestones 1 to 3D released as 1.5.0; the visual R&D and the Option E checkpoint approved (16 November 2026); the correction and polish pass (dead balls, locomotion, the crowd's second generation, the modelled goals) approved; version 1.6.0 prepared with style E as the only shipped isometric art, all 17 suites and the saved-game update check passing, deployed 16 November 2026.** Milestones 4 (touch selection, still frames, the five viewports) and 5 (rare situations, kit colours, fallbacks, working ahead of cuts, the measuring screen) are version 1.7.0, built and not yet deployed; phone landscape is left open by John's decision. `ARCHITECTURE_MATCHDAY.md` remains the authority for everything up to the renderer contract; this file covers only what the isometric renderer adds.
 
 ## What is new, and what is untouched
 
@@ -159,6 +159,25 @@ A 3D renderer needs the same three rules and nothing from this code: redraw on r
 
 **The match screen.** `matchday-ui.js` redraws the paused picture 120 ms after a window resize for whichever view is mounted (Pixels, Markers and Board clear their canvas on a resize and do not redraw themselves; their code is unchanged), labels Camera and View through two small functions (short wording below 480 px, the full wording as `aria-label`) and does not raise badges for the events Skip jumps past. The 44 px buttons and the 14 px the stage gives up are two media queries for a screen held upright; a phone in landscape is deliberately outside both.
 
+## Milestone 5: what changed in the pipeline, and why a 3D renderer cares
+
+**Ends.** `MD.homeDirAt(p, second)` in `schema.js` is the one rule for which way the home side attacks: ends change at half-time, for extra time and at its interval. `timeline.js` (`attackDir`) and `scene.js` (`dirAt`) both ask it, so events and positions cannot disagree. A renderer reads `scene.attackDir` as before.
+
+**Kits.** `capture.js` settles the two sides' kits for the match: a striped, hooped or quartered shirt counts as two colours (`MD.shirtColours`), the away side changes if any colour of one shirt is close to any colour of the other (`MD.kitsClash`, the long-standing 110 measure), and a shirt that is all pitch-green is changed whichever side wears it. This is in the presentation, so every view shows it. The goalkeepers and the referee are dressed by the isometric renderer alone, in `iso-actors.js` (`kitsFor(teams)`, remembered per match): the referee wears the first of a list (black first) that stands 110 clear of every shirt colour on the pitch, and each keeper the first of a list that stands 110 clear of the opposing shirt, 90 of his own side's and of the referee, 100 of the grass, and 70 of the other keeper. Colours come as `#rrggbb` or `hsl()` (`MD.rgbOf` reads both). A 3D renderer should call `kitsFor` (or copy its rule) rather than dress keepers in the club's second colour, which is what clashed.
+
+**When a view fails.** `mountRenderer` in `matchday-ui.js` tries the view asked for and then Pixels, Markers and Board in turn; a view that throws while a match is being shown is marked broken for that match and the next takes over at the same second (`viewFailed`); only if nothing can draw does the viewer close onto the result with a message. The stored choice of view is never changed by a fallback. If the painted art has not arrived six seconds after the match screen opens, the renderer is told to `proceed()` and draws with the generated figures and stands wherever a painted one is missing. A new renderer gets all of this for nothing so long as it throws rather than drawing rubbish.
+
+**Working ahead of a cut.** Two costs used to land on the frame of a cut: the camera choosing its scale for the highlight (`chooseP` samples the scene up to eighty times) and a screenful of ground tiles being painted. Both are now done beforehand, a little a frame, on frames from the playback loop only:
+
+* `iso-camera.js` remembers the scale per match and highlight (a `WeakMap` on the scene's `frameAt`), and `planJob(...)` works the same answer out for about three milliseconds a frame.
+* The match screen names the next cut to the view with `renderer.prepare(sceneAtTheCut, { segment })`: a cut inside the highlight (a restart from `scene.cutTimes`, or the cut to a scorer from `scene.celebration.cut`) from three and a half match seconds before it; otherwise the start of the next highlight, from the last six match seconds of the current one and through the fast-forward. It also calls `renderer.expectWave()` four match seconds before a goal.
+* The renderer finishes the scale, works out where the camera will stand on a scratch camera (the live one is not touched), marks those tiles to be kept, and paints the missing ones one a frame, with their risen-crowd variants when a goal is on its way. With nothing queued it paints the tiles just off screen, the edge the camera is heading for first.
+* The tile cache is sized to the stage (the view, the next view and the ring round the screen: 30 to 40 tiles on a phone, up to 72 on the largest desktop stage, per scale) and gives up its least recently drawn tile that is not being kept.
+
+None of this changes a pixel (`test-ahead.js` compares frames with and without it). `prepare` and `expectWave` are optional methods: the other three views do not have them and the match screen checks before calling.
+
+**The measuring screen.** `What's new > Measure the match frame rate` sets `Matchday.ui.measuring`; the next match watched times every animation frame for sixty seconds of play and every call to `renderer.render`, then pauses and shows the figures (`Matchday.ui.lastMeasure`). Nothing is stored or sent.
+
 ## Phase 4 (true 3D) readiness
 
 A WebGL renderer would replace steps 1 to 4 with its own projection and meshes and keep step 5. It would import nothing from the isometric files except, optionally, `iso-projection.toMetres` and `BALL_Z_M`; `scene.js` still carries no screen-space values. The world image cache, the sprite cache and the camera state are all private to this renderer and die with `dispose()`.
@@ -186,7 +205,7 @@ After the sign-off, style E became a complete art set rather than a test: every 
 
 ## Known limitations at Milestone 2A
 
-* A cut or seek can paint up to twenty tiles in one frame (about 70 ms); Milestone 5 pre-paints neighbours.
+* Since Milestone 5 a cut paints no ground on its own frame and does not stop to choose its scale (see above). What is left: the very first frame of a match paints its whole screen (before the clock starts), a seek paints the screen it lands on, and on the largest desktop stage a fast pan just after a cut can still paint up to five tiles in a frame.
 * The figures are generated from a model and lit, not hand-painted: consistent and animatable, but without hand-drawn character (see `ART-PIPELINE.md`, "Where the ceiling is").
 * The preview with both styles at three scales is 3.4 MB; the shipped game would carry one style (about 1.1 MB of sheets).
 * The near side of the ground is deliberately shallow (boards, a rail, three rows), so the camera stops short of it and the concourse colour shows beyond; the camera keeps the near-right goal low in the frame for the same reason.

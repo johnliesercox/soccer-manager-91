@@ -71,20 +71,43 @@
   // corner swung in needs the wider view on a phone), and kept until the next cut so the ground never re-tiles mid-play.
   // A goal is the one cut inside a highlight: a second after the ball crosses the line the picture cuts from the goalmouth
   // to the scorer at the close scale (when the shot needed the wider one), and stays with him until the restart.
+  // Working the scale out means sampling the scene up to eighty times across the highlight, which costs as much as
+  // several frames, so the answer for a highlight is remembered per match (the restart after a goal returns to the same
+  // highlight, and a reduced-motion device asks on every frame), and it can be worked out a few samples a frame before
+  // the cut that needs it (planJob), so that neither a cut nor the moment of a goal has to stop and think.
+  const plans = typeof WeakMap!=='undefined'? new WeakMap() : null;
+  const planOf = scene => { if (!plans || !scene.frameAt) return null; let m = plans.get(scene.frameAt); if (!m){ m = new Map(); plans.set(scene.frameAt, m); } return m; };
+  function planKey(scene, segment, w, h, closeP){ const celeb = scene.celebration || null; const base = segment? segment.a+':'+segment.b+':'+w+':'+h+':'+closeP : 'none:'+w+':'+h+':'+closeP; return celeb? base+':c'+celeb.cut : base; }
+  function planTimes(scene, segment){
+    const celeb = scene.celebration || null; const times = []; const t0 = scene.t||0;
+    const a = celeb? Math.max(t0, celeb.cut) : (segment? segment.a : t0), b = celeb? Math.min(celeb.end, segment? segment.b : celeb.end) : (segment? segment.b : t0);
+    if (b > a){ const step = Math.max(0.4, (b - a)/80); for (let t = a; t <= b; t += step) times.push(t); times.push(b); } else times.push(t0);
+    return times;
+  }
+  const rememberable = (scene, segment) => !!(segment || scene.celebration);   // with neither, the answer depends on the instant asked
   function chooseP(state, scene, segment, w, h, closeP, wideP, snap){
-    const celeb = scene.celebration || null;
-    const base = segment? segment.a+':'+segment.b+':'+w+':'+h+':'+closeP : 'none:'+w+':'+h+':'+closeP;
-    const key = celeb? base+':c'+celeb.cut : base;
+    const key = planKey(scene, segment, w, h, closeP);
     if (!snap && state.pKey===key && state.P) return state.P;
     if (!snap && state.P && state.pKey && state.pKey.indexOf('none:')!==0 && !segment) return state.P;
-    let P = closeP;
-    if (closeP !== wideP && scene.frameAt){
-      const times = []; const t0 = scene.t||0;
-      const a = celeb? Math.max(t0, celeb.cut) : (segment? segment.a : t0), b = celeb? Math.min(celeb.end, segment? segment.b : celeb.end) : (segment? segment.b : t0);
-      if (b > a){ const step = Math.max(0.4, (b - a)/80); for (let t = a; t <= b; t += step) times.push(t); times.push(b); } else times.push(t0);
-      if (!fits(scene, times, w, h, closeP)) P = wideP;
+    const memo = rememberable(scene, segment)? planOf(scene) : null; let P = memo? memo.get(key+':'+wideP) : undefined;
+    if (P===undefined){
+      P = closeP;
+      if (closeP !== wideP && scene.frameAt && !fits(scene, planTimes(scene, segment), w, h, closeP)) P = wideP;
+      if (memo) memo.set(key+':'+wideP, P);
     }
     state.P = P; state.pKey = key; return P;
+  }
+  // The same answer, worked out a little at a time: step(ms) samples for about that long and says whether it has finished.
+  function planJob(scene, segment, w, h, closeP, wideP){
+    const memo = rememberable(scene, segment)? planOf(scene) : null; const key = planKey(scene, segment, w, h, closeP)+':'+wideP;
+    if (!memo || memo.has(key) || closeP===wideP || !scene.frameAt) return { step: () => true, done: true };
+    const times = planTimes(scene, segment); let i = 0; const clock = () => (root.performance && root.performance.now)? root.performance.now() : Date.now();
+    const job = { done: false, step(ms){
+      if (job.done) return true; if (memo.has(key)){ job.done = true; return true; }
+      const until = clock() + (ms||3);
+      do { if (i >= times.length){ memo.set(key, closeP); job.done = true; return true; } if (!fits(scene, [times[i++]], w, h, closeP)){ memo.set(key, wideP); job.done = true; return true; } } while (clock() < until);
+      return false; } };
+    return job;
   }
 
   function update(state, scene, w, h, mode, dtReal, snap, followP){
@@ -155,5 +178,5 @@
     return { P, ox: Math.round(w/2 - state.cx), oy: Math.round(h/2 - state.cy), mode: 'follow' };
   }
 
-  MD.iso.camera = { update, chooseP, fits, clampToGround, FOLLOW_P, BOUNDS, EDGE, PAN_MAX, SHOT_PAN, OMEGA, MARGIN };
+  MD.iso.camera = { update, chooseP, planJob, fits, clampToGround, FOLLOW_P, BOUNDS, EDGE, PAN_MAX, SHOT_PAN, OMEGA, MARGIN };
 })(typeof window!=='undefined'? window : globalThis);

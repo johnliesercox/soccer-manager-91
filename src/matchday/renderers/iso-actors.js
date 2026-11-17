@@ -124,19 +124,43 @@
     return { kind, key: kind+':'+(pl.id||'ref'), pl, depth: goalmouthDepth(m.X, m.Y), sx: Math.round(p.sx), sy: Math.round(p.sy), gsx: Math.round(g.sx), gsy: Math.round(g.sy), lift: lift||0, sprite, dir: a.dir, pose };
   }
 
+  // Who wears what. The two sides wear the kits the presentation gives them. Each goalkeeper and the referee are dressed
+  // here, for this match, so that nobody can be mistaken for anybody else. The referee wears black unless a shirt on the
+  // pitch is dark. Each keeper wears the first colour of a short list that stands clear of the opposing side's shirt
+  // above all, then of his own side's, the referee and the grass, and that differs from the other keeper's. Distances
+  // are the same plain measure the kit-clash rule uses (110 apart is the game's line between two shirts being alike).
+  const KEEPER_COLOURS = ['#F2C200', '#9AA0A6', '#F28C28', '#35B7E8', '#8A4FD0', '#E85D9A', '#C4E538', '#0FB5AE', '#F4F4F4', '#B0123B', '#1D3F8F', '#5B3A29'];   // yellow, grey, orange, sky, purple, pink, lime, teal, white, crimson, royal blue, brown
+  const REFEREE_COLOURS = ['#1A1A1A', '#7B1E3A', '#C9CDD2', '#6A3FA0', '#E46A1F', '#F0F0F0', '#D9A400', '#E85D9A'];   // black, maroon, silver, purple, orange, white, gold, pink
+  const GRASS_COLOUR = '#3C9A46'; const NEAR = 110;
+  const rgbOf = c => MD.rgbOf? MD.rgbOf(c) : [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16));   // club colours come as #rrggbb or hsl()
+  const apart = (a, b) => { const x = rgbOf(a), y = rgbOf(b); return Math.hypot(x[0] - y[0], x[1] - y[1], x[2] - y[2]); };
+  // the first colour in the list that keeps every required distance; failing that, the one that comes nearest to doing so
+  const clearest = (list, needs) => { let best = list[0], bestS = -1; for (const c of list){ let sc = Infinity; for (const [o, d] of needs) sc = Math.min(sc, apart(c, o)/d); if (sc >= 1) return c; if (sc > bestS){ bestS = sc; best = c; } } return best; };
+  const kitMemo = typeof WeakMap!=='undefined'? new WeakMap() : null;
+  function kitsFor(teams){
+    let k = kitMemo && kitMemo.get(teams); if (k) return k;
+    const shirts = c => (MD.shirtColours? MD.shirtColours(c) : [c.primary]); const hs = shirts(teams.home.kit), as = shirts(teams.away.kit);
+    const ref = clearest(REFEREE_COLOURS, hs.concat(as).map(c => [c, NEAR]).concat([[GRASS_COLOUR, 100]]));
+    const keeperOf = (own, opp, other) => clearest(KEEPER_COLOURS, opp.map(c => [c, NEAR]).concat(own.map(c => [c, 90]), [[ref, 90], [GRASS_COLOUR, 100]], other? [[other, 70]] : []));
+    const hg = keeperOf(hs, as, null), ag = keeperOf(as, hs, hg);
+    const keeper = c => ({ primary: c, secondary: '#1F2A44', pattern:'plain', gk: true });
+    k = { home: teams.home.kit, away: teams.away.kit, homeGK: keeper(hg), awayGK: keeper(ag), ref: ref===SP.REF_KIT.primary? SP.REF_KIT : { primary: ref, secondary: '#F2F2F2', pattern:'plain' } };
+    if (kitMemo) kitMemo.set(teams, k); return k;
+  }
+
   function build(scene, teams, st, now, cam, spr){
     const items = [], shadows = []; const t = scene.t||0;
-    const home = teams.home, away = teams.away;
+    const home = teams.home, away = teams.away; const kits = kitsFor(teams);
     let carrier = null;
     for (const pl of scene.players){
       if (pl.sentOff) continue;                                 // off the pitch: not drawn
       const kit = pl.teamId===home.id? home.kit : away.kit;
-      const gk = pl.role==='GK'? { primary: kit.secondary, secondary: kit.primary, pattern:'plain', gk:true } : kit;
+      const gk = pl.role==='GK'? (pl.teamId===home.id? kits.homeGK : kits.awayGK) : kit;
       const it = actorItem('player', pl, gk, SP.variantFor(pl.id), st, t, cam, spr);
       items.push(it); shadows.push({ sx: it.gsx, sy: it.gsy, w: 0.9, ring: !!pl.hasBall });
       if (pl.hasBall) carrier = it;
     }
-    if (scene.ref){ const it = actorItem('ref', scene.ref, SP.REF_KIT, { skin:1, hair:0, style:1 }, st, t, cam, spr); items.push(it); shadows.push({ sx: it.gsx, sy: it.gsy, w: 0.9 }); }
+    if (scene.ref){ const it = actorItem('ref', scene.ref, kits.ref, { skin:1, hair:0, style:1 }, st, t, cam, spr); items.push(it); shadows.push({ sx: it.gsx, sy: it.gsy, w: 0.9 }); }
     // the ball: shadow at its ground point, the ball itself lifted by its height (the scene already puts a controlled
     // ball a touch ahead of its owner's feet, and blends it onto the spot it is struck from or lost at)
     const b = scene.ball; const bm = PR.toMetres(b.x, b.y); const bz = Math.max(0, b.z||0)*PR.BALL_Z_M;
@@ -152,5 +176,5 @@
     return { items, shadows };
   }
 
-  MD.iso.actors = { build, poseFor, refPose, goalmouthDepth, STRIDE_M, HYST, ZONE, JUMP };
+  MD.iso.actors = { build, poseFor, refPose, goalmouthDepth, kitsFor, KEEPER_COLOURS, REFEREE_COLOURS, STRIDE_M, HYST, ZONE, JUMP };
 })(typeof window!=='undefined'? window : globalThis);

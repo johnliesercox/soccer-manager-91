@@ -108,32 +108,31 @@ let asked = []; { const real = MD.isoSprites.get; MD.isoSprites.get = function(k
 
 // ---- B07: the colours as drawn. Everyone on the pitch must be told from everyone he could be mistaken for. ----
 {
-  const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)); const dist = (a, b) => { const x = rgb(a), y = rgb(b); return Math.hypot(x[0] - y[0], x[1] - y[1], x[2] - y[2]); };
-  const NEAR = 110;   // the game's own measure of two shirts being too alike (capture.js changes the away kit under it)
-  const GREEN = 80;   // against the grass: under this a shirt is a green close to the pitch's own
-  let matchesKeeperOpp = 0, matchesRef = 0, matchesShared = 0; const shirt = k => (k.pattern && k.pattern!=='plain')? [k.primary, k.secondary] : [k.primary];   // a striped, hooped or quartered shirt is two colours
-  const GRASS = '#3C9A46', REF = MD.isoSprites.REF_KIT.primary;
-  const kitsOf = ISO.actors.kitsFor || (teams => ({ home: teams.home.kit, away: teams.away.kit, homeGK: { primary: teams.home.kit.secondary }, awayGK: { primary: teams.away.kit.secondary }, ref: MD.isoSprites.REF_KIT }));   // as the renderer dresses them
-  const bad = { sides: [], shared: [], keeperOpp: [], keeperOwn: [], keepers: [], ref: [], grass: [] }; const seen = k => { const s = new Set(); return x => { if (s.has(x)) return false; s.add(x); return true; }; };
-  const once = {}; for (const k of Object.keys(bad)) once[k] = seen(k);
+  const dist = (a, b) => { const x = MD.rgbOf(a), y = MD.rgbOf(b); return Math.hypot(x[0] - y[0], x[1] - y[1], x[2] - y[2]); };   // club colours come as #rrggbb or hsl()
+  const NEAR = 110;    // the game's own line between two shirts being alike (capture.js changes a kit under it)
+  const GRASS = '#3C9A46'; const shirt = MD.shirtColours;   // a striped, hooped or quartered shirt is two colours
+  const kitsOf = ISO.actors.kitsFor;                         // as the renderer dresses the keepers and the referee
+  const bad = { sides: [], keeperOpp: [], keeperOwn: [], keepers: [], ref: [], grass: [] }; const used = { keeper: {}, ref: {} }; let changed = 0;
+  const note = (k, id, why) => { if (bad[k].length < 4) bad[k].push(id+' '+why); else bad[k].more = (bad[k].more||0) + 1; };
   for (const p of all){
-    const K = kitsOf(p.teams); const h = K.home.primary, a = K.away.primary, hg = K.homeGK.primary, ag = K.awayGK.primary, r = (K.ref||MD.isoSprites.REF_KIT).primary; const id = p.teams.home.short+' v '+p.teams.away.short;
-    if (dist(h, a) < NEAR && once.sides(h+a)) bad.sides.push(id+' '+h+' '+a);
-    { const hs = shirt(K.home), as = shirt(K.away); if ((hs.length > 1 || as.length > 1) && hs.some(c1 => as.some(c2 => dist(c1, c2) < NEAR))){ matchesShared++; if (once.shared(hs.join('')+as.join(''))) bad.shared.push(id+' '+hs.join('/')+' '+(K.home.pattern||'plain')+' against '+as.join('/')+' '+(K.away.pattern||'plain')); } }
-    if (dist(hg, a) < NEAR || dist(ag, h) < NEAR) matchesKeeperOpp++; if ([h, a, hg, ag].some(c => dist(c, r) < NEAR)) matchesRef++;
-    for (const [g, opp, who] of [[hg, a, 'home keeper'], [ag, h, 'away keeper']]) if (dist(g, opp) < NEAR && once.keeperOpp(g+opp)) bad.keeperOpp.push(id+' '+who+' '+g+' against '+opp);
-    for (const [g, own, who] of [[hg, h, 'home keeper'], [ag, a, 'away keeper']]) if (dist(g, own) < NEAR && once.keeperOwn(g+own)) bad.keeperOwn.push(id+' '+who+' '+g+' and his own side '+own);
-    if (dist(hg, ag) < NEAR && once.keepers(hg+ag)) bad.keepers.push(id+' '+hg+' '+ag);
-    for (const [c, who] of [[h, 'home'], [a, 'away'], [hg, 'home keeper'], [ag, 'away keeper']]){ if (dist(c, r) < NEAR && once.ref(c+r)) bad.ref.push(id+' '+who+' '+c+' and the referee '+r); if (dist(c, GRASS) < GREEN && once.grass(c)) bad.grass.push(id+' '+who+' '+c); }
+    const K = kitsOf(p.teams); const hs = shirt(K.home), as = shirt(K.away), hg = K.homeGK.primary, ag = K.awayGK.primary, r = K.ref.primary; const id = p.teams.home.short+' v '+p.teams.away.short;
+    used.keeper[hg] = 1; used.keeper[ag] = 1; used.ref[r] = (used.ref[r]||0) + 1; if (K.away.changed || K.home.changed) changed++;
+    if (hs.some(x => as.some(y => dist(x, y) < NEAR))) note('sides', id, hs.join('/')+' against '+as.join('/'));
+    if (as.some(x => dist(hg, x) < NEAR) || hs.some(x => dist(ag, x) < NEAR)) note('keeperOpp', id, 'keepers '+hg+' '+ag+', shirts '+hs.join('/')+' '+as.join('/'));
+    if (hs.some(x => dist(hg, x) < 90) || as.some(x => dist(ag, x) < 90)) note('keeperOwn', id, 'keepers '+hg+' '+ag+', shirts '+hs.join('/')+' '+as.join('/'));
+    if (dist(hg, ag) < 70) note('keepers', id, hg+' '+ag);
+    if (hs.concat(as).some(x => dist(x, r) < NEAR) || [hg, ag].some(x => dist(x, r) < 90)) note('ref', id, 'referee '+r+', shirts '+hs.join('/')+' '+as.join('/')+', keepers '+hg+' '+ag);
+    if ([hs, as].some(cs => cs.every(x => dist(x, GRASS) < 80)) || [hg, ag, r].some(x => dist(x, GRASS) < 100)) note('grass', id, hs.join('/')+' '+as.join('/')+' '+hg+' '+ag+' '+r);
   }
-  const few = a => a.length? ': '+a.slice(0, 4).join('; ')+(a.length > 4? '; and '+(a.length - 4)+' more' : '') : '';
-  ok(bad.sides.length===0, 'B07 the two sides never wear shirts too alike ('+bad.sides.length+' pairings)'+few(bad.sides));
-  ok(bad.shared.length===0, 'B07 a striped, hooped or quartered shirt shares neither of its colours with the other side\'s shirt ('+matchesShared+' of '+all.length+' matches, '+bad.shared.length+' pairings)'+few(bad.shared));
-  ok(bad.keeperOpp.length===0, 'B07 a goalkeeper never wears the colour of the opposing side ('+matchesKeeperOpp+' of '+all.length+' matches, '+bad.keeperOpp.length+' colour pairings)'+few(bad.keeperOpp));
-  ok(bad.keeperOwn.length===0, 'B07 a goalkeeper never wears the colour of his own side ('+bad.keeperOwn.length+')'+few(bad.keeperOwn));
-  ok(bad.ref.length===0, 'B07 nobody wears the colour of the referee ('+matchesRef+' of '+all.length+' matches, '+bad.ref.length+' colours)'+few(bad.ref));
-  ok(bad.grass.length===0, 'B07 nobody wears the colour of the grass ('+bad.grass.length+' colours)'+few(bad.grass));
-  console.log('   (the two keepers alike: '+bad.keepers.length+' pairings; they stand at opposite ends, so this is reported and not required)');
+  const few = a => a.length? ': '+a.join('; ')+(a.more? '; and '+a.more+' more' : '') : '';
+  ok(bad.sides.length===0, 'B07 no colour of one side\'s shirt is close to a colour of the other\'s, stripes, hoops and quarters counted as two colours ('+all.length+' matches, a kit changed in '+changed+')'+few(bad.sides));
+  ok(bad.keeperOpp.length===0, 'B07 a goalkeeper never wears a colour of the opposing side'+few(bad.keeperOpp));
+  ok(bad.keeperOwn.length===0, 'B07 a goalkeeper is told from his own side'+few(bad.keeperOwn));
+  ok(bad.keepers.length===0, 'B07 the two goalkeepers wear different colours ('+Object.keys(used.keeper).length+' keeper colours in use)'+few(bad.keepers));
+  ok(bad.ref.length===0, 'B07 the referee is told from both sides and both keepers (black in '+(used.ref[MD.isoSprites.REF_KIT.primary]||0)+' of '+all.length+' matches, '+(Object.keys(used.ref).length - 1)+' other colours when a shirt is dark)'+few(bad.ref));
+  ok(bad.grass.length===0, 'B07 nobody is dressed in the green of the pitch'+few(bad.grass));
+  // the same pairing is always dressed the same way (nothing random in it)
+  { const p = all[0]; const a = JSON.stringify(kitsOf(JSON.parse(JSON.stringify(p.teams)))), b = JSON.stringify(kitsOf(JSON.parse(JSON.stringify(p.teams)))); ok(a===b, 'B07 the colours for a pairing are always the same'); }
 }
 
 console.log(checks+' checks, '+fails+' failures');

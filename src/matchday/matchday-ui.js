@@ -128,14 +128,33 @@
       const sc = C.$('#md-score'); if (sc) sc.textContent = s.score.home+' - '+s.score.away;
       const ck = C.$('#md-clock'); if (ck){ ck.textContent = (ff? '\u25B6\u25B6 ' : '')+s.clock.label+(s.clock.extraTime? ' ET' : '')+'  '+s.phaseLabel+(onBall && !ff? '  \u00b7  '+onBall.name : ''); ck.classList.toggle('ff', !!ff); }
     };
+    const goalTimes = pres.events.filter(e => e.type===EV.GOAL).map(e => e.matchSecond);
     v.playback = MD.createPlayback(pres, {
       onFrame: (sec, state) => {
         const now = (root.performance && root.performance.now)? root.performance.now() : Date.now();
         if (v.reduced && now - v.lastDraw < 200 && !state.ended) return;
         v.lastDraw = now;
         const s = scene.getSceneAt(state.sceneSecond===undefined? sec : state.sceneSecond);   // the picture
-        if (v.renderer) v.renderer.render(s, { fastForward: state.fastForward, speed: state.speed, reducedMotion: v.reduced, sinceCut: state.sinceCut, segment: (state.segA!==undefined && !state.segFF)? { a: state.segA, b: state.segB } : null });
+        if (v.renderer){
+          const m0 = v.meter && !v.meter.done? root.performance.now() : 0;
+          try { v.renderer.render(s, { fastForward: state.fastForward, speed: state.speed, reducedMotion: v.reduced, sinceCut: state.sinceCut, segment: (state.segA!==undefined && !state.segFF)? { a: state.segA, b: state.segB } : null }); if (m0) v.meter.draws.push(root.performance.now() - m0); }
+          catch(err){ if (!viewFailed(v, err)) return; }   // the view broke: another one takes over, or the match gives way to its result
+        }
         board(scene.getSceneAt(sec), s, state.fastForward);                                     // the clock and score (the clock races during a fast-forward)
+        // The view is told where the next cut will land, so that it can choose its scale and paint that ground ahead of
+        // time: a cut inside this highlight (a restart, the scorer) a moment before it comes; otherwise the start of the
+        // next highlight, from the last seconds of this one and through the fast-forward that leads to it.
+        if (v.renderer && v.renderer.prepare){
+          const at = state.sceneSecond===undefined? sec : state.sceneSecond; let target, seg = null;
+          let inner = !state.segFF && scene.cutTimes? scene.cutTimes.find(x => x > at + 0.05 && x < at + 3.5) : undefined;
+          if (!state.segFF){ const g = goalTimes.find(x => x > at - 1.5 && x < at + 4); const cel = g!==undefined? scene.getSceneAt(g + 0.05).celebration : null; if (cel && cel.cut > at + 0.05 && (inner===undefined || cel.cut < inner)) inner = cel.cut; }   // the cut to the scorer, a second after his goal
+          if (inner!==undefined){ target = inner + 0.02; seg = state.segA!==undefined? { a: state.segA, b: state.segB } : null; }
+          else if (state.segB!==undefined && (state.segFF || state.segB - at < 6)){
+            const segs = v.segs || (v.segs = v.playback.timeMap().segs); let nx = segs.find(g => g.a===state.segB); if (nx && nx.ff) nx = segs.find(g => g.a===nx.b);   // past the fast-forward, if one is still to come
+            if (nx && !nx.ff){ target = nx.a; seg = { a: nx.a, b: nx.b }; }
+          }
+          if (target!==undefined && v.prepFor!==target){ v.prepFor = target; try { v.renderer.prepare(scene.getSceneAt(target), { segment: seg }); } catch(e){} }
+        }
       },
       onLine: (l) => { if (comm) comm.textContent = l.text; },
       onEvent: (e) => {
@@ -156,7 +175,7 @@
         else if (e.type===EV.SHOT_SAVED || e.type===EV.SHOT_WIDE || e.type===EV.SHOT_BLOCKED) MD.audio.chance();
       },
       onState: (state) => { const b = C.$('#md-play'); if (b) b.textContent = state.playing? 'Pause' : (state.ended? 'Ended' : 'Play'); for (const x of [1,2,4]){ const sb = C.$('#md-speed-'+x); if (sb) sb.classList.toggle('on', state.speed===x); } },
-      onEnd: () => { v.done = true; MD.audio.stop(); const act = C.$('#act'); if (act) act.innerHTML = `<button class="b" data-a="md-fulltime">Full time</button>`; },
+      onEnd: () => { v.done = true; if (v.meter && !v.meter.done) meterFinish(v); MD.audio.stop(); const act = C.$('#act'); if (act) act.innerHTML = `<button class="b" data-a="md-fulltime">Full time</button>`; },
     });
     // Turning the phone (or resizing the window) while nothing is playing: every view sizes its canvas again, which clears
     // it, and a paused or finished match sends no frames. The picture is put back here for all four views, a moment after
@@ -170,33 +189,108 @@
       root.addEventListener('resize', v.onResize);
     }
     // the painted art must have decoded before the clock starts (normally it has, preloaded at boot): until then the
-    // renderer draws its holding frame and nothing generated stands in for the painted players; six seconds at most
+    // renderer draws its holding frame; six seconds at most, after which the match is shown with the generated figures
+    // and stands wherever the painted ones are still missing (they take over as they arrive)
     const go = () => {
       if (S.md.viewer!==v || v.started) return; v.started = true;
       MD.audio.start();
       // review aid: ?t=1640 opens the first match watched at that match second (once), so an incident can be found again
       try { const q = new URLSearchParams(root.location.search||''); const tq = q.get('t'); if (tq!==null && isFinite(+tq) && !MD.ui._seeked){ MD.ui._seeked = true; v.playback.seek(Math.max(0, +tq)); } } catch(e){}
       v.playback.play();
+      if (MD.ui.measuring) meterStart(v);
       if (C.Track) C.Track.send('match_watched', { competition: pres.competition.kind, extra: pres.official.extra||'none', view: getView(), reduced_motion: v.reduced, build_ms: v.stat.buildMs });
     };
     const ready = (v.renderer && typeof v.renderer.ready==='function')? v.renderer.ready() : null;
     if (!ready || (v.renderer.isReady && v.renderer.isReady())) go();
-    else { if (comm) comm.textContent = 'Preparing the ground...'; const cap = root.setTimeout(go, 6000); ready.then(() => { root.clearTimeout(cap); if (comm && comm.textContent==='Preparing the ground...') comm.textContent = ''; go(); }, () => go()); }
+    else { if (comm) comm.textContent = 'Preparing the ground...'; const cap = root.setTimeout(() => { if (S.md.viewer===v && v.renderer && v.renderer.proceed) v.renderer.proceed(); if (comm && comm.textContent==='Preparing the ground...') comm.textContent = ''; go(); }, 6000); ready.then(() => { root.clearTimeout(cap); if (comm && comm.textContent==='Preparing the ground...') comm.textContent = ''; go(); }, () => go()); }
   }
+  // Mounting a view. If the one asked for cannot start (or has already broken in this match), the next is tried, Pixels
+  // first: a match is never lost to a broken view. The stored choice of view is not changed by a fallback.
+  const FALLBACK = ['pixelart', 'canvas2d', 'wireframe'];
   function mountRenderer(id){
     const v = C.S.md && C.S.md.viewer; if (!v) return;
     const stage = C.$('#md-stage'); if (!stage) return;
     if (v.renderer){ try { v.renderer.dispose(); } catch(e){} v.renderer = null; }
-    const def = MD.renderers[id] || MD.renderers.pixelart;
-    v.renderer = def.create({ onSelect: pl => { const comm = C.$('#md-comm'); if (comm) comm.textContent = pl.name+', '+({GK:'goalkeeper',DEF:'defender',MID:'midfielder',FWD:'forward'}[pl.role]||pl.role)+', number '+pl.shirtNo+'.'; } });
-    v.renderer.mount(stage, v.pres);
-    const cb = C.$('#md-camera'); if (cb){ const has = typeof v.renderer.setCamera==='function'; cb.style.display = has? '' : 'none'; if (has) labelCamera(cb, v.renderer.getCamera()); }
+    const broken = v.broken || {}; const wanted = MD.renderers[id]? id : 'pixelart';
+    const order = [wanted].concat(FALLBACK.filter(k => k!==wanted && MD.renderers[k])).filter(k => !broken[k]);
     const state = v.playback? v.playback.state() : { matchSecond:0, sceneSecond:0, fastForward:false, speed:1 };
-    if (v.scene) v.renderer.render(v.scene.getSceneAt(state.sceneSecond===undefined? state.matchSecond : state.sceneSecond), { fastForward: state.fastForward, speed: state.speed, reducedMotion: v.reduced });
+    let def = null, lastErr = null;
+    for (const k of order){
+      const d = MD.renderers[k]; let r = null;
+      try {
+        r = d.create({ onSelect: pl => { const comm = C.$('#md-comm'); if (comm) comm.textContent = pl.name+', '+({GK:'goalkeeper',DEF:'defender',MID:'midfielder',FWD:'forward'}[pl.role]||pl.role)+', number '+pl.shirtNo+'.'; } });
+        r.mount(stage, v.pres);
+        if (v.scene) r.render(v.scene.getSceneAt(state.sceneSecond===undefined? state.matchSecond : state.sceneSecond), { fastForward: state.fastForward, speed: state.speed, reducedMotion: v.reduced });
+        v.renderer = r; v.viewId = k; def = d; break;
+      } catch(err){
+        lastErr = err; console.error('matchday view could not start: '+k, err); (v.broken || (v.broken = {}))[k] = true;
+        try { if (r && r.dispose) r.dispose(); } catch(e){}
+        try { const left = stage.querySelectorAll? stage.querySelectorAll('canvas') : []; for (let i=0; i<left.length; i++) left[i].parentNode.removeChild(left[i]); } catch(e){}
+      }
+    }
+    if (!def) throw (lastErr || new Error('no match view could start'));
+    if (v.viewId!==wanted && !v.toldFallback){ v.toldFallback = true; C.toast('The '+((MD.renderers[wanted]||{}).name||'chosen')+' view could not be shown. Showing '+def.name+' instead.'); }
+    const cb = C.$('#md-camera'); if (cb){ const has = typeof v.renderer.setCamera==='function'; cb.style.display = has? '' : 'none'; if (has) labelCamera(cb, v.renderer.getCamera()); }
     const vb = C.$('#md-view'); if (vb) labelView(vb, def);
   }
+  // A view that throws while a match is being shown. The first time, the next view takes over where the match is (true is
+  // returned: carry on). If nothing can show the match, the viewer closes onto the result (false).
+  function viewFailed(v, err){
+    console.error('matchday view failed while showing a match: '+v.viewId, err);
+    (v.broken || (v.broken = {}))[v.viewId] = true;
+    try { mountRenderer(v.viewId); return true; }
+    catch(e){ C.toast('The match could not be shown. Showing the result.'); root.setTimeout(() => { if (C.S.md && C.S.md.viewer===v) act('md-fulltime', {}); }, 0); return false; }
+  }
+  // ---- the measuring screen (Phase 3 brief, E01 and E02: frame pacing on the device itself) ----
+  // Switched on from the What's new screen for the next match watched. For sixty seconds of play it times every
+  // animation frame the browser gives the page (so the whole screen is in it, not only the drawing) and the drawing of
+  // each match frame, then pauses the match and shows the figures over the stage for a screenshot. Nothing is stored in
+  // the game and nothing is sent anywhere.
+  const METER_SECONDS = 60;
+  const pct = (sorted, q) => sorted.length? sorted[Math.min(sorted.length - 1, Math.floor(sorted.length*q))] : 0;
+  function meterStats(M){
+    const d = M.deltas.slice().sort((a, b) => a - b), w = M.draws.slice().sort((a, b) => a - b); const total = d.reduce((x, y) => x + y, 0), n = d.length;
+    const r1 = x => Math.round(x*10)/10; const cvs = C.$('#md-stage canvas'); const v = M.viewer; const mem = root.performance && root.performance.memory;
+    return { seconds: r1(total/1000), frames: n, fps: n? r1(1000*n/total) : 0, typicalMs: r1(pct(d, 0.5)), p95Ms: r1(pct(d, 0.95)), p99Ms: r1(pct(d, 0.99)), worstMs: r1(d.length? d[d.length - 1] : 0),
+      slow30: d.filter(x => x > 33.4).length, slow20: d.filter(x => x > 50).length, drawAvgMs: w.length? r1(w.reduce((x, y) => x + y, 0)/w.length) : 0, drawP95Ms: r1(pct(w, 0.95)), drawWorstMs: r1(w.length? w[w.length - 1] : 0),
+      screen: (root.innerWidth||0)+'x'+(root.innerHeight||0)+' at '+r1(root.devicePixelRatio||1), stage: cvs? cvs.width+'x'+cvs.height : '', view: v.viewId||'', camera: v.renderer && v.renderer.getCamera? v.renderer.getCamera() : '',
+      tiles: v.renderer && v.renderer.worldTiles? v.renderer.worldTiles() : null, heapMB: mem && mem.usedJSHeapSize? r1(mem.usedJSHeapSize/1048576) : null, version: C.version||'', agent: (root.navigator && root.navigator.userAgent)||'' };
+  }
+  function meterFinish(v){
+    const M = v.meter; if (!M || M.done) return; M.done = true; MD.ui.measuring = false;
+    const st = meterStats(M); MD.ui.lastMeasure = st; try { console.log('sm91 frame rate', JSON.stringify(st)); } catch(e){}
+    try { if (v.playback && v.playback.state().playing) v.playback.pause(); } catch(e){}
+    const met = st.fps >= 30 && st.p95Ms <= 33.3; const el = C.$('#md-meter'); if (!el) return;
+    el.className = 'md-meter card';
+    el.innerHTML = '<b>FRAME RATE</b> over '+st.seconds+' s of play\n'
+      + '<b>'+st.fps+'</b> frames a second on average\n'
+      + 'A frame takes '+st.typicalMs+' ms typically; the slowest 5% take '+st.p95Ms+' ms or more, the slowest 1% '+st.p99Ms+' ms; the worst '+st.worstMs+' ms\n'
+      + 'Slower than 30 a second: '+st.slow30+' of '+st.frames+' frames'+(st.slow20? ' ('+st.slow20+' slower than 20 a second)' : '')+'\n'
+      + 'Drawing a match frame: '+st.drawAvgMs+' ms on average, '+st.drawP95Ms+' ms for the slowest 5%, '+st.drawWorstMs+' ms at worst\n'
+      + 'Target of 30 a second with the slowest 5% under 33.3 ms: <b>'+(met? 'met' : 'NOT met')+'</b>\n'
+      + 'Screen '+st.screen+', stage '+st.stage+', '+C.esc(st.view)+' view, camera '+C.esc(String(st.camera))+(st.tiles!==null? ', '+st.tiles+' ground tiles' : '')+(st.heapMB!==null? ', '+st.heapMB+' MB' : '')+'\n'
+      + 'Version '+C.esc(st.version)+'\n<span class="dim">'+C.esc(st.agent)+'</span>\n'
+      + '<button class="b quiet" data-a="md-measure-close">Close and carry on</button>';
+  }
+  function meterStart(v){
+    const stage = C.$('#md-stage'); if (!stage || !root.requestAnimationFrame) return;
+    const M = v.meter = { viewer: v, deltas: [], draws: [], last: 0, total: 0, done: false, shown: -1 };
+    let el = C.$('#md-meter'); if (!el){ el = root.document.createElement('div'); el.id = 'md-meter'; stage.appendChild(el); } el.className = 'md-meter'; el.textContent = 'Measuring: '+METER_SECONDS+' s';
+    const tick = ts => {
+      if (!C.S.md || C.S.md.viewer!==v || M.done) return;
+      const playing = v.playback && v.playback.state().playing;
+      if (playing && M.last){ const dt = ts - M.last; M.deltas.push(dt); M.total += dt; }
+      M.last = playing? ts : 0;                                 // a pause is not a slow frame
+      const left = Math.max(0, Math.ceil(METER_SECONDS - M.total/1000)); if (left!==M.shown){ M.shown = left; el.textContent = 'Measuring: '+left+' s'; }
+      if (M.total >= METER_SECONDS*1000){ meterFinish(v); return; }
+      root.requestAnimationFrame(tick);
+    };
+    root.requestAnimationFrame(tick);
+  }
+
   function closeViewer(){
     const S = C.S; const v = S.md && S.md.viewer; if (!v) return;
+    if (v.meter && !v.meter.done){ v.meter.done = true; MD.ui.measuring = false; }
     if (v.onResize && root.removeEventListener){ root.removeEventListener('resize', v.onResize); if (v.resizeT) root.clearTimeout(v.resizeT); }
     try { if (v.playback) v.playback.dispose(); } catch(e){}
     try { if (v.renderer) v.renderer.dispose(); } catch(e){}
@@ -259,11 +353,13 @@
     switch (a){
       case 'md-watch': { const q = S.md.queue[0]; const ok = openViewer(q.m); if (!ok){ C.toast('Could not build the match view. Showing the result.'); S.md.current = S.md.queue.shift().m; C.go('matchresult'); } break; }
       case 'md-instant': { S.md.current = S.md.queue.shift().m; if (C.Track) C.Track.send('match_instant', {}); C.go('matchresult'); break; }
+      case 'md-measure': { MD.ui.measuring = true; C.toast('Measuring is on. Watch any match for a minute.'); break; }
+      case 'md-measure-close': { const el = C.$('#md-meter'); if (el && el.parentNode) el.parentNode.removeChild(el); if (v && v.playback && !v.done) v.playback.play(); break; }
       case 'md-fulltime': { closeViewer(); S.md.current = S.md.queue.shift().m; C.go('matchresult'); break; }
       case 'md-continue': nextMatch(); break;
       case 'md-play': if (v && v.playback && !v.done) v.playback.toggle(); break;
       case 'md-speed': if (v && v.playback) v.playback.setSpeed(+d.s); break;
-      case 'md-skip': if (v && v.playback && !v.done){ v.skipping = true; try { v.playback.skip(); } finally { v.skipping = false; } const b = C.$('#md-badge'); if (b) b.hidden = true; } break;
+      case 'md-skip': if (v && v.playback && !v.done){ v.skipping = true; try { v.playback.skip(); } catch(err){ console.error('matchday skip failed', err); C.toast('The match could not be shown. Showing the result.'); v.skipping = false; act('md-fulltime', {}); break; } finally { v.skipping = false; } const b = C.$('#md-badge'); if (b) b.hidden = true; } break;
       case 'md-sound': { MD.audio.setEnabled(!MD.audio.enabled); const b = C.$('#md-sound'); if (b){ b.textContent = 'Sound: '+(MD.audio.enabled? 'on' : 'off'); b.setAttribute('aria-pressed', String(MD.audio.enabled)); } if (MD.audio.enabled && v && !v.done) MD.audio.start(); break; }
       case 'md-view': { const ids = VIEW_ORDER.filter(k=>MD.renderers[k] && shipped(k)).concat(Object.keys(MD.renderers).filter(k=>k!=='common' && !VIEW_ORDER.includes(k))); const cur = getView(); const next = ids[(ids.indexOf(cur)+1)%ids.length]; setView(next); mountRenderer(next); break; }
       case 'md-camera': { if (v && v.renderer && v.renderer.setCamera){ const modes = v.renderer.cameraModes || ['follow', 'whole']; const cur = v.renderer.getCamera(); const mode = v.renderer.setCamera(modes[(modes.indexOf(cur)+1) % modes.length]); const cb = C.$('#md-camera'); if (cb) labelCamera(cb, mode); } break; }

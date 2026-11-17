@@ -92,6 +92,11 @@ input{width:100%;font:inherit;padding:12px;background:var(--white);color:var(--b
 .md-board .s{font-size:30px;color:var(--orange);padding:0 10px;white-space:nowrap}
 .md-clock{text-align:center;color:var(--grey);font-size:13px;margin-bottom:6px;white-space:pre}
 .md-stage{position:relative;height:min(64vh,560px);background:#1E5F2A;box-shadow:inset 2px 2px 0 var(--black),inset -2px -2px 0 var(--white);margin-bottom:6px;overflow:hidden}
+/* the measuring screen (What's new > Measure the match frame rate): a countdown in the corner, then the figures over the stage */
+.md-meter{position:absolute;right:8px;top:8px;z-index:3;pointer-events:none;background:rgba(0,0,0,.78);color:var(--white);font-size:12px;line-height:1;padding:6px 8px}
+.md-meter.card{left:8px;right:8px;top:8px;max-height:calc(100% - 16px);overflow:auto;pointer-events:auto;white-space:pre-line;line-height:1.5;padding:10px 12px;background:rgba(0,0,0,.9);box-shadow:inset 1px 1px 0 var(--white),1px 1px 0 var(--black)}
+.md-meter.card .b{display:block;width:100%;margin-top:10px}
+.md-meter.card .dim{font-size:10px;word-break:break-all}
 .md-badge{position:absolute;left:8px;top:8px;z-index:2;pointer-events:none;background:rgba(0,0,0,.78);color:var(--white);font-size:13px;line-height:1;padding:7px 10px;white-space:pre;box-shadow:inset 1px 1px 0 var(--white),1px 1px 0 var(--black)}
 .md-badge .sw{display:inline-block;width:9px;height:13px;vertical-align:-2px;margin-right:7px;border:1px solid var(--black)}
 .md-badge .sw.yel{background:#f5d327}.md-badge .sw.red{background:#e0261c}
@@ -2044,6 +2049,15 @@ if (typeof module!=='undefined') module.exports = Engine;
     return { x: c(x), y: c(0.5 + (anchor.y-0.5)*width + (ballY-0.5)*sway) };
   }
 
+  // Which way the home side attacks at a match second: +1 is towards x = 1. Ends change at half-time, again for extra
+  // time and again at its interval, as in a real match (the timeline and the scene both ask here, so they always agree).
+  function homeDirAt(p, second){
+    const extra = !!(p && p.official && p.official.extra);
+    if (extra && second >= PERIODS.extraTime.half) return -1;
+    if (extra && second >= PERIODS.extraTime.start) return 1;
+    return second >= PERIODS.regulation.half? -1 : 1;
+  }
+  MD.homeDirAt = homeDirAt;
   MD.SCHEMA_VERSION = SCHEMA_VERSION; MD.EVENT = EVENT; MD.OFFICIAL_TYPES = OFFICIAL_TYPES; MD.PERIODS = PERIODS; MD.TECHNIQUES = TECHNIQUES;
   MD.validate = validate; MD.hashString = hashString; MD.seededRandom = seededRandom;
   MD.formationAnchors = formationAnchors; MD.shapePos = shapePos; MD.FORMATION_TEMPLATES = TEMPLATES;
@@ -2137,15 +2151,26 @@ if (typeof module!=='undefined') module.exports = Engine;
         winnerTeamId: m.winner!==undefined? 'club-'+m.winner : null },
       events: null,   // filled by the timeline builder
     };
-    // away kit clash: if the two primaries are close, the away side wears its second colour
-    if (similar(p.teams.home.kit.primary, p.teams.away.kit.primary)) p.teams.away.kit = { primary: p.teams.away.kit.secondary, secondary: p.teams.away.kit.primary, pattern:'plain', changed: true };
-    if (similar(p.teams.home.kit.primary, p.teams.away.kit.primary)) p.teams.away.kit = { primary: '#FFD200', secondary: '#202020', pattern:'plain', changed: true };
+    // Kit clash. A striped, hooped or quartered shirt is two colours, a plain one is one: if any colour of the home shirt
+    // is close to any colour of the away shirt, the away side changes. It wears its second colour as a plain shirt if that
+    // clears the home shirt, and otherwise the first spare kit that does.
+    // A shirt that is all pitch-green is changed too, home or away (the second colour as a plain shirt).
+    { const spare = SPARE_KITS.map(k => ({ primary: k[0], secondary: k[1], pattern:'plain', changed: true }));
+      const swapped = k => ({ primary: k.secondary, secondary: k.primary, pattern:'plain', changed: true });
+      if (pitchGreen(p.teams.home.kit)){ const own = p.teams.home.kit; p.teams.home.kit = [swapped(own)].concat(spare).find(k => !pitchGreen(k)) || own; }
+      const hk = p.teams.home.kit, own = p.teams.away.kit;
+      if (kitsClash(hk, own) || pitchGreen(own)) p.teams.away.kit = [swapped(own)].concat(spare).find(k => !kitsClash(hk, k) && !pitchGreen(k)) || swapped(own);
+    }
     return Object.freeze(p);
   }
   function rgb(c){ if (c[0]==='#'){ return [parseInt(c.slice(1,3),16), parseInt(c.slice(3,5),16), parseInt(c.slice(5,7),16)]; } const m = /hsl\((\d+),(\d+)%,(\d+)%\)/.exec(c); if (!m) return [128,128,128]; const h=+m[1]/360, s=+m[2]/100, l=+m[3]/100; const f=(n)=>{ const k=(n+h*12)%12; const a=s*Math.min(l,1-l); return Math.round(255*(l - a*Math.max(-1, Math.min(k-3, 9-k, 1)))); }; return [f(0),f(8),f(4)]; }
+  const shirtColours = k => (k.pattern && k.pattern!=='plain')? [k.primary, k.secondary] : [k.primary];
+  const PITCH_GREEN = '#3C9A46'; const pitchGreen = k => shirtColours(k).every(c => { const x = rgb(c), y = rgb(PITCH_GREEN); return Math.hypot(x[0]-y[0], x[1]-y[1], x[2]-y[2]) < 80; });
+  const kitsClash = (a, b) => shirtColours(a).some(x => shirtColours(b).some(y => similar(x, y)));
+  const SPARE_KITS = [['#FFD200','#202020'], ['#FFFFFF','#202020'], ['#6CB4EE','#1F2A44'], ['#E03A3E','#FFFFFF'], ['#1F2A44','#FFFFFF'], ['#F28C28','#202020']];   // yellow, white, sky, red, navy, orange
   function similar(a,b){ const x = rgb(a), y = rgb(b); const d = Math.sqrt((x[0]-y[0])**2 + (x[1]-y[1])**2 + (x[2]-y[2])**2); return d < 110; }
 
-  MD.capture = capture; MD.kitFor = kitFor; MD.KITS = KITS;
+  MD.capture = capture; MD.kitFor = kitFor; MD.KITS = KITS; MD.shirtColours = shirtColours; MD.kitsClash = kitsClash; MD.coloursAlike = similar; MD.rgbOf = rgb;
 })(typeof window!=='undefined'? window : globalThis);
 
 // ============================================================================
@@ -2195,8 +2220,7 @@ if (typeof module!=='undefined') module.exports = Engine;
   const VOLLEY_Z = 0.55/3.0;       // a volley is struck around knee height
 
   function attackDir(p, teamId, second){
-    const secondHalfOrLater = second >= P.regulation.half;
-    const homeDir = secondHalfOrLater? -1 : 1;
+    const homeDir = MD.homeDirAt(p, second);   // ends change at half-time, for extra time and at its interval
     return teamId===p.teams.home.id? homeDir : -homeDir;
   }
   // attacking-frame depth -> absolute
@@ -2330,7 +2354,7 @@ if (typeof module!=='undefined') module.exports = Engine;
     let restartHeld = null;    // the keeper has placed a goal kick and not yet taken it: the ball is dead on the spot
     const kickOff = (second, teamId, type) => {
       poss = teamId; bAx = 0.5; bY = 0.5; carrier = nearest(teamId, 0.5, 0.5, 0.5, 0.5, null, false); cornerPending = false; lastKickOff = second; restartHeld = null;
-      official(type, second, { teamId, playerId: carrier? carrier.id : null, at:{x:0.5,y:0.5}, text: type===EV.KICK_OFF? (second===0? 'Kick-off.' : 'Back under way.') : type===EV.SECOND_HALF? 'Second half under way.' : 'Extra time. Thirty more minutes.' });
+      official(type, second, { teamId, playerId: carrier? carrier.id : null, at:{x:0.5,y:0.5}, text: type===EV.KICK_OFF? (second===0? 'Kick-off.' : 'Back under way.') : type===EV.SECOND_HALF? 'Second half under way.' : second >= P.extraTime.half? 'The second period of extra time. Fifteen more minutes.' : 'Extra time. Thirty more minutes.' });
     };
     // the short pass that takes a kick-off, a beat after the whistle: to the partner standing a stride beside the taker
     // (the same man the scene places there: the forward nearest the middle), else to whoever is nearest the spot
@@ -3619,7 +3643,7 @@ if (typeof module!=='undefined') module.exports = Engine;
     const byId = {}; for (const pl of players) byId[pl.id] = pl;
     const gkOf = {}; for (const pl of players) if (pl.role==='GK' && !gkOf[pl.teamId]) gkOf[pl.teamId] = pl.id;
     const teamOf = id => players.filter(x=>x.teamId===id);
-    const dirAt = (teamId, t) => (teamId===H? (t >= P.regulation.half? -1 : 1) : (t >= P.regulation.half? 1 : -1));
+    const dirAt = (teamId, t) => (teamId===H? MD.homeDirAt(p, t) : -MD.homeDirAt(p, t));
     const toAbs = (teamId, t, ax, y) => ({ x: dirAt(teamId, t)===1? ax : 1-ax, y });
     const end = p.official.extra? P.extraTime.end : P.regulation.end;
 
@@ -6185,20 +6209,43 @@ if (typeof module!=='undefined') module.exports = Engine;
   // corner swung in needs the wider view on a phone), and kept until the next cut so the ground never re-tiles mid-play.
   // A goal is the one cut inside a highlight: a second after the ball crosses the line the picture cuts from the goalmouth
   // to the scorer at the close scale (when the shot needed the wider one), and stays with him until the restart.
+  // Working the scale out means sampling the scene up to eighty times across the highlight, which costs as much as
+  // several frames, so the answer for a highlight is remembered per match (the restart after a goal returns to the same
+  // highlight, and a reduced-motion device asks on every frame), and it can be worked out a few samples a frame before
+  // the cut that needs it (planJob), so that neither a cut nor the moment of a goal has to stop and think.
+  const plans = typeof WeakMap!=='undefined'? new WeakMap() : null;
+  const planOf = scene => { if (!plans || !scene.frameAt) return null; let m = plans.get(scene.frameAt); if (!m){ m = new Map(); plans.set(scene.frameAt, m); } return m; };
+  function planKey(scene, segment, w, h, closeP){ const celeb = scene.celebration || null; const base = segment? segment.a+':'+segment.b+':'+w+':'+h+':'+closeP : 'none:'+w+':'+h+':'+closeP; return celeb? base+':c'+celeb.cut : base; }
+  function planTimes(scene, segment){
+    const celeb = scene.celebration || null; const times = []; const t0 = scene.t||0;
+    const a = celeb? Math.max(t0, celeb.cut) : (segment? segment.a : t0), b = celeb? Math.min(celeb.end, segment? segment.b : celeb.end) : (segment? segment.b : t0);
+    if (b > a){ const step = Math.max(0.4, (b - a)/80); for (let t = a; t <= b; t += step) times.push(t); times.push(b); } else times.push(t0);
+    return times;
+  }
+  const rememberable = (scene, segment) => !!(segment || scene.celebration);   // with neither, the answer depends on the instant asked
   function chooseP(state, scene, segment, w, h, closeP, wideP, snap){
-    const celeb = scene.celebration || null;
-    const base = segment? segment.a+':'+segment.b+':'+w+':'+h+':'+closeP : 'none:'+w+':'+h+':'+closeP;
-    const key = celeb? base+':c'+celeb.cut : base;
+    const key = planKey(scene, segment, w, h, closeP);
     if (!snap && state.pKey===key && state.P) return state.P;
     if (!snap && state.P && state.pKey && state.pKey.indexOf('none:')!==0 && !segment) return state.P;
-    let P = closeP;
-    if (closeP !== wideP && scene.frameAt){
-      const times = []; const t0 = scene.t||0;
-      const a = celeb? Math.max(t0, celeb.cut) : (segment? segment.a : t0), b = celeb? Math.min(celeb.end, segment? segment.b : celeb.end) : (segment? segment.b : t0);
-      if (b > a){ const step = Math.max(0.4, (b - a)/80); for (let t = a; t <= b; t += step) times.push(t); times.push(b); } else times.push(t0);
-      if (!fits(scene, times, w, h, closeP)) P = wideP;
+    const memo = rememberable(scene, segment)? planOf(scene) : null; let P = memo? memo.get(key+':'+wideP) : undefined;
+    if (P===undefined){
+      P = closeP;
+      if (closeP !== wideP && scene.frameAt && !fits(scene, planTimes(scene, segment), w, h, closeP)) P = wideP;
+      if (memo) memo.set(key+':'+wideP, P);
     }
     state.P = P; state.pKey = key; return P;
+  }
+  // The same answer, worked out a little at a time: step(ms) samples for about that long and says whether it has finished.
+  function planJob(scene, segment, w, h, closeP, wideP){
+    const memo = rememberable(scene, segment)? planOf(scene) : null; const key = planKey(scene, segment, w, h, closeP)+':'+wideP;
+    if (!memo || memo.has(key) || closeP===wideP || !scene.frameAt) return { step: () => true, done: true };
+    const times = planTimes(scene, segment); let i = 0; const clock = () => (root.performance && root.performance.now)? root.performance.now() : Date.now();
+    const job = { done: false, step(ms){
+      if (job.done) return true; if (memo.has(key)){ job.done = true; return true; }
+      const until = clock() + (ms||3);
+      do { if (i >= times.length){ memo.set(key, closeP); job.done = true; return true; } if (!fits(scene, [times[i++]], w, h, closeP)){ memo.set(key, wideP); job.done = true; return true; } } while (clock() < until);
+      return false; } };
+    return job;
   }
 
   function update(state, scene, w, h, mode, dtReal, snap, followP){
@@ -6269,7 +6316,7 @@ if (typeof module!=='undefined') module.exports = Engine;
     return { P, ox: Math.round(w/2 - state.cx), oy: Math.round(h/2 - state.cy), mode: 'follow' };
   }
 
-  MD.iso.camera = { update, chooseP, fits, clampToGround, FOLLOW_P, BOUNDS, EDGE, PAN_MAX, SHOT_PAN, OMEGA, MARGIN };
+  MD.iso.camera = { update, chooseP, planJob, fits, clampToGround, FOLLOW_P, BOUNDS, EDGE, PAN_MAX, SHOT_PAN, OMEGA, MARGIN };
 })(typeof window!=='undefined'? window : globalThis);
 
 // ============================================================================
@@ -6398,19 +6445,43 @@ if (typeof module!=='undefined') module.exports = Engine;
     return { kind, key: kind+':'+(pl.id||'ref'), pl, depth: goalmouthDepth(m.X, m.Y), sx: Math.round(p.sx), sy: Math.round(p.sy), gsx: Math.round(g.sx), gsy: Math.round(g.sy), lift: lift||0, sprite, dir: a.dir, pose };
   }
 
+  // Who wears what. The two sides wear the kits the presentation gives them. Each goalkeeper and the referee are dressed
+  // here, for this match, so that nobody can be mistaken for anybody else. The referee wears black unless a shirt on the
+  // pitch is dark. Each keeper wears the first colour of a short list that stands clear of the opposing side's shirt
+  // above all, then of his own side's, the referee and the grass, and that differs from the other keeper's. Distances
+  // are the same plain measure the kit-clash rule uses (110 apart is the game's line between two shirts being alike).
+  const KEEPER_COLOURS = ['#F2C200', '#9AA0A6', '#F28C28', '#35B7E8', '#8A4FD0', '#E85D9A', '#C4E538', '#0FB5AE', '#F4F4F4', '#B0123B', '#1D3F8F', '#5B3A29'];   // yellow, grey, orange, sky, purple, pink, lime, teal, white, crimson, royal blue, brown
+  const REFEREE_COLOURS = ['#1A1A1A', '#7B1E3A', '#C9CDD2', '#6A3FA0', '#E46A1F', '#F0F0F0', '#D9A400', '#E85D9A'];   // black, maroon, silver, purple, orange, white, gold, pink
+  const GRASS_COLOUR = '#3C9A46'; const NEAR = 110;
+  const rgbOf = c => MD.rgbOf? MD.rgbOf(c) : [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16));   // club colours come as #rrggbb or hsl()
+  const apart = (a, b) => { const x = rgbOf(a), y = rgbOf(b); return Math.hypot(x[0] - y[0], x[1] - y[1], x[2] - y[2]); };
+  // the first colour in the list that keeps every required distance; failing that, the one that comes nearest to doing so
+  const clearest = (list, needs) => { let best = list[0], bestS = -1; for (const c of list){ let sc = Infinity; for (const [o, d] of needs) sc = Math.min(sc, apart(c, o)/d); if (sc >= 1) return c; if (sc > bestS){ bestS = sc; best = c; } } return best; };
+  const kitMemo = typeof WeakMap!=='undefined'? new WeakMap() : null;
+  function kitsFor(teams){
+    let k = kitMemo && kitMemo.get(teams); if (k) return k;
+    const shirts = c => (MD.shirtColours? MD.shirtColours(c) : [c.primary]); const hs = shirts(teams.home.kit), as = shirts(teams.away.kit);
+    const ref = clearest(REFEREE_COLOURS, hs.concat(as).map(c => [c, NEAR]).concat([[GRASS_COLOUR, 100]]));
+    const keeperOf = (own, opp, other) => clearest(KEEPER_COLOURS, opp.map(c => [c, NEAR]).concat(own.map(c => [c, 90]), [[ref, 90], [GRASS_COLOUR, 100]], other? [[other, 70]] : []));
+    const hg = keeperOf(hs, as, null), ag = keeperOf(as, hs, hg);
+    const keeper = c => ({ primary: c, secondary: '#1F2A44', pattern:'plain', gk: true });
+    k = { home: teams.home.kit, away: teams.away.kit, homeGK: keeper(hg), awayGK: keeper(ag), ref: ref===SP.REF_KIT.primary? SP.REF_KIT : { primary: ref, secondary: '#F2F2F2', pattern:'plain' } };
+    if (kitMemo) kitMemo.set(teams, k); return k;
+  }
+
   function build(scene, teams, st, now, cam, spr){
     const items = [], shadows = []; const t = scene.t||0;
-    const home = teams.home, away = teams.away;
+    const home = teams.home, away = teams.away; const kits = kitsFor(teams);
     let carrier = null;
     for (const pl of scene.players){
       if (pl.sentOff) continue;                                 // off the pitch: not drawn
       const kit = pl.teamId===home.id? home.kit : away.kit;
-      const gk = pl.role==='GK'? { primary: kit.secondary, secondary: kit.primary, pattern:'plain', gk:true } : kit;
+      const gk = pl.role==='GK'? (pl.teamId===home.id? kits.homeGK : kits.awayGK) : kit;
       const it = actorItem('player', pl, gk, SP.variantFor(pl.id), st, t, cam, spr);
       items.push(it); shadows.push({ sx: it.gsx, sy: it.gsy, w: 0.9, ring: !!pl.hasBall });
       if (pl.hasBall) carrier = it;
     }
-    if (scene.ref){ const it = actorItem('ref', scene.ref, SP.REF_KIT, { skin:1, hair:0, style:1 }, st, t, cam, spr); items.push(it); shadows.push({ sx: it.gsx, sy: it.gsy, w: 0.9 }); }
+    if (scene.ref){ const it = actorItem('ref', scene.ref, kits.ref, { skin:1, hair:0, style:1 }, st, t, cam, spr); items.push(it); shadows.push({ sx: it.gsx, sy: it.gsy, w: 0.9 }); }
     // the ball: shadow at its ground point, the ball itself lifted by its height (the scene already puts a controlled
     // ball a touch ahead of its owner's feet, and blends it onto the spot it is struck from or lost at)
     const b = scene.ball; const bm = PR.toMetres(b.x, b.y); const bz = Math.max(0, b.z||0)*PR.BALL_Z_M;
@@ -6426,7 +6497,7 @@ if (typeof module!=='undefined') module.exports = Engine;
     return { items, shadows };
   }
 
-  MD.iso.actors = { build, poseFor, refPose, goalmouthDepth, STRIDE_M, HYST, ZONE, JUMP };
+  MD.iso.actors = { build, poseFor, refPose, goalmouthDepth, kitsFor, KEEPER_COLOURS, REFEREE_COLOURS, STRIDE_M, HYST, ZONE, JUMP };
 })(typeof window!=='undefined'? window : globalThis);
 
 // ============================================================================
@@ -6455,21 +6526,27 @@ if (typeof module!=='undefined') module.exports = Engine;
   // A tile set belongs to one scale. Tiles are keyed in a grid fixed to the world origin, so a pan only
   // uncovers new tiles at the edge; a crowd-bounce variant is rendered only for tiles that hold spectators.
   const TILE = 256;
-  function buildWorld(createCanvas, P, seed, colours){
-    const tiles = new Map(); const MAX = P >= 16? 40 : 30;             // 10 MB on a desktop, 7.5 MB on a phone, at most (two scales may be live)
+  function buildWorld(createCanvas, P, seed, colours, room){
+    // the cache holds the view on screen and the view the next cut will open on, with a little over: thirty tiles on a
+    // phone (7.5 MB), up to seventy-two on the largest desktop stage (19 MB); two scales may be live at once
+    const tiles = new Map(); const MAX = Math.max(P >= 16? 40 : 30, Math.min(72, room||0)); let painted = 0, kept = null;
+    // the tile given up when the cache is full: the least recently drawn that is not being kept for the next cut
+    const giveUp = () => { if (kept) for (const k of tiles.keys()) if (!kept.has(k)){ tiles.delete(k); return; } tiles.delete(tiles.keys().next().value); };
     function get(tx, ty, jump){
       const base = tx+':'+ty; const key = (jump? 'j' : 's') + base;
       let t = tiles.get(key); if (t){ tiles.delete(key); tiles.set(key, t); return t; }
       if (jump){ const still = tiles.get('s' + base); if (still && !still.crowd) return still; }
-      const cv = createCanvas(TILE, TILE); const ctx = cv.getContext('2d'); ctx.imageSmoothingEnabled = false;
+      const cv = createCanvas(TILE, TILE); const ctx = cv.getContext('2d'); ctx.imageSmoothingEnabled = false; painted++;
       ctx.fillStyle = OUTSIDE; ctx.fillRect(0, 0, TILE, TILE);
       const crowd = ISO.stadium.drawGround(ctx, { P, ox: -tx*TILE, oy: -ty*TILE }, seed, jump, { x:0, y:0, w:TILE, h:TILE }, { colours });
       t = { cv, crowd };
-      if (tiles.size >= MAX) tiles.delete(tiles.keys().next().value);
+      if (tiles.size >= MAX) giveUp();
       tiles.set(key, t); return t;
     }
-    return { P, TILE, get, size: () => tiles.size, max: MAX, dispose(){ tiles.clear(); } };
+    return { P, TILE, get, has: (tx, ty) => tiles.has('s'+tx+':'+ty), needsJump: (tx, ty) => { const t = tiles.get('s'+tx+':'+ty); return !!(t && t.crowd && !tiles.has('j'+tx+':'+ty)); }, keep(list){ kept = list? new Set(list.flatMap(t => ['s'+t[0]+':'+t[1], 'j'+t[0]+':'+t[1]])) : null; }, size: () => tiles.size, painted: () => painted, max: MAX, dispose(){ tiles.clear(); } };
   }
+  // the tiles a view of w x h at this camera needs, as [tx, ty] pairs
+  function tilesIn(w, h, cam, T){ const out = []; const tx0 = Math.floor(-cam.ox/T), tx1 = Math.floor((w - cam.ox)/T), ty0 = Math.floor(-cam.oy/T), ty1 = Math.floor((h - cam.oy)/T); for (let ty=ty0; ty<=ty1; ty++) for (let tx=tx0; tx<=tx1; tx++) out.push([tx, ty]); return out; }
   function drawWorld(ctx, w, h, cam, world, jump){
     const T = world.TILE; const tx0 = Math.floor(-cam.ox/T), tx1 = Math.floor((w - cam.ox)/T), ty0 = Math.floor(-cam.oy/T), ty1 = Math.floor((h - cam.oy)/T);
     for (let ty=ty0; ty<=ty1; ty++) for (let tx=tx0; tx<=tx1; tx++){ const t = world.get(tx, ty, jump); ctx.drawImage(t.cv, cam.ox + tx*T, cam.oy + ty*T); }
@@ -6599,7 +6676,7 @@ if (typeof module!=='undefined') module.exports = Engine;
   function create(options){
     const opts = Object.assign({}, options||{});
     if (!opts.style && MD.isoDefaultStyle) opts.style = MD.isoDefaultStyle;   // a build may name the style the plain Iso view draws with (ISO_DEFAULT in build.py)
-    let container = null, canvas = null, ctx = null, teams = null, seed = 1, ro = null, lastW = 0, lastH = 0, lastTs = 0, lastFrame = null, lastScene = null, selected = null, loopTs = -1e9, settle = 0;
+    let container = null, canvas = null, ctx = null, teams = null, seed = 1, ro = null, lastW = 0, lastH = 0, lastTs = 0, lastFrame = null, lastScene = null, selected = null, loopTs = -1e9, settle = 0, unpainted = false, ahead = [], aheadKey = '', lastCam = null, pending = null, waveBy = 0, gone = 0;
     const worlds = new Map();                                   // P -> world image (at most two: follow and whole)
     let cameraMode = opts.camera || (function(){ try { return root.localStorage.getItem(CAM_KEY) || 'close'; } catch(e){ return 'close'; } })();   // the close camera is the default (Phase 3 art direction)
     const state = { anim: {}, cx: undefined, cy: undefined };
@@ -6617,8 +6694,52 @@ if (typeof module!=='undefined') module.exports = Engine;
     };
     function worldFor(P){
       let wld = worlds.get(P); if (wld) return wld;
-      if (worlds.size >= 2){ const k = worlds.keys().next().value; worlds.get(k).dispose(); worlds.delete(k); }
-      wld = buildWorld(makeCanvas, P, seed, [teams.home.kit.primary, teams.away.kit.primary]); worlds.set(P, wld); return wld;
+      if (worlds.size >= 2){ const k = worlds.keys().next().value; gone += worlds.get(k).painted(); worlds.get(k).dispose(); worlds.delete(k); }
+      const cols = canvas? Math.ceil(canvas.width/TILE) + 1 : 3, rows = canvas? Math.ceil(canvas.height/TILE) + 1 : 3;   // room for the view on screen, the view of the next cut and the ring of tiles round the screen
+      wld = buildWorld(makeCanvas, P, seed, [teams.home.kit.primary, teams.away.kit.primary], cols*rows*2 + 2*(cols + rows) + 4); worlds.set(P, wld); return wld;
+    }
+    // Working ahead. A cut used to stop the picture for several frames: the camera sampled the whole highlight to choose
+    // its scale (up to eighty samples of the scene) and then a whole screen of ground tiles was painted (up to twenty, a
+    // few milliseconds each), all in the one frame. The moment of a goal did the same for the cut to the scorer. That
+    // work is now done beforehand, a little a frame, after the frame is drawn: the match screen says where the next cut
+    // will land (during the fast-forward that leads to a highlight, and a moment before a cut inside one), the scale is
+    // worked out a few samples at a time, and then the tiles it needs are painted one a frame. While the camera pans,
+    // the tiles just beyond the edge it is moving towards are painted the same way. Nothing is painted ahead when the
+    // cache has no room for it, and a cut that arrives before the work is finished simply does the rest itself.
+    function prepare(scene, hud){
+      if (!ctx || !canvas || !scene || !r.isReady()) return;
+      const w = canvas.width, h = canvas.height; const seg = (hud && hud.segment) || null; const key = (scene.t||0)+':'+w+':'+h+':'+cameraMode; if (key===aheadKey) return; aheadKey = key;
+      // first the scale the cut will be shown at (a few samples of the scene a frame), then the ground under it
+      pending = { scene, seg, w, h, scale: (cameraMode==='close' && !opts.followP)? ISO.camera.planJob(scene, seg, w, h, closeP(), wideP()) : null }; ahead = [];
+    }
+    function planGround(job){
+      const { scene, seg, w, h } = job; if (w!==canvas.width || h!==canvas.height) return;
+      const scratch = { anim: {} };   // the live camera is not touched: the cut is worked out on a camera of its own
+      const P = cameraMode==='whole'? PR.fit(w, h, DIM.runoff + 1.5).P : opts.followP? opts.followP : cameraMode!=='close'? wideP() : ISO.camera.chooseP(scratch, scene, seg, w, h, closeP(), wideP(), true);
+      const cam = ISO.camera.update(scratch, scene, w, h, cameraMode==='whole'? 'whole' : 'follow', 0, true, P);
+      const live = lastFrame && lastFrame.cam? lastFrame.cam.P : null; if (live!==null && worlds.has(live)){ const cur = worlds.get(live); worlds.delete(live); worlds.set(live, cur); }   // the ground on screen is never the one given up for the new scale
+      const world = worldFor(P); for (const wld of worlds.values()) wld.keep(wld===world? tilesIn(w, h, cam, world.TILE) : null);   // what is painted for the cut is kept until the next one is prepared
+      const wave = nowMs() < waveBy;   // a goal is on its way: the stands of the view the cut opens on are wanted risen as well
+      ahead = []; for (const t of tilesIn(w, h, cam, world.TILE)){ if (!world.has(t[0], t[1])) ahead.push({ world, tx: t[0], ty: t[1], wave }); else if (wave && world.needsJump(t[0], t[1])) ahead.push({ world, tx: t[0], ty: t[1], jump: true }); }
+    }
+    function paintAhead(){
+      if (pending){ if (pending.scale && !pending.scale.step(3)) return; const job = pending; pending = null; planGround(job); return; }
+      while (ahead.length){ const a = ahead.shift(); if (worlds.get(a.world.P)!==a.world) continue;
+        if (a.jump){ if (!a.world.needsJump(a.tx, a.ty)) continue; a.world.get(a.tx, a.ty, true); return; }
+        if (a.world.has(a.tx, a.ty)) continue; const t = a.world.get(a.tx, a.ty, false); if (a.wave && t.crowd) ahead.push({ world: a.world, tx: a.tx, ty: a.ty, jump: true }); return; }   // (the cache gives up its least recently drawn tile if it is full: never one on screen, which are touched every frame)
+      const cam = lastFrame && lastFrame.cam; if (!cam) return; const world = worlds.get(cam.P); if (!world) return;
+      const T = world.TILE, w = canvas.width, h = canvas.height;
+      // a goal is coming (the match screen says so): the stands in view get their second, risen, painting ready for the wave
+      if (nowMs() < waveBy){ for (const t of tilesIn(w, h, cam, T)) if (world.needsJump(t[0], t[1])){ world.get(t[0], t[1], true); return; } }
+      // nothing queued for a cut: the tiles just off screen, first along the edge the camera is moving towards, then
+      // (while the cache has room to spare) the rest of the ring round the screen
+      if (!lastCam || cam.P!==lastCam.P) return;
+      const dx = cam.ox - lastCam.ox, dy = cam.oy - lastCam.oy;   // the picture slides the other way from the camera: ox falls as the view moves right
+      const tx0 = Math.floor(-cam.ox/T), tx1 = Math.floor((w - cam.ox)/T), ty0 = Math.floor(-cam.oy/T), ty1 = Math.floor((h - cam.oy)/T);
+      if (dx){ const tx = dx < 0? tx1 + 1 : tx0 - 1; for (let ty=ty0; ty<=ty1; ty++) if (!world.has(tx, ty)){ world.get(tx, ty, false); return; } }
+      if (dy){ const ty = dy < 0? ty1 + 1 : ty0 - 1; for (let tx=tx0; tx<=tx1; tx++) if (!world.has(tx, ty)){ world.get(tx, ty, false); return; } }
+      if (world.size() >= world.max) return;
+      for (let ty=ty0-1; ty<=ty1+1; ty++) for (let tx=tx0-1; tx<=tx1+1; tx++) if ((ty < ty0 || ty > ty1 || tx < tx0 || tx > tx1) && !world.has(tx, ty)){ world.get(tx, ty, false); return; }
     }
     // Frames normally come from the playback loop. When nothing is playing (paused, full time) the picture still has to be
     // put right after a tap, a turn of the phone, a camera change or a cut that left it mid-fade: a still frame draws the
@@ -6659,13 +6780,17 @@ if (typeof module!=='undefined') module.exports = Engine;
         const cw = Math.max(1, container.clientWidth), ch = Math.max(1, container.clientHeight);
         if (cw===lastW && ch===lastH) return;
         lastW = cw; lastH = ch; canvas.width = cw; canvas.height = ch; state.cx = undefined;
-        for (const wld of worlds.values()) wld.dispose(); worlds.clear();   // the whole-pitch scale depends on the stage size
+        for (const wld of worlds.values()) wld.dispose(); worlds.clear(); ahead = []; aheadKey = ''; lastCam = null; pending = null;   // the whole-pitch scale depends on the stage size
         redraw();   // sizing a canvas clears it: the picture is drawn again at once, playing or not (a phone turned while paused)
       },
       // the painted art of the style is still decoding: nothing generated is shown in its place, a plain holding frame
       // is drawn instead (the match screen waits for ready() before it starts the clock, so nothing is missed)
       ready(){ if (!MD.isoAssets || opts.style==='none' || !MD.isoAssets.expects(opts.style || 'B')) return Promise.resolve(); assetLoad(opts.assetUrl); return MD.isoAssets.styleReady(opts.style || 'B'); },
-      isReady(){ return !MD.isoAssets || opts.style==='none' || MD.isoAssets.isReady(opts.style || 'B'); },
+      isReady(){ return unpainted || !MD.isoAssets || opts.style==='none' || MD.isoAssets.isReady(opts.style || 'B'); },
+      // the painted art has not arrived in time: draw anyway, with the generated figures and stands wherever a painted one
+      // is missing (each takes over as it arrives)
+      proceed(){ unpainted = true; if (lastScene) redraw(); },
+      prepare, expectWave(){ waveBy = nowMs() + 6000; }, aheadCount(){ return ahead.length + (pending? 1 : 0); }, tilesPainted(){ let n = 0; for (const wld of worlds.values()) n += wld.painted(); return n + gone; }, worldTiles(){ let n = 0; for (const wld of worlds.values()) n += wld.size(); return n; },
       render(scene, hud){
         if (!ctx) return;
         if (!r.isReady()){ holdingFrame(ctx, canvas.width, canvas.height); r.lastHud = hud; lastScene = scene; return; }
@@ -6674,16 +6799,17 @@ if (typeof module!=='undefined') module.exports = Engine;
         const P = cameraMode==='whole'? PR.fit(canvas.width, canvas.height, DIM.runoff + 1.5).P : followP(scene, hud);
         const world = worldFor(P);
         lastFrame = drawFrame(ctx, canvas.width, canvas.height, scene, { teams, seed, world, state, dtReal: dt, nowMs: ts, cameraMode, selected, followP: P, fastForward: !!(hud && hud.fastForward), sinceCut: hud? hud.sinceCut : undefined, snap: !!(hud && hud.reducedMotion), reducedMotion: !!(hud && hud.reducedMotion) });
+        if (hud && hud.sinceCut!==undefined){ try { paintAhead(); } catch(e){ ahead = []; } lastCam = lastFrame.cam; }   // one tile ahead, on frames from the loop only
         // a frame drawn part-way through a fade is completed even if no frame follows it (Skip ends the match on a cut)
         if (settle){ root.clearTimeout(settle); settle = 0; }
         if (lastFrame.fading && root.setTimeout) settle = root.setTimeout(() => { settle = 0; if (!playing()) still(); }, 350);
       },
       cameraModes: ['follow', 'close', 'whole'],
-      setCamera(mode){ cameraMode = mode==='whole'? 'whole' : mode==='close'? 'close' : 'follow'; try { root.localStorage.setItem(CAM_KEY, cameraMode); } catch(e){} state.cx = undefined; redraw(); return cameraMode; },
+      setCamera(mode){ cameraMode = mode==='whole'? 'whole' : mode==='close'? 'close' : 'follow'; try { root.localStorage.setItem(CAM_KEY, cameraMode); } catch(e){} state.cx = undefined; ahead = []; pending = null; aheadKey = ''; redraw(); return cameraMode; },
       getCamera(){ return cameraMode; },
       debugItems(){ return (lastFrame && lastFrame.items)? lastFrame.items.map(it => ({ kind: it.kind, id: it.pl? it.pl.id : it.key, box: it.box||null, sx: it.sx, sy: it.sy })) : []; },   // for tooling: what was drawn where
       lastFrame(){ return lastFrame; },   // the camera and the drawn items of the last frame (for tools and tests)
-      dispose(){ if (settle){ root.clearTimeout(settle); settle = 0; } if (ro){ ro.disconnect(); ro = null; } if (canvas){ canvas.removeEventListener('click', onTap); if (canvas.parentNode) canvas.parentNode.removeChild(canvas); } for (const wld of worlds.values()) wld.dispose(); worlds.clear(); SP.clear(); canvas = ctx = container = lastFrame = lastScene = null; state.anim = {}; },
+      dispose(){ ahead = []; pending = null; if (settle){ root.clearTimeout(settle); settle = 0; } if (ro){ ro.disconnect(); ro = null; } if (canvas){ canvas.removeEventListener('click', onTap); if (canvas.parentNode) canvas.parentNode.removeChild(canvas); } for (const wld of worlds.values()) wld.dispose(); worlds.clear(); SP.clear(); canvas = ctx = container = lastFrame = lastScene = null; state.anim = {}; },
     };
     return r;
   }
@@ -6890,14 +7016,33 @@ if (typeof module!=='undefined') module.exports = Engine;
       const sc = C.$('#md-score'); if (sc) sc.textContent = s.score.home+' - '+s.score.away;
       const ck = C.$('#md-clock'); if (ck){ ck.textContent = (ff? '\u25B6\u25B6 ' : '')+s.clock.label+(s.clock.extraTime? ' ET' : '')+'  '+s.phaseLabel+(onBall && !ff? '  \u00b7  '+onBall.name : ''); ck.classList.toggle('ff', !!ff); }
     };
+    const goalTimes = pres.events.filter(e => e.type===EV.GOAL).map(e => e.matchSecond);
     v.playback = MD.createPlayback(pres, {
       onFrame: (sec, state) => {
         const now = (root.performance && root.performance.now)? root.performance.now() : Date.now();
         if (v.reduced && now - v.lastDraw < 200 && !state.ended) return;
         v.lastDraw = now;
         const s = scene.getSceneAt(state.sceneSecond===undefined? sec : state.sceneSecond);   // the picture
-        if (v.renderer) v.renderer.render(s, { fastForward: state.fastForward, speed: state.speed, reducedMotion: v.reduced, sinceCut: state.sinceCut, segment: (state.segA!==undefined && !state.segFF)? { a: state.segA, b: state.segB } : null });
+        if (v.renderer){
+          const m0 = v.meter && !v.meter.done? root.performance.now() : 0;
+          try { v.renderer.render(s, { fastForward: state.fastForward, speed: state.speed, reducedMotion: v.reduced, sinceCut: state.sinceCut, segment: (state.segA!==undefined && !state.segFF)? { a: state.segA, b: state.segB } : null }); if (m0) v.meter.draws.push(root.performance.now() - m0); }
+          catch(err){ if (!viewFailed(v, err)) return; }   // the view broke: another one takes over, or the match gives way to its result
+        }
         board(scene.getSceneAt(sec), s, state.fastForward);                                     // the clock and score (the clock races during a fast-forward)
+        // The view is told where the next cut will land, so that it can choose its scale and paint that ground ahead of
+        // time: a cut inside this highlight (a restart, the scorer) a moment before it comes; otherwise the start of the
+        // next highlight, from the last seconds of this one and through the fast-forward that leads to it.
+        if (v.renderer && v.renderer.prepare){
+          const at = state.sceneSecond===undefined? sec : state.sceneSecond; let target, seg = null;
+          let inner = !state.segFF && scene.cutTimes? scene.cutTimes.find(x => x > at + 0.05 && x < at + 3.5) : undefined;
+          if (!state.segFF){ const g = goalTimes.find(x => x > at - 1.5 && x < at + 4); const cel = g!==undefined? scene.getSceneAt(g + 0.05).celebration : null; if (cel && cel.cut > at + 0.05 && (inner===undefined || cel.cut < inner)) inner = cel.cut; }   // the cut to the scorer, a second after his goal
+          if (inner!==undefined){ target = inner + 0.02; seg = state.segA!==undefined? { a: state.segA, b: state.segB } : null; }
+          else if (state.segB!==undefined && (state.segFF || state.segB - at < 6)){
+            const segs = v.segs || (v.segs = v.playback.timeMap().segs); let nx = segs.find(g => g.a===state.segB); if (nx && nx.ff) nx = segs.find(g => g.a===nx.b);   // past the fast-forward, if one is still to come
+            if (nx && !nx.ff){ target = nx.a; seg = { a: nx.a, b: nx.b }; }
+          }
+          if (target!==undefined && v.prepFor!==target){ v.prepFor = target; try { v.renderer.prepare(scene.getSceneAt(target), { segment: seg }); } catch(e){} }
+        }
       },
       onLine: (l) => { if (comm) comm.textContent = l.text; },
       onEvent: (e) => {
@@ -6918,7 +7063,7 @@ if (typeof module!=='undefined') module.exports = Engine;
         else if (e.type===EV.SHOT_SAVED || e.type===EV.SHOT_WIDE || e.type===EV.SHOT_BLOCKED) MD.audio.chance();
       },
       onState: (state) => { const b = C.$('#md-play'); if (b) b.textContent = state.playing? 'Pause' : (state.ended? 'Ended' : 'Play'); for (const x of [1,2,4]){ const sb = C.$('#md-speed-'+x); if (sb) sb.classList.toggle('on', state.speed===x); } },
-      onEnd: () => { v.done = true; MD.audio.stop(); const act = C.$('#act'); if (act) act.innerHTML = `<button class="b" data-a="md-fulltime">Full time</button>`; },
+      onEnd: () => { v.done = true; if (v.meter && !v.meter.done) meterFinish(v); MD.audio.stop(); const act = C.$('#act'); if (act) act.innerHTML = `<button class="b" data-a="md-fulltime">Full time</button>`; },
     });
     // Turning the phone (or resizing the window) while nothing is playing: every view sizes its canvas again, which clears
     // it, and a paused or finished match sends no frames. The picture is put back here for all four views, a moment after
@@ -6932,33 +7077,108 @@ if (typeof module!=='undefined') module.exports = Engine;
       root.addEventListener('resize', v.onResize);
     }
     // the painted art must have decoded before the clock starts (normally it has, preloaded at boot): until then the
-    // renderer draws its holding frame and nothing generated stands in for the painted players; six seconds at most
+    // renderer draws its holding frame; six seconds at most, after which the match is shown with the generated figures
+    // and stands wherever the painted ones are still missing (they take over as they arrive)
     const go = () => {
       if (S.md.viewer!==v || v.started) return; v.started = true;
       MD.audio.start();
       // review aid: ?t=1640 opens the first match watched at that match second (once), so an incident can be found again
       try { const q = new URLSearchParams(root.location.search||''); const tq = q.get('t'); if (tq!==null && isFinite(+tq) && !MD.ui._seeked){ MD.ui._seeked = true; v.playback.seek(Math.max(0, +tq)); } } catch(e){}
       v.playback.play();
+      if (MD.ui.measuring) meterStart(v);
       if (C.Track) C.Track.send('match_watched', { competition: pres.competition.kind, extra: pres.official.extra||'none', view: getView(), reduced_motion: v.reduced, build_ms: v.stat.buildMs });
     };
     const ready = (v.renderer && typeof v.renderer.ready==='function')? v.renderer.ready() : null;
     if (!ready || (v.renderer.isReady && v.renderer.isReady())) go();
-    else { if (comm) comm.textContent = 'Preparing the ground...'; const cap = root.setTimeout(go, 6000); ready.then(() => { root.clearTimeout(cap); if (comm && comm.textContent==='Preparing the ground...') comm.textContent = ''; go(); }, () => go()); }
+    else { if (comm) comm.textContent = 'Preparing the ground...'; const cap = root.setTimeout(() => { if (S.md.viewer===v && v.renderer && v.renderer.proceed) v.renderer.proceed(); if (comm && comm.textContent==='Preparing the ground...') comm.textContent = ''; go(); }, 6000); ready.then(() => { root.clearTimeout(cap); if (comm && comm.textContent==='Preparing the ground...') comm.textContent = ''; go(); }, () => go()); }
   }
+  // Mounting a view. If the one asked for cannot start (or has already broken in this match), the next is tried, Pixels
+  // first: a match is never lost to a broken view. The stored choice of view is not changed by a fallback.
+  const FALLBACK = ['pixelart', 'canvas2d', 'wireframe'];
   function mountRenderer(id){
     const v = C.S.md && C.S.md.viewer; if (!v) return;
     const stage = C.$('#md-stage'); if (!stage) return;
     if (v.renderer){ try { v.renderer.dispose(); } catch(e){} v.renderer = null; }
-    const def = MD.renderers[id] || MD.renderers.pixelart;
-    v.renderer = def.create({ onSelect: pl => { const comm = C.$('#md-comm'); if (comm) comm.textContent = pl.name+', '+({GK:'goalkeeper',DEF:'defender',MID:'midfielder',FWD:'forward'}[pl.role]||pl.role)+', number '+pl.shirtNo+'.'; } });
-    v.renderer.mount(stage, v.pres);
-    const cb = C.$('#md-camera'); if (cb){ const has = typeof v.renderer.setCamera==='function'; cb.style.display = has? '' : 'none'; if (has) labelCamera(cb, v.renderer.getCamera()); }
+    const broken = v.broken || {}; const wanted = MD.renderers[id]? id : 'pixelart';
+    const order = [wanted].concat(FALLBACK.filter(k => k!==wanted && MD.renderers[k])).filter(k => !broken[k]);
     const state = v.playback? v.playback.state() : { matchSecond:0, sceneSecond:0, fastForward:false, speed:1 };
-    if (v.scene) v.renderer.render(v.scene.getSceneAt(state.sceneSecond===undefined? state.matchSecond : state.sceneSecond), { fastForward: state.fastForward, speed: state.speed, reducedMotion: v.reduced });
+    let def = null, lastErr = null;
+    for (const k of order){
+      const d = MD.renderers[k]; let r = null;
+      try {
+        r = d.create({ onSelect: pl => { const comm = C.$('#md-comm'); if (comm) comm.textContent = pl.name+', '+({GK:'goalkeeper',DEF:'defender',MID:'midfielder',FWD:'forward'}[pl.role]||pl.role)+', number '+pl.shirtNo+'.'; } });
+        r.mount(stage, v.pres);
+        if (v.scene) r.render(v.scene.getSceneAt(state.sceneSecond===undefined? state.matchSecond : state.sceneSecond), { fastForward: state.fastForward, speed: state.speed, reducedMotion: v.reduced });
+        v.renderer = r; v.viewId = k; def = d; break;
+      } catch(err){
+        lastErr = err; console.error('matchday view could not start: '+k, err); (v.broken || (v.broken = {}))[k] = true;
+        try { if (r && r.dispose) r.dispose(); } catch(e){}
+        try { const left = stage.querySelectorAll? stage.querySelectorAll('canvas') : []; for (let i=0; i<left.length; i++) left[i].parentNode.removeChild(left[i]); } catch(e){}
+      }
+    }
+    if (!def) throw (lastErr || new Error('no match view could start'));
+    if (v.viewId!==wanted && !v.toldFallback){ v.toldFallback = true; C.toast('The '+((MD.renderers[wanted]||{}).name||'chosen')+' view could not be shown. Showing '+def.name+' instead.'); }
+    const cb = C.$('#md-camera'); if (cb){ const has = typeof v.renderer.setCamera==='function'; cb.style.display = has? '' : 'none'; if (has) labelCamera(cb, v.renderer.getCamera()); }
     const vb = C.$('#md-view'); if (vb) labelView(vb, def);
   }
+  // A view that throws while a match is being shown. The first time, the next view takes over where the match is (true is
+  // returned: carry on). If nothing can show the match, the viewer closes onto the result (false).
+  function viewFailed(v, err){
+    console.error('matchday view failed while showing a match: '+v.viewId, err);
+    (v.broken || (v.broken = {}))[v.viewId] = true;
+    try { mountRenderer(v.viewId); return true; }
+    catch(e){ C.toast('The match could not be shown. Showing the result.'); root.setTimeout(() => { if (C.S.md && C.S.md.viewer===v) act('md-fulltime', {}); }, 0); return false; }
+  }
+  // ---- the measuring screen (Phase 3 brief, E01 and E02: frame pacing on the device itself) ----
+  // Switched on from the What's new screen for the next match watched. For sixty seconds of play it times every
+  // animation frame the browser gives the page (so the whole screen is in it, not only the drawing) and the drawing of
+  // each match frame, then pauses the match and shows the figures over the stage for a screenshot. Nothing is stored in
+  // the game and nothing is sent anywhere.
+  const METER_SECONDS = 60;
+  const pct = (sorted, q) => sorted.length? sorted[Math.min(sorted.length - 1, Math.floor(sorted.length*q))] : 0;
+  function meterStats(M){
+    const d = M.deltas.slice().sort((a, b) => a - b), w = M.draws.slice().sort((a, b) => a - b); const total = d.reduce((x, y) => x + y, 0), n = d.length;
+    const r1 = x => Math.round(x*10)/10; const cvs = C.$('#md-stage canvas'); const v = M.viewer; const mem = root.performance && root.performance.memory;
+    return { seconds: r1(total/1000), frames: n, fps: n? r1(1000*n/total) : 0, typicalMs: r1(pct(d, 0.5)), p95Ms: r1(pct(d, 0.95)), p99Ms: r1(pct(d, 0.99)), worstMs: r1(d.length? d[d.length - 1] : 0),
+      slow30: d.filter(x => x > 33.4).length, slow20: d.filter(x => x > 50).length, drawAvgMs: w.length? r1(w.reduce((x, y) => x + y, 0)/w.length) : 0, drawP95Ms: r1(pct(w, 0.95)), drawWorstMs: r1(w.length? w[w.length - 1] : 0),
+      screen: (root.innerWidth||0)+'x'+(root.innerHeight||0)+' at '+r1(root.devicePixelRatio||1), stage: cvs? cvs.width+'x'+cvs.height : '', view: v.viewId||'', camera: v.renderer && v.renderer.getCamera? v.renderer.getCamera() : '',
+      tiles: v.renderer && v.renderer.worldTiles? v.renderer.worldTiles() : null, heapMB: mem && mem.usedJSHeapSize? r1(mem.usedJSHeapSize/1048576) : null, version: C.version||'', agent: (root.navigator && root.navigator.userAgent)||'' };
+  }
+  function meterFinish(v){
+    const M = v.meter; if (!M || M.done) return; M.done = true; MD.ui.measuring = false;
+    const st = meterStats(M); MD.ui.lastMeasure = st; try { console.log('sm91 frame rate', JSON.stringify(st)); } catch(e){}
+    try { if (v.playback && v.playback.state().playing) v.playback.pause(); } catch(e){}
+    const met = st.fps >= 30 && st.p95Ms <= 33.3; const el = C.$('#md-meter'); if (!el) return;
+    el.className = 'md-meter card';
+    el.innerHTML = '<b>FRAME RATE</b> over '+st.seconds+' s of play\n'
+      + '<b>'+st.fps+'</b> frames a second on average\n'
+      + 'A frame takes '+st.typicalMs+' ms typically; the slowest 5% take '+st.p95Ms+' ms or more, the slowest 1% '+st.p99Ms+' ms; the worst '+st.worstMs+' ms\n'
+      + 'Slower than 30 a second: '+st.slow30+' of '+st.frames+' frames'+(st.slow20? ' ('+st.slow20+' slower than 20 a second)' : '')+'\n'
+      + 'Drawing a match frame: '+st.drawAvgMs+' ms on average, '+st.drawP95Ms+' ms for the slowest 5%, '+st.drawWorstMs+' ms at worst\n'
+      + 'Target of 30 a second with the slowest 5% under 33.3 ms: <b>'+(met? 'met' : 'NOT met')+'</b>\n'
+      + 'Screen '+st.screen+', stage '+st.stage+', '+C.esc(st.view)+' view, camera '+C.esc(String(st.camera))+(st.tiles!==null? ', '+st.tiles+' ground tiles' : '')+(st.heapMB!==null? ', '+st.heapMB+' MB' : '')+'\n'
+      + 'Version '+C.esc(st.version)+'\n<span class="dim">'+C.esc(st.agent)+'</span>\n'
+      + '<button class="b quiet" data-a="md-measure-close">Close and carry on</button>';
+  }
+  function meterStart(v){
+    const stage = C.$('#md-stage'); if (!stage || !root.requestAnimationFrame) return;
+    const M = v.meter = { viewer: v, deltas: [], draws: [], last: 0, total: 0, done: false, shown: -1 };
+    let el = C.$('#md-meter'); if (!el){ el = root.document.createElement('div'); el.id = 'md-meter'; stage.appendChild(el); } el.className = 'md-meter'; el.textContent = 'Measuring: '+METER_SECONDS+' s';
+    const tick = ts => {
+      if (!C.S.md || C.S.md.viewer!==v || M.done) return;
+      const playing = v.playback && v.playback.state().playing;
+      if (playing && M.last){ const dt = ts - M.last; M.deltas.push(dt); M.total += dt; }
+      M.last = playing? ts : 0;                                 // a pause is not a slow frame
+      const left = Math.max(0, Math.ceil(METER_SECONDS - M.total/1000)); if (left!==M.shown){ M.shown = left; el.textContent = 'Measuring: '+left+' s'; }
+      if (M.total >= METER_SECONDS*1000){ meterFinish(v); return; }
+      root.requestAnimationFrame(tick);
+    };
+    root.requestAnimationFrame(tick);
+  }
+
   function closeViewer(){
     const S = C.S; const v = S.md && S.md.viewer; if (!v) return;
+    if (v.meter && !v.meter.done){ v.meter.done = true; MD.ui.measuring = false; }
     if (v.onResize && root.removeEventListener){ root.removeEventListener('resize', v.onResize); if (v.resizeT) root.clearTimeout(v.resizeT); }
     try { if (v.playback) v.playback.dispose(); } catch(e){}
     try { if (v.renderer) v.renderer.dispose(); } catch(e){}
@@ -7021,11 +7241,13 @@ if (typeof module!=='undefined') module.exports = Engine;
     switch (a){
       case 'md-watch': { const q = S.md.queue[0]; const ok = openViewer(q.m); if (!ok){ C.toast('Could not build the match view. Showing the result.'); S.md.current = S.md.queue.shift().m; C.go('matchresult'); } break; }
       case 'md-instant': { S.md.current = S.md.queue.shift().m; if (C.Track) C.Track.send('match_instant', {}); C.go('matchresult'); break; }
+      case 'md-measure': { MD.ui.measuring = true; C.toast('Measuring is on. Watch any match for a minute.'); break; }
+      case 'md-measure-close': { const el = C.$('#md-meter'); if (el && el.parentNode) el.parentNode.removeChild(el); if (v && v.playback && !v.done) v.playback.play(); break; }
       case 'md-fulltime': { closeViewer(); S.md.current = S.md.queue.shift().m; C.go('matchresult'); break; }
       case 'md-continue': nextMatch(); break;
       case 'md-play': if (v && v.playback && !v.done) v.playback.toggle(); break;
       case 'md-speed': if (v && v.playback) v.playback.setSpeed(+d.s); break;
-      case 'md-skip': if (v && v.playback && !v.done){ v.skipping = true; try { v.playback.skip(); } finally { v.skipping = false; } const b = C.$('#md-badge'); if (b) b.hidden = true; } break;
+      case 'md-skip': if (v && v.playback && !v.done){ v.skipping = true; try { v.playback.skip(); } catch(err){ console.error('matchday skip failed', err); C.toast('The match could not be shown. Showing the result.'); v.skipping = false; act('md-fulltime', {}); break; } finally { v.skipping = false; } const b = C.$('#md-badge'); if (b) b.hidden = true; } break;
       case 'md-sound': { MD.audio.setEnabled(!MD.audio.enabled); const b = C.$('#md-sound'); if (b){ b.textContent = 'Sound: '+(MD.audio.enabled? 'on' : 'off'); b.setAttribute('aria-pressed', String(MD.audio.enabled)); } if (MD.audio.enabled && v && !v.done) MD.audio.start(); break; }
       case 'md-view': { const ids = VIEW_ORDER.filter(k=>MD.renderers[k] && shipped(k)).concat(Object.keys(MD.renderers).filter(k=>k!=='common' && !VIEW_ORDER.includes(k))); const cur = getView(); const next = ids[(ids.indexOf(cur)+1)%ids.length]; setView(next); mountRenderer(next); break; }
       case 'md-camera': { if (v && v.renderer && v.renderer.setCamera){ const modes = v.renderer.cameraModes || ['follow', 'whole']; const cur = v.renderer.getCamera(); const mode = v.renderer.setCamera(modes[(modes.indexOf(cur)+1) % modes.length]); const cb = C.$('#md-camera'); if (cb) labelCamera(cb, mode); } break; }
@@ -7072,6 +7294,10 @@ const CHANGELOG = [
     'Skip ends on the final whistle with the players on the pitch, instead of a black screen with the last goal\'s banner left on it.',
     'Bigger buttons on a phone held upright: Play, the speeds, Skip, Camera, View and Sound are each a full fingertip tall, and the Camera and View labels no longer run out of room on narrower phones.',
     'If your phone is set to reduce motion, the crowd on the near terrace now holds still after a goal as well.',
+    'Everyone can be told apart. Each goalkeeper now wears a colour of his own (yellow, grey, sky blue and so on), chosen for the match so that it clashes with neither side; the referee leaves his black at home when a team plays in dark shirts; and the away side changes whenever stripes or hoops would share a colour with the home shirt.',
+    'Extra time is played properly: the teams change ends for extra time and again at its interval.',
+    'Smoother cuts. The next highlight is got ready while the clock runs on, so the picture no longer hesitates when it cuts to a new attack, to a goalscorer or to the crowd rising for a goal.',
+    'If the isometric view ever fails on your phone, the match carries on in the Pixels view instead of stopping.',
   ]},
   { v:'1.6.0', when:'November 2026', notes:[
     'New matchday artwork. The footballers are painted figures with real volume now: the same body in the same light from every angle, in your kit colours, with short, cropped and long hair, keepers in gloves, and the referee. Every running, turning, kicking, heading, diving and celebrating frame was repainted; no pose was left out.',
@@ -7303,7 +7529,7 @@ const SCREENS = {
   whatsnew(){
     const st = S.state;
     const body = CHANGELOG.map((c,i)=>`<h2>Version ${c.v}${i===0? ' (this one)':''} <span class="dim" style="font-size:12px">${c.when}</span></h2>${c.notes.map(n=>`<p>${n}</p>`).join('')}`).join('');
-    return { main: `<h1>What's new</h1>${body}<p class="dim">Have a view on any of it? The feedback button is on the home screen.</p>`, action: `<button class="b quiet" data-a="${st? 'back' : 'title'}">Back</button>` };
+    return { main: `<h1>What's new</h1>${body}<p class="dim">Have a view on any of it? The feedback button is on the home screen.</p><p class="dim">For testing: this times the next match you watch for one minute and shows how smoothly your phone draws it. <button class="b quiet" data-a="md-measure" style="margin-top:8px">Measure the match frame rate</button></p>`, action: `<button class="b quiet" data-a="${st? 'back' : 'title'}">Back</button>` };
   },
   hof(){
     const st = S.state; const tab = S.tab.hof || (LADDER_URL? 'ladder' : 'mine');
@@ -8094,7 +8320,7 @@ async function playWeek(){
 }
 
 // ---------- matchday viewer ----------
-Matchday.ui.install({ S, SCREENS, E, go, render, esc, $, toast, user, mgr, multi, euroComp, Track });
+Matchday.ui.install({ S, SCREENS, E, go, render, esc, $, toast, user, mgr, multi, euroComp, Track, version: APP_VERSION });
 
 // ---------- wiring ----------
 let busy = false;

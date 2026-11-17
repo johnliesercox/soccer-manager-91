@@ -86,13 +86,24 @@
         winnerTeamId: m.winner!==undefined? 'club-'+m.winner : null },
       events: null,   // filled by the timeline builder
     };
-    // away kit clash: if the two primaries are close, the away side wears its second colour
-    if (similar(p.teams.home.kit.primary, p.teams.away.kit.primary)) p.teams.away.kit = { primary: p.teams.away.kit.secondary, secondary: p.teams.away.kit.primary, pattern:'plain', changed: true };
-    if (similar(p.teams.home.kit.primary, p.teams.away.kit.primary)) p.teams.away.kit = { primary: '#FFD200', secondary: '#202020', pattern:'plain', changed: true };
+    // Kit clash. A striped, hooped or quartered shirt is two colours, a plain one is one: if any colour of the home shirt
+    // is close to any colour of the away shirt, the away side changes. It wears its second colour as a plain shirt if that
+    // clears the home shirt, and otherwise the first spare kit that does.
+    // A shirt that is all pitch-green is changed too, home or away (the second colour as a plain shirt).
+    { const spare = SPARE_KITS.map(k => ({ primary: k[0], secondary: k[1], pattern:'plain', changed: true }));
+      const swapped = k => ({ primary: k.secondary, secondary: k.primary, pattern:'plain', changed: true });
+      if (pitchGreen(p.teams.home.kit)){ const own = p.teams.home.kit; p.teams.home.kit = [swapped(own)].concat(spare).find(k => !pitchGreen(k)) || own; }
+      const hk = p.teams.home.kit, own = p.teams.away.kit;
+      if (kitsClash(hk, own) || pitchGreen(own)) p.teams.away.kit = [swapped(own)].concat(spare).find(k => !kitsClash(hk, k) && !pitchGreen(k)) || swapped(own);
+    }
     return Object.freeze(p);
   }
   function rgb(c){ if (c[0]==='#'){ return [parseInt(c.slice(1,3),16), parseInt(c.slice(3,5),16), parseInt(c.slice(5,7),16)]; } const m = /hsl\((\d+),(\d+)%,(\d+)%\)/.exec(c); if (!m) return [128,128,128]; const h=+m[1]/360, s=+m[2]/100, l=+m[3]/100; const f=(n)=>{ const k=(n+h*12)%12; const a=s*Math.min(l,1-l); return Math.round(255*(l - a*Math.max(-1, Math.min(k-3, 9-k, 1)))); }; return [f(0),f(8),f(4)]; }
+  const shirtColours = k => (k.pattern && k.pattern!=='plain')? [k.primary, k.secondary] : [k.primary];
+  const PITCH_GREEN = '#3C9A46'; const pitchGreen = k => shirtColours(k).every(c => { const x = rgb(c), y = rgb(PITCH_GREEN); return Math.hypot(x[0]-y[0], x[1]-y[1], x[2]-y[2]) < 80; });
+  const kitsClash = (a, b) => shirtColours(a).some(x => shirtColours(b).some(y => similar(x, y)));
+  const SPARE_KITS = [['#FFD200','#202020'], ['#FFFFFF','#202020'], ['#6CB4EE','#1F2A44'], ['#E03A3E','#FFFFFF'], ['#1F2A44','#FFFFFF'], ['#F28C28','#202020']];   // yellow, white, sky, red, navy, orange
   function similar(a,b){ const x = rgb(a), y = rgb(b); const d = Math.sqrt((x[0]-y[0])**2 + (x[1]-y[1])**2 + (x[2]-y[2])**2); return d < 110; }
 
-  MD.capture = capture; MD.kitFor = kitFor; MD.KITS = KITS;
+  MD.capture = capture; MD.kitFor = kitFor; MD.KITS = KITS; MD.shirtColours = shirtColours; MD.kitsClash = kitsClash; MD.coloursAlike = similar; MD.rgbOf = rgb;
 })(typeof window!=='undefined'? window : globalThis);

@@ -1,4 +1,4 @@
-# Phase 3 QA report (interim, updated through Milestone 4)
+# Phase 3 QA report (interim, updated through Milestone 5)
 
 Source baseline: commit 9115a15 ("Add source, build script and tests (1.4.0)"), verified to rebuild the live `index.html` byte for byte. Milestones 1, 2 and 2A are on top of it in the working tree (preview build `1.5.0-m2a preview`, not deployed). Test commands: `node test-isometric.js`, plus every existing suite (`test-matchday.js`, `test-playback.js`, `test-matchday-ui.js`, `test-phase25.js`, `test-equivalence.js`, `test-regression.js`, `test-contracts.js`, `test-youth.js`, `test-hof.js`). Run them one at a time: two UI suites running at once share a temporary file and can trip each other.
 
@@ -17,7 +17,7 @@ Status words: **Pass** (automated, on this build), **Manual** (checked by eye in
 | A07 | Stable depth order, no flicker | Pass | 30 s at 30 fps: no pair of players swaps draw order three times within a second |
 | A08 | Ball shadow at ground coordinate while airborne | Pass | a two-metre ball rises exactly 2P px above its shadow |
 | A09 | Goals and nets in correct order | Pass / Manual | back part sorts before front part; X=0 goal behind X=105 goal; sequences at both ends in `goal-sequence-*.png` |
-| A10 | Attacking ends correct in both halves and extra time | Manual | first-half goal at the right end, second-half goal at the left end in the recording; extra time Open (M5) |
+| A10 | Attacking ends correct in both halves and extra time | Pass | since Milestone 5 ends change at half-time, for extra time and at its interval (`MD.homeDirAt`); `test-situations.js`: 56 of 56 matches that went to extra time, and every one of their goals is scored at the end its scorer attacks |
 
 ## B. Renderer and animation
 
@@ -29,8 +29,8 @@ Status words: **Pass** (automated, on this build), **Manual** (checked by eye in
 | B04 | Eight-way heading selection across 0/2π and diagonals | Pass | full turn visits each heading once; wrap-around equal; hysteresis holds then releases |
 | B05 | No excessive facing flicker; contacts line up with ball movement | Manual | kick frames keyed to `actionPhase` (contact at 0.42 to 0.66); recording |
 | B06 | Round ball legible across zoom and modes | Manual | 7 cells at P 12, 9 cells at P 16, both recordings |
-| B07 | Kits, GK, referee distinct, kit clash | Manual / Open | stripes, hoops, quarters, swapped keeper colours with gloves, black referee; clash case Open (M5) |
-| B08 | Sent-off player disappears, stand-in keeper exists | Open (M5) | scene already provides both (Phase 2.5 tests) |
+| B07 | Kits, GK, referee distinct, kit clash | Pass | `test-situations.js` over 2,410 matches: no colour of one side's shirt is close to a colour of the other's (stripes, hoops and quarters counted as two colours), no keeper wears a colour of the opposing side or his own, the keepers differ, the referee is told from all four, nobody is in pitch-green |
+| B08 | Sent-off player disappears, stand-in keeper exists | Pass | `test-situations.js`: 71 dismissals drawn on the whole-pitch camera (18 of goalkeepers, 24 matches with two): the player is never drawn again, his side is a man short for each man lost, a team-mate is in goal in the keeper's kit |
 | B09 | Goal shot, line crossing, celebration order | Manual | `goal-sequence-*.png`, both recordings (ball in net, GOAL overlay a beat later, celebration) |
 | B10 | Corner and keeper dive framing and layering | Manual | corner at 36 s of the desktop recording; dives at both ends |
 | B11 | Assets local, no runtime network | Pass | everything is generated in code; `C03` grep |
@@ -89,7 +89,7 @@ The Milestone 1 world image (20 MB phone, 35 MB desktop, 35 to 67 ms to build) i
 | E06 | Fallback: no style selected, or a missing sheet, draws the procedural art | Pass | `isoAssets.get` returns null, actors fall back |
 | E07 | Clean checkout rebuilds the sheets and the game | Pass | `node tools/iso-art.js`, `python3 build.py` |
 | E01 | 60 fps desktop with assets | Pass (headless) | 60.5 fps, 0.8 ms render, 3.8 ms per tile at 1366x768 |
-| E02 | Real Android | Open | preview file |
+| E02 | Real Android | Open | the measuring screen in the 1.7.0 preview, on John's Samsung Galaxy |
 | D02 | A shot in flight whips the camera to the goal on a phone (close camera) | Pass | `test-isometric.js` D02 shot cap; phone goalmouth captures show both posts, the keeper and the ball |
 | B12 | A painted override cell replaces the generated cell and keeps its feet anchor | Pass | `test-isometric.js` (run frame, style B, 16 px/m) |
 | B13 | The painted far-stand texture registers with its metres and anchor and tiles in the far stand | Pass / Manual | `test-isometric.js`; far-wing captures and recording |
@@ -219,9 +219,51 @@ On the final 1.7.0 build (`index.html` 7,083,243 bytes): all 18 suites pass one 
 
 Not checked here and left to John's phone: a real finger on a real screen (the emulation sends true touch events but a finger is not a point), and load time.
 
+## Milestone 5 (17 November 2026): the rare situations, failure, and the phone
+
+Scope agreed with John on 17 November, built on top of the Milestone 4 work as he decided (both go out as one release, 1.7.0, when he says). An audit first (`test-situations.js` and `tools/soak-audit.js`, no change to the game), a checkpoint on its findings, then the fixes.
+
+What the audit found sound, and what now holds it:
+
+| | Checked | Result |
+|---|---|---|
+| E03 | Ten matches opened and closed and twenty view switches in Chromium (`soak-audit.js leak`) | JS memory 6.4 MB after matches 3 to 5 and 6.8 MB after matches 8 to 10; no animation loop, observer, resize listener, canvas or viewer left behind after any match |
+| E05 | One visit, then the network cut (`soak-audit.js offline`) | the game reloads from its cache, a new game starts, its first match is painted in the isometric view, the next week plays, and reopening carries on from the autosave |
+| E05, scenario 13 | **On John's Samsung Galaxy, live 1.6.0, 17 November**: the installed app in airplane mode | passed: a game played, the app closed and reopened, the same place resumed, the match graphics all as expected |
+| scenario 10 | A three-manager hot-seat week (`soak-audit.js hotseat`) | each match opens in the isometric view; no score on a handover screen, on the screen before kick-off or on the scoreboard at kick-off; each ends on the engine's score |
+| scenario 9 | Extra time and penalties (`test-situations.js`) | six matches drawn to the last second with no error; 30 of 30 shoot-outs show the Penalties stage, name the official winner, invent no kick and keep the score level |
+| scenario 7, B08 | Dismissals | see B08 above |
+
+What it found wrong, each fixed and held by a test:
+
+| | Fault | Fix | Held by |
+|---|---|---|---|
+| 10.2, scenario 15 | An error in the isometric view in the middle of a match froze the picture and left no way off the match screen but a reload | the view is marked broken for that match and the next takes over at the same second (Pixels first); if nothing can draw, the viewer closes onto the result with a message | `soak-audit.js fallback` (the view made to throw after ninety frames) |
+| 10.2 | If the isometric view could not be created or mounted, the match went straight to its result, at every match | the same chain: Pixels is shown, with a message once | `soak-audit.js fallback` (two faults) |
+| E06 | If the painted art never arrived, the whole match played behind "Preparing the ground..." | after the six-second wait the renderer draws with the generated figures and stands wherever a painted one is missing | `soak-audit.js fallback` |
+| A10 | Ends were not changed in extra time: both periods were played the way of the second half | one rule for ends, shared by the timeline and the scene; John asked for the change at the interval too | `test-situations.js` |
+| B07 | A striped, hooped or quartered shirt shared a colour with the other side's shirt in 423 of 2,410 matches; a keeper (in his club's second colour) was close to the opposing shirt in 1,115; twelve dark colours were close to the referee's black across 1,045; one club's keeper was green on the grass | the clash rule counts both colours of a patterned shirt and treats an all-green shirt as a clash; keepers and the referee are dressed per match from short lists to stand clear of everyone (agreed by John: keepers no longer wear club colours) | `test-situations.js` (and a count over 7,230 matches of six seasons from three seeds while tuning: no violation) |
+| scenario 9 | At the interval of extra time the commentary said "Extra time. Thirty more minutes." a second time | "The second period of extra time. Fifteen more minutes." | read in the still |
+
+Working ahead of cuts (item 5 of the scope). The fault was wider than the note left for this milestone: a cut cost several frames not only because up to twenty ground tiles were painted on it but because the camera sampled the whole highlight to choose its scale on the same frame, and the moment of a goal did that again for the cut to the scorer and painted the risen stands at once. Both are now done ahead, a little a frame (see `PHASE-3-ARCHITECTURE.md`). `test-ahead.js` plays a half through a mounted renderer as the match screen does: without it a cut paints up to 12 tiles on its frame on a phone stage and 24 on the largest desktop stage; with it no cut paints more than the one tile every frame is allowed, the worst frame in play paints 3 tiles on the phone stage and 5 on the desktop one (13 before), and the picture is identical frame for frame.
+
+Frame pacing, from the game's own measuring screen (`What's new > Measure the match frame rate`; sixty seconds of play; **headless Chromium, which says nothing about a real phone**):
+
+| Window | Stage | Frames a second | Typical frame | Slowest 5% | Slowest 1% | Slower than 30 a second | Drawing, average / slowest 5% |
+|---|---|---|---|---|---|---|---|
+| 390x664 | 366x411 | 60.0 | 16.7 ms | 16.7 ms | 16.8 ms | 0 of 3,600 | 1.0 / 3.4 ms |
+| 1366x768 | 904x619 | 59.7 (59.1 before) | 16.7 ms | 16.7 ms | 16.8 ms | 4 of 3,584 (13 before) | 1.5 / 7.2 ms |
+| 1920x1080 | 1164x756 | 59.7 (58.0 before) | 16.7 ms | 16.7 ms | 16.8 ms (33.3 before) | 4 of 3,582 (25 before) | 2.1 / 9.1 ms |
+
+The drawing figure for the slowest 5% is higher than before (3.6 ms at 1366x768) because a tile is now painted on many frames instead of twenty on one; it stays well inside a frame.
+
+On the final build of 17 November (`index.html` 7,108,283 bytes): all 20 suites pass one at a time (the 18 of Milestone 4, `test-situations.js` with 20 checks and `test-ahead.js` with 14), `tools/soak-audit.js` passes 44 of 44, `tools/viewport-audit.js` passes at all five sizes, and `tools/save-compat.js` passes 19 of 19 from 1.6.0 to this build and 19 of 19 back.
+
+**E02 (a real mid-range Android) is still open**: it is John's Samsung Galaxy with the measuring screen in the 1.7.0 preview. Quality tiers (brief 10.3) are built only if that falls below 30 frames a second.
+
 ## Manual scenarios (Section 14)
 
-Covered so far by the recordings and captures: 1 kick-off, 2 midfield passing, 4 shot saved, 5 goal, 6 corner (desktop recording, 36 s), 8 ends swap (second-half goal at the left end), 12 next-highlight cut. Since Milestone 4: 3 counter-attack framing (film strips, phone and desktop). Open: 7 red card, 9 extra time/penalties, 10 hot-seat in ISO, 11 view switching mid-match (passes the UI test), 13 offline mobile, 14 long log desktop (layout unchanged), 15 weak-browser fallback.
+Covered so far by the recordings and captures: 1 kick-off, 2 midfield passing, 4 shot saved, 5 goal, 6 corner (desktop recording, 36 s), 8 ends swap (second-half goal at the left end), 12 next-highlight cut. Since Milestone 4: 3 counter-attack framing (film strips, phone and desktop). Since Milestone 5: 7 red card and 9 extra time and penalties (`test-situations.js`, stills), 10 hot-seat in the isometric view and 15 a failing view (`tools/soak-audit.js`), 13 offline mobile (John's phone, 17 November), 11 view switching mid-match and 14 the long log on a desktop (`tools/viewport-audit.js` and the leak run switch views twenty times; the audit checks the full log at both desktop sizes). None open.
 
 ## Known limitations after the Phase 3 art completion
 
@@ -231,5 +273,5 @@ Covered so far by the recordings and captures: 1 kick-off, 2 midfield passing, 4
 * The near terrace is the right end's painting mirrored (a packed pen of fans seen from behind): the depth preprocessor reads the low flat near terrace as a slab and painted it as one row of giant figures four times over; a dedicated painting can replace it in seconds if a later attempt comes out right.
 * The crowd figures in the painted stands are chunky (a head is about a player's head), in the 16-bit manner. (Since 3D the painted stands rise in a wave for a goal, with camera flashes; the main stand's rows under its roof stay still.)
 * The referee's raised card is a few pixels and is not painted from the W heading (the painter hid the arm behind the body).
-* A cut or seek can paint up to twenty tiles in one frame (about 70 ms on a desktop close camera); neighbours will be pre-painted in Milestone 5.
-* Frame pacing is from headless Chromium; no real-device numbers yet (the preview file is the way to get them).
+* Since Milestone 5 a cut paints no ground on its own frame and does not stop to choose its scale. What is left: the first frame of a match paints its whole screen (before the clock starts), a seek paints the screen it lands on, and on the largest desktop stage a fast pan just after a cut can paint up to five tiles in one frame.
+* Frame pacing is from headless Chromium; no real-device numbers yet. The measuring screen (What's new > Measure the match frame rate) is the way to get them: E02 waits on John's phone.

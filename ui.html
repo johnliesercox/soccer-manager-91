@@ -91,6 +91,11 @@ input{width:100%;font:inherit;padding:12px;background:var(--white);color:var(--b
 .md-board .s{font-size:30px;color:var(--orange);padding:0 10px;white-space:nowrap}
 .md-clock{text-align:center;color:var(--grey);font-size:13px;margin-bottom:6px;white-space:pre}
 .md-stage{position:relative;height:min(64vh,560px);background:#1E5F2A;box-shadow:inset 2px 2px 0 var(--black),inset -2px -2px 0 var(--white);margin-bottom:6px;overflow:hidden}
+/* the measuring screen (What's new > Measure the match frame rate): a countdown in the corner, then the figures over the stage */
+.md-meter{position:absolute;right:8px;top:8px;z-index:3;pointer-events:none;background:rgba(0,0,0,.78);color:var(--white);font-size:12px;line-height:1;padding:6px 8px}
+.md-meter.card{left:8px;right:8px;top:8px;max-height:calc(100% - 16px);overflow:auto;pointer-events:auto;white-space:pre-line;line-height:1.5;padding:10px 12px;background:rgba(0,0,0,.9);box-shadow:inset 1px 1px 0 var(--white),1px 1px 0 var(--black)}
+.md-meter.card .b{display:block;width:100%;margin-top:10px}
+.md-meter.card .dim{font-size:10px;word-break:break-all}
 .md-badge{position:absolute;left:8px;top:8px;z-index:2;pointer-events:none;background:rgba(0,0,0,.78);color:var(--white);font-size:13px;line-height:1;padding:7px 10px;white-space:pre;box-shadow:inset 1px 1px 0 var(--white),1px 1px 0 var(--black)}
 .md-badge .sw{display:inline-block;width:9px;height:13px;vertical-align:-2px;margin-right:7px;border:1px solid var(--black)}
 .md-badge .sw.yel{background:#f5d327}.md-badge .sw.red{background:#e0261c}
@@ -144,6 +149,10 @@ const CHANGELOG = [
     'Skip ends on the final whistle with the players on the pitch, instead of a black screen with the last goal\'s banner left on it.',
     'Bigger buttons on a phone held upright: Play, the speeds, Skip, Camera, View and Sound are each a full fingertip tall, and the Camera and View labels no longer run out of room on narrower phones.',
     'If your phone is set to reduce motion, the crowd on the near terrace now holds still after a goal as well.',
+    'Everyone can be told apart. Each goalkeeper now wears a colour of his own (yellow, grey, sky blue and so on), chosen for the match so that it clashes with neither side; the referee leaves his black at home when a team plays in dark shirts; and the away side changes whenever stripes or hoops would share a colour with the home shirt.',
+    'Extra time is played properly: the teams change ends for extra time and again at its interval.',
+    'Smoother cuts. The next highlight is got ready while the clock runs on, so the picture no longer hesitates when it cuts to a new attack, to a goalscorer or to the crowd rising for a goal.',
+    'If the isometric view ever fails on your phone, the match carries on in the Pixels view instead of stopping.',
   ]},
   { v:'1.6.0', when:'November 2026', notes:[
     'New matchday artwork. The footballers are painted figures with real volume now: the same body in the same light from every angle, in your kit colours, with short, cropped and long hair, keepers in gloves, and the referee. Every running, turning, kicking, heading, diving and celebrating frame was repainted; no pose was left out.',
@@ -375,7 +384,7 @@ const SCREENS = {
   whatsnew(){
     const st = S.state;
     const body = CHANGELOG.map((c,i)=>`<h2>Version ${c.v}${i===0? ' (this one)':''} <span class="dim" style="font-size:12px">${c.when}</span></h2>${c.notes.map(n=>`<p>${n}</p>`).join('')}`).join('');
-    return { main: `<h1>What's new</h1>${body}<p class="dim">Have a view on any of it? The feedback button is on the home screen.</p>`, action: `<button class="b quiet" data-a="${st? 'back' : 'title'}">Back</button>` };
+    return { main: `<h1>What's new</h1>${body}<p class="dim">Have a view on any of it? The feedback button is on the home screen.</p><p class="dim">For testing: this times the next match you watch for one minute and shows how smoothly your phone draws it. <button class="b quiet" data-a="md-measure" style="margin-top:8px">Measure the match frame rate</button></p>`, action: `<button class="b quiet" data-a="${st? 'back' : 'title'}">Back</button>` };
   },
   hof(){
     const st = S.state; const tab = S.tab.hof || (LADDER_URL? 'ladder' : 'mine');
@@ -1166,7 +1175,7 @@ async function playWeek(){
 }
 
 // ---------- matchday viewer ----------
-Matchday.ui.install({ S, SCREENS, E, go, render, esc, $, toast, user, mgr, multi, euroComp, Track });
+Matchday.ui.install({ S, SCREENS, E, go, render, esc, $, toast, user, mgr, multi, euroComp, Track, version: APP_VERSION });
 
 // ---------- wiring ----------
 let busy = false;

@@ -24,21 +24,27 @@
   // A tile set belongs to one scale. Tiles are keyed in a grid fixed to the world origin, so a pan only
   // uncovers new tiles at the edge; a crowd-bounce variant is rendered only for tiles that hold spectators.
   const TILE = 256;
-  function buildWorld(createCanvas, P, seed, colours){
-    const tiles = new Map(); const MAX = P >= 16? 40 : 30;             // 10 MB on a desktop, 7.5 MB on a phone, at most (two scales may be live)
+  function buildWorld(createCanvas, P, seed, colours, room){
+    // the cache holds the view on screen and the view the next cut will open on, with a little over: thirty tiles on a
+    // phone (7.5 MB), up to seventy-two on the largest desktop stage (19 MB); two scales may be live at once
+    const tiles = new Map(); const MAX = Math.max(P >= 16? 40 : 30, Math.min(72, room||0)); let painted = 0, kept = null;
+    // the tile given up when the cache is full: the least recently drawn that is not being kept for the next cut
+    const giveUp = () => { if (kept) for (const k of tiles.keys()) if (!kept.has(k)){ tiles.delete(k); return; } tiles.delete(tiles.keys().next().value); };
     function get(tx, ty, jump){
       const base = tx+':'+ty; const key = (jump? 'j' : 's') + base;
       let t = tiles.get(key); if (t){ tiles.delete(key); tiles.set(key, t); return t; }
       if (jump){ const still = tiles.get('s' + base); if (still && !still.crowd) return still; }
-      const cv = createCanvas(TILE, TILE); const ctx = cv.getContext('2d'); ctx.imageSmoothingEnabled = false;
+      const cv = createCanvas(TILE, TILE); const ctx = cv.getContext('2d'); ctx.imageSmoothingEnabled = false; painted++;
       ctx.fillStyle = OUTSIDE; ctx.fillRect(0, 0, TILE, TILE);
       const crowd = ISO.stadium.drawGround(ctx, { P, ox: -tx*TILE, oy: -ty*TILE }, seed, jump, { x:0, y:0, w:TILE, h:TILE }, { colours });
       t = { cv, crowd };
-      if (tiles.size >= MAX) tiles.delete(tiles.keys().next().value);
+      if (tiles.size >= MAX) giveUp();
       tiles.set(key, t); return t;
     }
-    return { P, TILE, get, size: () => tiles.size, max: MAX, dispose(){ tiles.clear(); } };
+    return { P, TILE, get, has: (tx, ty) => tiles.has('s'+tx+':'+ty), needsJump: (tx, ty) => { const t = tiles.get('s'+tx+':'+ty); return !!(t && t.crowd && !tiles.has('j'+tx+':'+ty)); }, keep(list){ kept = list? new Set(list.flatMap(t => ['s'+t[0]+':'+t[1], 'j'+t[0]+':'+t[1]])) : null; }, size: () => tiles.size, painted: () => painted, max: MAX, dispose(){ tiles.clear(); } };
   }
+  // the tiles a view of w x h at this camera needs, as [tx, ty] pairs
+  function tilesIn(w, h, cam, T){ const out = []; const tx0 = Math.floor(-cam.ox/T), tx1 = Math.floor((w - cam.ox)/T), ty0 = Math.floor(-cam.oy/T), ty1 = Math.floor((h - cam.oy)/T); for (let ty=ty0; ty<=ty1; ty++) for (let tx=tx0; tx<=tx1; tx++) out.push([tx, ty]); return out; }
   function drawWorld(ctx, w, h, cam, world, jump){
     const T = world.TILE; const tx0 = Math.floor(-cam.ox/T), tx1 = Math.floor((w - cam.ox)/T), ty0 = Math.floor(-cam.oy/T), ty1 = Math.floor((h - cam.oy)/T);
     for (let ty=ty0; ty<=ty1; ty++) for (let tx=tx0; tx<=tx1; tx++){ const t = world.get(tx, ty, jump); ctx.drawImage(t.cv, cam.ox + tx*T, cam.oy + ty*T); }
@@ -168,7 +174,7 @@
   function create(options){
     const opts = Object.assign({}, options||{});
     if (!opts.style && MD.isoDefaultStyle) opts.style = MD.isoDefaultStyle;   // a build may name the style the plain Iso view draws with (ISO_DEFAULT in build.py)
-    let container = null, canvas = null, ctx = null, teams = null, seed = 1, ro = null, lastW = 0, lastH = 0, lastTs = 0, lastFrame = null, lastScene = null, selected = null, loopTs = -1e9, settle = 0;
+    let container = null, canvas = null, ctx = null, teams = null, seed = 1, ro = null, lastW = 0, lastH = 0, lastTs = 0, lastFrame = null, lastScene = null, selected = null, loopTs = -1e9, settle = 0, unpainted = false, ahead = [], aheadKey = '', lastCam = null, pending = null, waveBy = 0, gone = 0;
     const worlds = new Map();                                   // P -> world image (at most two: follow and whole)
     let cameraMode = opts.camera || (function(){ try { return root.localStorage.getItem(CAM_KEY) || 'close'; } catch(e){ return 'close'; } })();   // the close camera is the default (Phase 3 art direction)
     const state = { anim: {}, cx: undefined, cy: undefined };
@@ -186,8 +192,52 @@
     };
     function worldFor(P){
       let wld = worlds.get(P); if (wld) return wld;
-      if (worlds.size >= 2){ const k = worlds.keys().next().value; worlds.get(k).dispose(); worlds.delete(k); }
-      wld = buildWorld(makeCanvas, P, seed, [teams.home.kit.primary, teams.away.kit.primary]); worlds.set(P, wld); return wld;
+      if (worlds.size >= 2){ const k = worlds.keys().next().value; gone += worlds.get(k).painted(); worlds.get(k).dispose(); worlds.delete(k); }
+      const cols = canvas? Math.ceil(canvas.width/TILE) + 1 : 3, rows = canvas? Math.ceil(canvas.height/TILE) + 1 : 3;   // room for the view on screen, the view of the next cut and the ring of tiles round the screen
+      wld = buildWorld(makeCanvas, P, seed, [teams.home.kit.primary, teams.away.kit.primary], cols*rows*2 + 2*(cols + rows) + 4); worlds.set(P, wld); return wld;
+    }
+    // Working ahead. A cut used to stop the picture for several frames: the camera sampled the whole highlight to choose
+    // its scale (up to eighty samples of the scene) and then a whole screen of ground tiles was painted (up to twenty, a
+    // few milliseconds each), all in the one frame. The moment of a goal did the same for the cut to the scorer. That
+    // work is now done beforehand, a little a frame, after the frame is drawn: the match screen says where the next cut
+    // will land (during the fast-forward that leads to a highlight, and a moment before a cut inside one), the scale is
+    // worked out a few samples at a time, and then the tiles it needs are painted one a frame. While the camera pans,
+    // the tiles just beyond the edge it is moving towards are painted the same way. Nothing is painted ahead when the
+    // cache has no room for it, and a cut that arrives before the work is finished simply does the rest itself.
+    function prepare(scene, hud){
+      if (!ctx || !canvas || !scene || !r.isReady()) return;
+      const w = canvas.width, h = canvas.height; const seg = (hud && hud.segment) || null; const key = (scene.t||0)+':'+w+':'+h+':'+cameraMode; if (key===aheadKey) return; aheadKey = key;
+      // first the scale the cut will be shown at (a few samples of the scene a frame), then the ground under it
+      pending = { scene, seg, w, h, scale: (cameraMode==='close' && !opts.followP)? ISO.camera.planJob(scene, seg, w, h, closeP(), wideP()) : null }; ahead = [];
+    }
+    function planGround(job){
+      const { scene, seg, w, h } = job; if (w!==canvas.width || h!==canvas.height) return;
+      const scratch = { anim: {} };   // the live camera is not touched: the cut is worked out on a camera of its own
+      const P = cameraMode==='whole'? PR.fit(w, h, DIM.runoff + 1.5).P : opts.followP? opts.followP : cameraMode!=='close'? wideP() : ISO.camera.chooseP(scratch, scene, seg, w, h, closeP(), wideP(), true);
+      const cam = ISO.camera.update(scratch, scene, w, h, cameraMode==='whole'? 'whole' : 'follow', 0, true, P);
+      const live = lastFrame && lastFrame.cam? lastFrame.cam.P : null; if (live!==null && worlds.has(live)){ const cur = worlds.get(live); worlds.delete(live); worlds.set(live, cur); }   // the ground on screen is never the one given up for the new scale
+      const world = worldFor(P); for (const wld of worlds.values()) wld.keep(wld===world? tilesIn(w, h, cam, world.TILE) : null);   // what is painted for the cut is kept until the next one is prepared
+      const wave = nowMs() < waveBy;   // a goal is on its way: the stands of the view the cut opens on are wanted risen as well
+      ahead = []; for (const t of tilesIn(w, h, cam, world.TILE)){ if (!world.has(t[0], t[1])) ahead.push({ world, tx: t[0], ty: t[1], wave }); else if (wave && world.needsJump(t[0], t[1])) ahead.push({ world, tx: t[0], ty: t[1], jump: true }); }
+    }
+    function paintAhead(){
+      if (pending){ if (pending.scale && !pending.scale.step(3)) return; const job = pending; pending = null; planGround(job); return; }
+      while (ahead.length){ const a = ahead.shift(); if (worlds.get(a.world.P)!==a.world) continue;
+        if (a.jump){ if (!a.world.needsJump(a.tx, a.ty)) continue; a.world.get(a.tx, a.ty, true); return; }
+        if (a.world.has(a.tx, a.ty)) continue; const t = a.world.get(a.tx, a.ty, false); if (a.wave && t.crowd) ahead.push({ world: a.world, tx: a.tx, ty: a.ty, jump: true }); return; }   // (the cache gives up its least recently drawn tile if it is full: never one on screen, which are touched every frame)
+      const cam = lastFrame && lastFrame.cam; if (!cam) return; const world = worlds.get(cam.P); if (!world) return;
+      const T = world.TILE, w = canvas.width, h = canvas.height;
+      // a goal is coming (the match screen says so): the stands in view get their second, risen, painting ready for the wave
+      if (nowMs() < waveBy){ for (const t of tilesIn(w, h, cam, T)) if (world.needsJump(t[0], t[1])){ world.get(t[0], t[1], true); return; } }
+      // nothing queued for a cut: the tiles just off screen, first along the edge the camera is moving towards, then
+      // (while the cache has room to spare) the rest of the ring round the screen
+      if (!lastCam || cam.P!==lastCam.P) return;
+      const dx = cam.ox - lastCam.ox, dy = cam.oy - lastCam.oy;   // the picture slides the other way from the camera: ox falls as the view moves right
+      const tx0 = Math.floor(-cam.ox/T), tx1 = Math.floor((w - cam.ox)/T), ty0 = Math.floor(-cam.oy/T), ty1 = Math.floor((h - cam.oy)/T);
+      if (dx){ const tx = dx < 0? tx1 + 1 : tx0 - 1; for (let ty=ty0; ty<=ty1; ty++) if (!world.has(tx, ty)){ world.get(tx, ty, false); return; } }
+      if (dy){ const ty = dy < 0? ty1 + 1 : ty0 - 1; for (let tx=tx0; tx<=tx1; tx++) if (!world.has(tx, ty)){ world.get(tx, ty, false); return; } }
+      if (world.size() >= world.max) return;
+      for (let ty=ty0-1; ty<=ty1+1; ty++) for (let tx=tx0-1; tx<=tx1+1; tx++) if ((ty < ty0 || ty > ty1 || tx < tx0 || tx > tx1) && !world.has(tx, ty)){ world.get(tx, ty, false); return; }
     }
     // Frames normally come from the playback loop. When nothing is playing (paused, full time) the picture still has to be
     // put right after a tap, a turn of the phone, a camera change or a cut that left it mid-fade: a still frame draws the
@@ -228,13 +278,17 @@
         const cw = Math.max(1, container.clientWidth), ch = Math.max(1, container.clientHeight);
         if (cw===lastW && ch===lastH) return;
         lastW = cw; lastH = ch; canvas.width = cw; canvas.height = ch; state.cx = undefined;
-        for (const wld of worlds.values()) wld.dispose(); worlds.clear();   // the whole-pitch scale depends on the stage size
+        for (const wld of worlds.values()) wld.dispose(); worlds.clear(); ahead = []; aheadKey = ''; lastCam = null; pending = null;   // the whole-pitch scale depends on the stage size
         redraw();   // sizing a canvas clears it: the picture is drawn again at once, playing or not (a phone turned while paused)
       },
       // the painted art of the style is still decoding: nothing generated is shown in its place, a plain holding frame
       // is drawn instead (the match screen waits for ready() before it starts the clock, so nothing is missed)
       ready(){ if (!MD.isoAssets || opts.style==='none' || !MD.isoAssets.expects(opts.style || 'B')) return Promise.resolve(); assetLoad(opts.assetUrl); return MD.isoAssets.styleReady(opts.style || 'B'); },
-      isReady(){ return !MD.isoAssets || opts.style==='none' || MD.isoAssets.isReady(opts.style || 'B'); },
+      isReady(){ return unpainted || !MD.isoAssets || opts.style==='none' || MD.isoAssets.isReady(opts.style || 'B'); },
+      // the painted art has not arrived in time: draw anyway, with the generated figures and stands wherever a painted one
+      // is missing (each takes over as it arrives)
+      proceed(){ unpainted = true; if (lastScene) redraw(); },
+      prepare, expectWave(){ waveBy = nowMs() + 6000; }, aheadCount(){ return ahead.length + (pending? 1 : 0); }, tilesPainted(){ let n = 0; for (const wld of worlds.values()) n += wld.painted(); return n + gone; }, worldTiles(){ let n = 0; for (const wld of worlds.values()) n += wld.size(); return n; },
       render(scene, hud){
         if (!ctx) return;
         if (!r.isReady()){ holdingFrame(ctx, canvas.width, canvas.height); r.lastHud = hud; lastScene = scene; return; }
@@ -243,16 +297,17 @@
         const P = cameraMode==='whole'? PR.fit(canvas.width, canvas.height, DIM.runoff + 1.5).P : followP(scene, hud);
         const world = worldFor(P);
         lastFrame = drawFrame(ctx, canvas.width, canvas.height, scene, { teams, seed, world, state, dtReal: dt, nowMs: ts, cameraMode, selected, followP: P, fastForward: !!(hud && hud.fastForward), sinceCut: hud? hud.sinceCut : undefined, snap: !!(hud && hud.reducedMotion), reducedMotion: !!(hud && hud.reducedMotion) });
+        if (hud && hud.sinceCut!==undefined){ try { paintAhead(); } catch(e){ ahead = []; } lastCam = lastFrame.cam; }   // one tile ahead, on frames from the loop only
         // a frame drawn part-way through a fade is completed even if no frame follows it (Skip ends the match on a cut)
         if (settle){ root.clearTimeout(settle); settle = 0; }
         if (lastFrame.fading && root.setTimeout) settle = root.setTimeout(() => { settle = 0; if (!playing()) still(); }, 350);
       },
       cameraModes: ['follow', 'close', 'whole'],
-      setCamera(mode){ cameraMode = mode==='whole'? 'whole' : mode==='close'? 'close' : 'follow'; try { root.localStorage.setItem(CAM_KEY, cameraMode); } catch(e){} state.cx = undefined; redraw(); return cameraMode; },
+      setCamera(mode){ cameraMode = mode==='whole'? 'whole' : mode==='close'? 'close' : 'follow'; try { root.localStorage.setItem(CAM_KEY, cameraMode); } catch(e){} state.cx = undefined; ahead = []; pending = null; aheadKey = ''; redraw(); return cameraMode; },
       getCamera(){ return cameraMode; },
       debugItems(){ return (lastFrame && lastFrame.items)? lastFrame.items.map(it => ({ kind: it.kind, id: it.pl? it.pl.id : it.key, box: it.box||null, sx: it.sx, sy: it.sy })) : []; },   // for tooling: what was drawn where
       lastFrame(){ return lastFrame; },   // the camera and the drawn items of the last frame (for tools and tests)
-      dispose(){ if (settle){ root.clearTimeout(settle); settle = 0; } if (ro){ ro.disconnect(); ro = null; } if (canvas){ canvas.removeEventListener('click', onTap); if (canvas.parentNode) canvas.parentNode.removeChild(canvas); } for (const wld of worlds.values()) wld.dispose(); worlds.clear(); SP.clear(); canvas = ctx = container = lastFrame = lastScene = null; state.anim = {}; },
+      dispose(){ ahead = []; pending = null; if (settle){ root.clearTimeout(settle); settle = 0; } if (ro){ ro.disconnect(); ro = null; } if (canvas){ canvas.removeEventListener('click', onTap); if (canvas.parentNode) canvas.parentNode.removeChild(canvas); } for (const wld of worlds.values()) wld.dispose(); worlds.clear(); SP.clear(); canvas = ctx = container = lastFrame = lastScene = null; state.anim = {}; },
     };
     return r;
   }

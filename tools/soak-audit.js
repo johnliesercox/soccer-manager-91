@@ -6,8 +6,10 @@
 //             its painted art never arrives) and the match must still be watchable and the week playable
 //   offline   E05, scenario 13: after one visit the network is cut; the game must reload, start, show a match and save
 //   hotseat   scenario 10: three managers, each match watched in the isometric view, nothing given away at a handover
+//   measure   E01: the game's own measuring screen (What's new > Measure the match frame rate) run for a minute on a phone-sized
+//             and two desktop-sized windows; headless Chromium figures, which say nothing about a real phone (E02)
 //   stills    scenarios 7 and 9, B07: pictures of a shoot-out's end, a dismissal and a keeper in the other side's colour
-//   node tools/soak-audit.js . out-dir [leak|fallback|offline|hotseat|stills|all]     (after python3 build.py; needs playwright)
+//   node tools/soak-audit.js . out-dir [leak|fallback|offline|hotseat|measure|stills|all]     (after python3 build.py; needs playwright)
 // Writes out-dir/soak-<part>.json and screenshots, prints what it found and exits 1 if anything it checks is wrong.
 // Requests to anywhere but the local server are blocked, so runs never reach the usage beacon or the ladder.
 const { chromium } = require('playwright'); const path = require('path'); const fs = require('fs'); const http = require('http');
@@ -179,6 +181,33 @@ const stageLook = () => { const c = document.querySelector('#md-stage canvas'); 
     ok(played.every(r => r.endOk), 'each match ends on the engine\'s own score');
     ok(b.errors.length === 0, 'no page errors (' + b.errors.slice(0, 2).join(' | ') + ')');
     fs.writeFileSync(path.join(OUT, 'soak-hotseat.json'), JSON.stringify(seen, null, 1)); await b.ctx.close();
+  }
+
+  // ---------------- measure: the game's own measuring screen ----------------
+  if (PART === 'all' || PART === 'measure'){
+    console.log('\n=== measure (E01): the measuring screen, one minute of play (headless Chromium)');
+    const out = [];
+    for (const V of [{ name: 'phone-390x664', w: 390, h: 664 }, { name: 'desktop-1366x768', w: 1366, h: 768, desktop: true }, { name: 'desktop-1920x1080', w: 1920, h: 1080, desktop: true }]){
+      const b = await open(V); const rec = { window: V.name };
+      try {
+        await b.page.goto(URL); await sleep(600); await b.click('[data-a="whatsnew"]', 250); await b.click('[data-a="md-measure"]', 250); await b.click('[data-a="title"]', 250);
+        await b.click('[data-a="setup"]', 200); const ins = await b.page.$$('.mgrname'); if (ins[0]) await ins[0].fill('Meter'); await b.click('[data-a="start"]', 500);
+        await b.toMatch(); await b.click('[data-a="md-watch"]', 300); await b.watching();
+        rec.counting = await b.page.evaluate(() => { const m = document.querySelector('#md-meter'); return m? m.textContent : null; });
+        const done = await b.page.waitForFunction(() => { const m = document.querySelector('#md-meter'); return m && /card/.test(m.className); }, null, { timeout: 100000 }).then(() => true, () => false);
+        rec.done = done; rec.stats = await b.page.evaluate(() => window.Matchday.ui.lastMeasure || null); rec.paused = await b.page.evaluate(() => !window.__sm91.S.md.viewer.playback.state().playing);
+        await b.shot('measure-' + V.name);
+        await b.click('[data-a="md-measure-close"]', 400); rec.resumed = await b.page.evaluate(() => ({ gone: !document.querySelector('#md-meter'), playing: window.__sm91.S.md.viewer.playback.state().playing || window.__sm91.S.md.viewer.done }));
+        await b.finish(); await b.toMatch(); if (await b.has('[data-a="md-watch"]')){ await b.click('[data-a="md-watch"]', 300); await b.watching(); await sleep(800); rec.nextMatchMeter = await b.page.evaluate(() => !!document.querySelector('#md-meter')); }
+      } catch (e){ rec.threw = String(e.message || e).slice(0, 300); }
+      rec.errors = b.errors.slice(0, 3); out.push(rec); await b.ctx.close(); const s = rec.stats || {};
+      note(V.name + ': ' + (rec.stats? s.fps + ' frames a second over ' + s.seconds + ' s; a frame ' + s.typicalMs + ' ms typically, slowest 5% ' + s.p95Ms + ' ms, slowest 1% ' + s.p99Ms + ' ms, worst ' + s.worstMs + ' ms; ' + s.slow30 + ' of ' + s.frames + ' slower than 30 a second; drawing ' + s.drawAvgMs + ' ms on average, ' + s.drawP95Ms + ' ms slowest 5%, ' + s.drawWorstMs + ' ms worst; stage ' + s.stage + ', camera ' + s.camera + ', ' + s.tiles + ' tiles' + (s.heapMB? ', ' + s.heapMB + ' MB' : '') : 'no figures') + (rec.threw? ' | THREW ' + rec.threw : ''));
+      ok(!rec.threw && rec.done && rec.stats && rec.stats.frames > 1500 && rec.paused && /Measuring/.test(rec.counting || ''), V.name + ': the measuring screen counts down for a minute of play, pauses the match and shows its figures');
+      ok(rec.resumed && rec.resumed.gone && rec.resumed.playing && rec.nextMatchMeter === false, V.name + ': closing it carries the match on, and the next match is not measured');
+      ok(rec.stats && rec.stats.fps >= 55 && rec.stats.p95Ms <= 21, V.name + ': E01 the desktop target in headless Chromium: about 60 frames a second, the slowest 5% of frames within a quarter of a frame of 16.7 ms (' + (rec.stats? rec.stats.fps + ', ' + rec.stats.p95Ms + ' ms' : 'none') + ')');
+      ok(rec.errors.length === 0, V.name + ': no page errors (' + rec.errors.join(' | ') + ')');
+    }
+    fs.writeFileSync(path.join(OUT, 'soak-measure.json'), JSON.stringify(out, null, 1));
   }
 
   // ---------------- stills: the rare situations with the painted art, for a person to look at ----------------

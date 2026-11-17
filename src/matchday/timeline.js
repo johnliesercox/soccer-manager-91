@@ -45,8 +45,7 @@
   const VOLLEY_Z = 0.55/3.0;       // a volley is struck around knee height
 
   function attackDir(p, teamId, second){
-    const secondHalfOrLater = second >= P.regulation.half;
-    const homeDir = secondHalfOrLater? -1 : 1;
+    const homeDir = MD.homeDirAt(p, second);   // ends change at half-time, for extra time and at its interval
     return teamId===p.teams.home.id? homeDir : -homeDir;
   }
   // attacking-frame depth -> absolute
@@ -180,7 +179,7 @@
     let restartHeld = null;    // the keeper has placed a goal kick and not yet taken it: the ball is dead on the spot
     const kickOff = (second, teamId, type) => {
       poss = teamId; bAx = 0.5; bY = 0.5; carrier = nearest(teamId, 0.5, 0.5, 0.5, 0.5, null, false); cornerPending = false; lastKickOff = second; restartHeld = null;
-      official(type, second, { teamId, playerId: carrier? carrier.id : null, at:{x:0.5,y:0.5}, text: type===EV.KICK_OFF? (second===0? 'Kick-off.' : 'Back under way.') : type===EV.SECOND_HALF? 'Second half under way.' : 'Extra time. Thirty more minutes.' });
+      official(type, second, { teamId, playerId: carrier? carrier.id : null, at:{x:0.5,y:0.5}, text: type===EV.KICK_OFF? (second===0? 'Kick-off.' : 'Back under way.') : type===EV.SECOND_HALF? 'Second half under way.' : second >= P.extraTime.half? 'The second period of extra time. Fifteen more minutes.' : 'Extra time. Thirty more minutes.' });
     };
     // the short pass that takes a kick-off, a beat after the whistle: to the partner standing a stride beside the taker
     // (the same man the scene places there: the forward nearest the middle), else to whoever is nearest the spot

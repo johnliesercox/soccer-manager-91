@@ -157,6 +157,15 @@
     return { x: c(x), y: c(0.5 + (anchor.y-0.5)*width + (ballY-0.5)*sway) };
   }
 
+  // Which way the home side attacks at a match second: +1 is towards x = 1. Ends change at half-time, again for extra
+  // time and again at its interval, as in a real match (the timeline and the scene both ask here, so they always agree).
+  function homeDirAt(p, second){
+    const extra = !!(p && p.official && p.official.extra);
+    if (extra && second >= PERIODS.extraTime.half) return -1;
+    if (extra && second >= PERIODS.extraTime.start) return 1;
+    return second >= PERIODS.regulation.half? -1 : 1;
+  }
+  MD.homeDirAt = homeDirAt;
   MD.SCHEMA_VERSION = SCHEMA_VERSION; MD.EVENT = EVENT; MD.OFFICIAL_TYPES = OFFICIAL_TYPES; MD.PERIODS = PERIODS; MD.TECHNIQUES = TECHNIQUES;
   MD.validate = validate; MD.hashString = hashString; MD.seededRandom = seededRandom;
   MD.formationAnchors = formationAnchors; MD.shapePos = shapePos; MD.FORMATION_TEMPLATES = TEMPLATES;
