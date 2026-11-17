@@ -281,5 +281,37 @@
     return pb;
   }
 
+  // What the view should get ready for, asked on every frame. A view that paints its ground in tiles and recolours its
+  // players' pictures wants to know a little ahead where the picture will jump to and when the stands will rise:
+  //   wave    the match second of a goal within the next four seconds of the match (the stands rise as it goes in);
+  //   target  the match second the next cut lands on: a cut inside this highlight within three and a half seconds (a
+  //           restart, or the cut to the scorer 1.2 s after his goal), otherwise the start of the next highlight, from
+  //           the last six seconds of this one and all through the fast-forward that leads to it;
+  //   seg     the highlight that cut belongs to ({ a, b }), for the camera's choice of scale.
+  // `at` is the match second being shown, `state` the playback state (segA, segB, segFF), `segsOf()` gives the
+  // playback's segments. The match screen and the tests both ask this one function, so what is tested is what the
+  // game does. (Until 17 November 2026 each had its own copy of the rule, the scorer's cut was asked of the scene at a
+  // moment before the scene knows of one, and only the test told the view of a goal.)
+  MD.lookAhead = function(scene, goalTimes, segsOf){
+    const cuts = new Map(); let segs = null;
+    const scorerCut = g => { if (!cuts.has(g)){ let cut = null; for (const d of [1.3, 1.6, 2.2]){ const c = scene.getSceneAt(g + d).celebration; if (c){ cut = c.cut; break; } } cuts.set(g, cut); } return cuts.get(g); };
+    const look = function(at, state){
+      state = state || {}; let wave, target, seg = null;
+      let inner = !state.segFF && scene.cutTimes? scene.cutTimes.find(x => x > at + 0.05 && x < at + 3.5) : undefined;
+      if (!state.segFF){
+        const g = goalTimes.find(x => x > at - 1.5 && x < at + 4);
+        if (g!==undefined && g > at) wave = g;
+        const cut = g!==undefined? scorerCut(g) : null; if (cut!==null && cut > at + 0.05 && (inner===undefined || cut < inner)) inner = cut;
+      }
+      if (inner!==undefined){ target = inner + 0.02; seg = state.segA!==undefined? { a: state.segA, b: state.segB } : null; }
+      else if (state.segB!==undefined && (state.segFF || state.segB - at < 6)){
+        segs = segs || segsOf(); let nx = segs.find(g => g.a===state.segB); if (nx && nx.ff) nx = segs.find(g => g.a===nx.b);   // past the fast-forward, if one is still to come
+        if (nx && !nx.ff){ target = nx.a; seg = { a: nx.a, b: nx.b }; }
+      }
+      return { wave, target, seg };
+    };
+    look.scorerCut = scorerCut; return look;
+  };
+
   MD.createPlayback = createPlayback; MD.buildTimeMap = buildTimeMap; MD.chancesOf = chancesOf; MD.linesOf = linesOf; MD.PLAYBACK_DEFAULTS = DEFAULTS;
 })(typeof window!=='undefined'? window : globalThis);

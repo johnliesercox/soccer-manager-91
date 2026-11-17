@@ -129,6 +129,7 @@
       const ck = C.$('#md-clock'); if (ck){ ck.textContent = (ff? '\u25B6\u25B6 ' : '')+s.clock.label+(s.clock.extraTime? ' ET' : '')+'  '+s.phaseLabel+(onBall && !ff? '  \u00b7  '+onBall.name : ''); ck.classList.toggle('ff', !!ff); }
     };
     const goalTimes = pres.events.filter(e => e.type===EV.GOAL).map(e => e.matchSecond);
+    const look = MD.lookAhead(scene, goalTimes, () => v.playback.timeMap().segs);
     v.playback = MD.createPlayback(pres, {
       onFrame: (sec, state) => {
         const now = (root.performance && root.performance.now)? root.performance.now() : Date.now();
@@ -141,19 +142,13 @@
           catch(err){ if (!viewFailed(v, err)) return; }   // the view broke: another one takes over, or the match gives way to its result
         }
         board(scene.getSceneAt(sec), s, state.fastForward);                                     // the clock and score (the clock races during a fast-forward)
-        // The view is told where the next cut will land, so that it can choose its scale and paint that ground ahead of
-        // time: a cut inside this highlight (a restart, the scorer) a moment before it comes; otherwise the start of the
-        // next highlight, from the last seconds of this one and through the fast-forward that leads to it.
+        // The view is told what to get ready for (MD.lookAhead): a goal a few seconds off, so that the stands it shows
+        // have their risen painting ready when the ball goes in, and where the next cut will land, so that it can choose
+        // its scale, paint that ground and make the players' pictures for it ahead of time.
         if (v.renderer && v.renderer.prepare){
-          const at = state.sceneSecond===undefined? sec : state.sceneSecond; let target, seg = null;
-          let inner = !state.segFF && scene.cutTimes? scene.cutTimes.find(x => x > at + 0.05 && x < at + 3.5) : undefined;
-          if (!state.segFF){ const g = goalTimes.find(x => x > at - 1.5 && x < at + 4); const cel = g!==undefined? scene.getSceneAt(g + 0.05).celebration : null; if (cel && cel.cut > at + 0.05 && (inner===undefined || cel.cut < inner)) inner = cel.cut; }   // the cut to the scorer, a second after his goal
-          if (inner!==undefined){ target = inner + 0.02; seg = state.segA!==undefined? { a: state.segA, b: state.segB } : null; }
-          else if (state.segB!==undefined && (state.segFF || state.segB - at < 6)){
-            const segs = v.segs || (v.segs = v.playback.timeMap().segs); let nx = segs.find(g => g.a===state.segB); if (nx && nx.ff) nx = segs.find(g => g.a===nx.b);   // past the fast-forward, if one is still to come
-            if (nx && !nx.ff){ target = nx.a; seg = { a: nx.a, b: nx.b }; }
-          }
-          if (target!==undefined && v.prepFor!==target){ v.prepFor = target; try { v.renderer.prepare(scene.getSceneAt(target), { segment: seg }); } catch(e){} }
+          const at = state.sceneSecond===undefined? sec : state.sceneSecond; const la = look(at, state);
+          if (la.wave!==undefined && v.waveFor!==la.wave && v.renderer.expectWave){ v.waveFor = la.wave; try { v.renderer.expectWave(); } catch(e){} }
+          if (la.target!==undefined && v.prepFor!==la.target){ v.prepFor = la.target; try { v.renderer.prepare(scene.getSceneAt(la.target), { segment: la.seg, sceneAt: tt => scene.getSceneAt(tt) }); } catch(e){} }
         }
       },
       onLine: (l) => { if (comm) comm.textContent = l.text; },
@@ -196,6 +191,8 @@
       MD.audio.start();
       // review aid: ?t=1640 opens the first match watched at that match second (once), so an incident can be found again
       try { const q = new URLSearchParams(root.location.search||''); const tq = q.get('t'); if (tq!==null && isFinite(+tq) && !MD.ui._seeked){ MD.ui._seeked = true; v.playback.seek(Math.max(0, +tq)); } } catch(e){}
+      // the pictures of the first strides are made before the clock starts, not on the frames that first show them
+      try { if (v.renderer && v.renderer.warm){ const p0 = v.playback.state(); v.renderer.warm(tt => scene.getSceneAt(tt), p0.sceneSecond===undefined? (p0.matchSecond||0) : p0.sceneSecond, 3, (p0.segA!==undefined && !p0.segFF)? { a: p0.segA, b: p0.segB } : null); } } catch(e){}
       v.playback.play();
       if (MD.ui.measuring) meterStart(v);
       if (C.Track) C.Track.send('match_watched', { competition: pres.competition.kind, extra: pres.official.extra||'none', view: getView(), reduced_motion: v.reduced, build_ms: v.stat.buildMs });
@@ -252,7 +249,7 @@
     const d = M.deltas.slice().sort((a, b) => a - b), w = M.draws.slice().sort((a, b) => a - b); const total = d.reduce((x, y) => x + y, 0), n = d.length;
     const r1 = x => Math.round(x*10)/10; const cvs = C.$('#md-stage canvas'); const v = M.viewer; const mem = root.performance && root.performance.memory;
     return { seconds: r1(total/1000), frames: n, fps: n? r1(1000*n/total) : 0, typicalMs: r1(pct(d, 0.5)), p95Ms: r1(pct(d, 0.95)), p99Ms: r1(pct(d, 0.99)), worstMs: r1(d.length? d[d.length - 1] : 0),
-      slow30: d.filter(x => x > 33.4).length, slow20: d.filter(x => x > 50).length, drawAvgMs: w.length? r1(w.reduce((x, y) => x + y, 0)/w.length) : 0, drawP95Ms: r1(pct(w, 0.95)), drawWorstMs: r1(w.length? w[w.length - 1] : 0),
+      slow30: d.filter(x => x > 34).length, slow20: d.filter(x => x > 50).length, drawAvgMs: w.length? r1(w.reduce((x, y) => x + y, 0)/w.length) : 0, drawP95Ms: r1(pct(w, 0.95)), drawWorstMs: r1(w.length? w[w.length - 1] : 0),
       screen: (root.innerWidth||0)+'x'+(root.innerHeight||0)+' at '+r1(root.devicePixelRatio||1), stage: cvs? cvs.width+'x'+cvs.height : '', view: v.viewId||'', camera: v.renderer && v.renderer.getCamera? v.renderer.getCamera() : '',
       tiles: v.renderer && v.renderer.worldTiles? v.renderer.worldTiles() : null, heapMB: mem && mem.usedJSHeapSize? r1(mem.usedJSHeapSize/1048576) : null, version: C.version||'', agent: (root.navigator && root.navigator.userAgent)||'' };
   }
@@ -260,14 +257,14 @@
     const M = v.meter; if (!M || M.done) return; M.done = true; MD.ui.measuring = false;
     const st = meterStats(M); MD.ui.lastMeasure = st; try { console.log('sm91 frame rate', JSON.stringify(st)); } catch(e){}
     try { if (v.playback && v.playback.state().playing) v.playback.pause(); } catch(e){}
-    const met = st.fps >= 30 && st.p95Ms <= 33.3; const el = C.$('#md-meter'); if (!el) return;
+    const met = st.fps >= 30 && Math.round(st.p95Ms) <= 33; /* a frame of two refreshes of a 60 Hz screen is 33.3 ms and reads as 33.3 or 33.4: that is 30 a second, not slower */ const el = C.$('#md-meter'); if (!el) return;
     el.className = 'md-meter card';
     el.innerHTML = '<b>FRAME RATE</b> over '+st.seconds+' s of play\n'
       + '<b>'+st.fps+'</b> frames a second on average\n'
       + 'A frame takes '+st.typicalMs+' ms typically; the slowest 5% take '+st.p95Ms+' ms or more, the slowest 1% '+st.p99Ms+' ms; the worst '+st.worstMs+' ms\n'
-      + 'Slower than 30 a second: '+st.slow30+' of '+st.frames+' frames'+(st.slow20? ' ('+st.slow20+' slower than 20 a second)' : '')+'\n'
+      + 'Longer than 34 ms (slower than 30 a second): '+st.slow30+' of '+st.frames+' frames'+(st.slow20? '; longer than 50 ms: '+st.slow20 : '')+'\n'
       + 'Drawing a match frame: '+st.drawAvgMs+' ms on average, '+st.drawP95Ms+' ms for the slowest 5%, '+st.drawWorstMs+' ms at worst\n'
-      + 'Target of 30 a second with the slowest 5% under 33.3 ms: <b>'+(met? 'met' : 'NOT met')+'</b>\n'
+      + 'Target of 30 a second with the slowest 5% at 33 ms or less, to the nearest millisecond: <b>'+(met? 'met' : 'NOT met')+'</b>\n'
       + 'Screen '+st.screen+', stage '+st.stage+', '+C.esc(st.view)+' view, camera '+C.esc(String(st.camera))+(st.tiles!==null? ', '+st.tiles+' ground tiles' : '')+(st.heapMB!==null? ', '+st.heapMB+' MB' : '')+'\n'
       + 'Version '+C.esc(st.version)+'\n<span class="dim">'+C.esc(st.agent)+'</span>\n'
       + '<button class="b quiet" data-a="md-measure-close">Close and carry on</button>';

@@ -89,7 +89,7 @@ The Milestone 1 world image (20 MB phone, 35 MB desktop, 35 to 67 ms to build) i
 | E06 | Fallback: no style selected, or a missing sheet, draws the procedural art | Pass | `isoAssets.get` returns null, actors fall back |
 | E07 | Clean checkout rebuilds the sheets and the game | Pass | `node tools/iso-art.js`, `python3 build.py` |
 | E01 | 60 fps desktop with assets | Pass (headless) | 60.5 fps, 0.8 ms render, 3.8 ms per tile at 1366x768 |
-| E02 | Real Android | Open: measured 17 November, the average is met and the slow frames are not | John's Samsung Galaxy, 49.9 frames a second, slowest 5% at 33.4 ms against 33.3; see "E02 on John's phone" below |
+| E02 | Real Android | Open: measured 17 November on John's Galaxy S23 Ultra (49.9 frames a second, one frame in thirty at 50 ms or more); the cause is fixed and awaits his second measurement | see "E02 on John's phone" and "The phone smoothness pass" below |
 | D02 | A shot in flight whips the camera to the goal on a phone (close camera) | Pass | `test-isometric.js` D02 shot cap; phone goalmouth captures show both posts, the keeper and the ball |
 | B12 | A painted override cell replaces the generated cell and keeps its feet anchor | Pass | `test-isometric.js` (run frame, style B, 16 px/m) |
 | B13 | The painted far-stand texture registers with its metres and anchor and tiles in the far stand | Pass / Manual | `test-isometric.js`; far-wing captures and recording |
@@ -245,7 +245,7 @@ What it found wrong, each fixed and held by a test:
 | B07 | A striped, hooped or quartered shirt shared a colour with the other side's shirt in 423 of 2,410 matches; a keeper (in his club's second colour) was close to the opposing shirt in 1,115; twelve dark colours were close to the referee's black across 1,045; one club's keeper was green on the grass | the clash rule counts both colours of a patterned shirt and treats an all-green shirt as a clash; keepers and the referee are dressed per match from short lists to stand clear of everyone (agreed by John: keepers no longer wear club colours) | `test-situations.js` (and a count over 7,230 matches of six seasons from three seeds while tuning: no violation) |
 | scenario 9 | At the interval of extra time the commentary said "Extra time. Thirty more minutes." a second time | "The second period of extra time. Fifteen more minutes." | read in the still |
 
-Working ahead of cuts (item 5 of the scope). The fault was wider than the note left for this milestone: a cut cost several frames not only because up to twenty ground tiles were painted on it but because the camera sampled the whole highlight to choose its scale on the same frame, and the moment of a goal did that again for the cut to the scorer and painted the risen stands at once. Both are now done ahead, a little a frame (see `PHASE-3-ARCHITECTURE.md`). `test-ahead.js` plays a half through a mounted renderer as the match screen does: without it a cut paints up to 12 tiles on its frame on a phone stage and 24 on the largest desktop stage; with it no cut paints more than the one tile every frame is allowed, the worst frame in play paints 3 tiles on the phone stage and 5 on the desktop one (13 before), and the picture is identical frame for frame.
+Working ahead of cuts (item 5 of the scope; **part of this paragraph was wrong, see "A correction" under the phone smoothness pass**: in the game the stands were not got ready before a goal and the cut to the scorer was not prepared, although the test said so). The fault was wider than the note left for this milestone: a cut cost several frames not only because up to twenty ground tiles were painted on it but because the camera sampled the whole highlight to choose its scale on the same frame, and the moment of a goal did that again for the cut to the scorer and painted the risen stands at once. Both are now done ahead, a little a frame (see `PHASE-3-ARCHITECTURE.md`). `test-ahead.js` plays a half through a mounted renderer as the match screen does: without it a cut paints up to 12 tiles on its frame on a phone stage and 24 on the largest desktop stage; with it no cut paints more than the one tile every frame is allowed, the worst frame in play paints 3 tiles on the phone stage and 5 on the desktop one (13 before), and the picture is identical frame for frame.
 
 Frame pacing, from the game's own measuring screen (`What's new > Measure the match frame rate`; sixty seconds of play; **headless Chromium, which says nothing about a real phone**):
 
@@ -261,7 +261,7 @@ On the final build of 17 November (`index.html` 7,108,283 bytes): all 20 suites 
 
 ### E02 on John's phone (17 November)
 
-John ran the measuring screen in the 1.7.0 preview (`index.html` md5 `56337bd2d3f0b8491f1ceee6b7a72165`, opened from a file) on his Samsung Galaxy: Chrome 157, a screen of 384x692 CSS px at a pixel ratio of 3.75 (reported as 3.8), stage 360x465, isometric view, close camera, one minute of play at normal speed from kick-off. The model of the phone is not in the figures (Chrome hides it) and is still to be recorded. The second column is headless Chromium at the same screen size with the processor slowed six times (`tools/phone-probe.js . 6`), which lands close enough to the phone to stand in for it while the cause is worked on.
+John ran the measuring screen in the 1.7.0 preview (`index.html` md5 `56337bd2d3f0b8491f1ceee6b7a72165`, opened from a file) on his Samsung Galaxy S23 Ultra: Chrome 157, a screen of 384x692 CSS px at a pixel ratio of 3.75 (reported as 3.8), stage 360x465, isometric view, close camera, one minute of play at normal speed from kick-off. (Chrome hides the model; John gave it.) The S23 Ultra is a flagship, not the mid-range phone the brief names, so a mid-range phone will do no better than these figures. The second column is headless Chromium at the same screen size with the processor slowed six times (`tools/phone-probe.js . 6`), which lands close enough to the phone to stand in for it while the cause is worked on.
 
 | | John's phone | Headless, slowed 6x |
 |---|---|---|
@@ -284,7 +284,71 @@ John ran the measuring screen in the 1.7.0 preview (`index.html` md5 `56337bd2d3
 * The worst stall was three frames within a second that painted 3, 3 and 6 tiles, nine seconds into a highlight: a move of the camera that the working ahead did not see coming.
 * The players' pictures are recoloured for the two kits as they are first needed: 2,384 of them over the first 35 seconds, on 712 frames. That lowers the average early in a match (a few milliseconds a frame) and is not what makes the slow frames.
 
-Working ahead (Milestone 5) took the painting off the frame of a cut, which was the fault on the desktop, but a whole tile in one frame is still too much for a phone. The remedy keeps the picture as it is: paint only what lies inside a tile, and spread a tile over several frames. Lower detail (brief 10.3) is the fallback if that is not enough. Not yet done: it is scoped with John first.
+Working ahead (Milestone 5) took the painting off the frame of a cut, which was the fault on the desktop, but a whole tile in one frame is still too much for a phone. The remedy keeps the picture as it is: paint only what lies inside a tile, and spread a tile over several frames. Lower detail (brief 10.3) is the fallback if that is not enough. John agreed the scope the same afternoon; the work is the next section.
+
+## The phone smoothness pass (17 November 2026, after John's measurement)
+
+Scope agreed with John on 17 November: paint only what lies inside a tile; spread what is left of a tile over several frames; find and fix the third-of-a-second freeze; colour the players' pictures before they are needed; rerun every check and give him a new preview to measure. The picture was not to change, and lower detail (brief 10.3) was to stay out unless this was not enough. Still version 1.7.0, on the branch `milestone-5`, not deployed.
+
+### What was done
+
+| | Cause found | What changed | Held by |
+|---|---|---|---|
+| 1 | Each ground tile painted the whole stadium and left the canvas to discard what fell outside: about 45 ms a tile at phone speed, 141 tiles a minute | the painter leaves out polygons, lines, grass and crowd strips that cannot reach the tile | `test-smooth.js` A (every tile of the stadium painted both ways, generated and painted art, two scales, crowd still and risen); `tools/tile-reference.js` (1,717 tiles at five scales against the build before) |
+| 2 | A tile painted ahead was still painted in one frame | a tile painted ahead goes on a layer at a time, inside what is left of the frame's time (9 ms from the start of its drawing); it is shown only when whole | `test-smooth.js` B, C and F |
+| 3 | The freeze: the frame of a goal painted the risen stands at once, and the cut to the scorer painted a screen of ground at the other scale and chose its scale there too. Milestone 5 was meant to prepare both and did not (below) | the game now tells the view of a goal four match seconds ahead and prepares the scorer's cut; the risen stands in view, and just off screen, come first in the work ahead | `test-ahead.js` (the frame the ball goes in on and the frame of the scorer's cut paint no more than one tile; unprepared they paint several) |
+| 4 | A player's picture was made by drawing its cell of the sheet and reading the pixels back: about 3,500 pictures in the first minute on a phone, twenty at once at kick-off and at a cut | the sheets are read once, in the menus, into one byte a pixel, and a picture is written from that with no read-back; the pictures of the opening are made before the clock starts and those of a cut before the cut | `test-smooth.js` D and E; `tools/sprite-reference.js` (61,248 pictures against the build before) |
+| 5 | A stand's first tile made all eight of its crowd strips at once | the strips are made before the clock starts at the opening scale, and one at a time otherwise | the frame log of `tools/phone-probe.js` |
+
+### A correction to what was reported for Milestone 5
+
+The Milestone 5 report said the stands are got ready before a goal and the cut to the scorer is prepared. In the game neither happened. The view's `expectWave` was called only by `test-ahead.js`, which carried its own copy of the match screen's rule; and both copies asked the scene for the scorer's cut at a moment (0.05 s after the goal) at which the scene does not yet know of one (it does 1.2 s after). The test's limits were loose enough to pass (up to six tiles in a frame during play). This was the worst stall on John's phone. The rule now lives in one function (`MD.lookAhead` in `playback.js`) that the match screen and the tests both call, and `test-ahead.js` checks the goal frame and the scorer's cut by name.
+
+### Is the picture the same?
+
+Yes, to the pixel, by three comparisons with the build John measured (`index.html` md5 `56337bd2d3f0b8491f1ceee6b7a72165`), each run in Chromium on the final build:
+
+* `tools/tile-reference.js`: all 1,717 ground tiles of the stadium at 12, 16 and 24 px a metre and the two whole-pitch scales, crowd still and risen, are identical; and every tile painted a layer at a time equals the same tile painted in one go.
+* `tools/sprite-reference.js`: all 61,248 player pictures (every cell of the player and keeper sheets at three scales, for plain, striped, hooped, halved and quartered kits, a white shirt, colours given as hsl, two keepers and the referee with each card, in four looks) are identical.
+* `tools/frame-reference.js`: 198 whole frames of one match (kick-off, open play, three goals and their celebrations, the second half; phone and desktop stage; the three cameras) are identical.
+
+### Frame pacing on the stand-in for the phone
+
+Headless Chromium at 384x692 with the processor slowed six times, the same seeded match every run (`tools/phone-probe.js . 6`), the game's own measuring screen. **This is not a phone**: it matched John's first measurement closely, which is why it is used, and his second measurement is what counts.
+
+| | John's phone, the build before | Stand-in, the build before (two runs) | Stand-in, this build (three runs) | This build, not slowed |
+|---|---|---|---|---|
+| Frames a second | 49.9 | 50.5, 51.7 | 58.8, 58.5, 58.3 | 60.0 |
+| Slowest 5% of frames | 33.4 ms | 33.4, 33.3 ms | 16.8 ms each | 16.8 ms |
+| Slowest 1% | 83.4 ms | 83.4, 66.7 ms | 33.3 ms each | 16.8 ms |
+| Worst frame | 341.6 ms | 350, 300 ms | 117, 250, 133 ms | 33.3 ms |
+| Longer than 34 ms (slower than 30 a second) | (175 by the old count) | 122 and 126 of about 3,050 (4.0%, 4.1%) | 4, 5 and 10 of about 3,510 (0.1%, 0.1%, 0.3%) | 0 of 3,600 |
+| Longer than 50 ms | 92 (3.1%) | 74, 68 (2.4%, 2.2%) | 3, 5, 3 (0.1%) | 0 |
+| Drawing a frame: average, slowest 5%, worst | 8.5, 36.8, 241 ms | 6.2, 26.5, 324 and 5.7, 26.0, 269 ms | 3.8, 10.2, 45; 3.9, 10.3, 78; 4.3, 10.5, 94 ms | 0.6, 1.5, 12 ms |
+| JS memory | 37.8 MB | 35.6 MB | 48.1, 42.6, 48.1 MB | 42.1 MB |
+
+Reading. On the stand-in the slow frames fall from one in twenty-five to about one in five hundred, and the frames of 50 ms or more from one in forty-five to about one in a thousand. What is left there: a full garbage collection once or twice a minute (27 ms unslowed in the worst case seen), and now and then a frame that makes several pictures at once or paints a tile's heaviest layer. The cost is memory, about 10 MB more on a phone for the sheets held at a byte a pixel (about 22 MB on a desktop stage).
+
+Before the clock starts the view now makes the opening's pictures and crowd strips: 82 ms unslowed, about a third of a second on the stand-in, on top of the first frame's whole screen of tiles (which was there before). It is outside the measured minute.
+
+### The measuring screen's rule, changed
+
+A frame of exactly two refreshes of a 60 Hz screen is 33.3 ms: 30 a second, not slower. The screen counted such a frame as slower than 30 a second whenever the browser's clock read it as 33.4 or more, and failed the target for a slowest 5% of 33.4. It now counts a frame as slower than 30 a second when it is longer than 34 ms, and calls the target met when the slowest 5% are 33 ms or less to the nearest millisecond (with 30 a second or more on average). By the new rule John's first run would have read "met" on that line while showing 92 frames longer than 50 ms, which is why E02 was left open on the stutters and not argued on the rounding. The count of frames longer than 50 ms is the same under both rules and is the figure to compare between his two screenshots (92 in the first).
+
+### Checks on the final build
+
+`index.html` 7,131,899 bytes, md5 `d86995b43e4a887d22f76d1a3d74264d` (`python3 build.py` reproduces it). What ran on which build, exactly:
+
+* On the build one small change earlier (md5 `48d33fa7e3a9f19b52e5dce23f89b164`): all 21 suites, one after another, pass (the 20 of Milestone 5 and `test-smooth.js` with 41 checks; `test-ahead.js` now has 22); `tools/soak-audit.js` all, 44 of 44; `tools/viewport-audit.js` at all five sizes; `tools/save-compat.js` 19 of 19 from 1.6.0 to this build and 19 of 19 back.
+* The small change: a kit's colour table is kept in a few hundred bytes (it was kept as a hundred small lists, and memory after ten matches had crept to 7.6 MB). It touches only the quick way of making a picture, which only `test-smooth.js` and the browser reach.
+* On the final build: `test-smooth.js`, `test-isometric.js`, `test-matchday-ui.js` and `test-hof.js` pass; the three pixel comparisons above pass; `tools/soak-audit.js leak` (JS memory 6.6 MB after matches 3 to 5 and 7.0 MB after matches 8 to 10, against 6.4 and 6.8 before the pass; nothing left behind after any match) and `measure` pass; and the three slowed runs in the table are of this build.
+* The measuring screen, not slowed, at the three sizes of the Milestone 5 table: 60.0 frames a second at each, no frame slower than 30 a second at any (0, 4 and 4 before), drawing 0.6, 0.7 and 0.9 ms on average (1.0, 1.5 and 2.1 before) and 1.5, 2.0 and 2.9 ms for the slowest 5% (3.4, 7.2 and 9.1 before).
+
+One fault of my own making was caught by the probe and not by the suites: a comment added on the measuring screen's verdict line cut off the rest of the line, so the panel never appeared at the end of the minute. It is fixed, the changed lines were searched for any other of the kind (none), and `tools/soak-audit.js measure` runs the panel to the end at three sizes.
+
+`test-youth.js` failed about one run in seven, on the release before this one too: its club was whichever the test harness had drawn, and with some clubs the academy had produced no reserve by the point the test releases one. It is now pinned to one club (eight runs of eight pass). Nothing in the game changed for it.
+
+**E02 stays open until John's second measurement.** If his phone shows what the stand-in shows, the row closes. If not, the frame log of a slowed run is the place to look next, and lower detail (brief 10.3) remains the fallback.
 
 ## Manual scenarios (Section 14)
 
@@ -299,4 +363,6 @@ Covered so far by the recordings and captures: 1 kick-off, 2 midfield passing, 4
 * The crowd figures in the painted stands are chunky (a head is about a player's head), in the 16-bit manner. (Since 3D the painted stands rise in a wave for a goal, with camera flashes; the main stand's rows under its roof stay still.)
 * The referee's raised card is a few pixels and is not painted from the W heading (the painter hid the arm behind the body).
 * Since Milestone 5 a cut paints no ground on its own frame and does not stop to choose its scale. What is left: the first frame of a match paints its whole screen (before the clock starts), a seek paints the screen it lands on, and on the largest desktop stage a fast pan just after a cut can paint up to five tiles in one frame.
-* On John's phone (17 November) the match averages 49.9 frames a second, but 5.8% of frames are slower than 30 a second and 3.1% slower than 20, nearly all of them frames that paint a ground tile (see "E02 on John's phone"). The desktop figures are from headless Chromium.
+* On John's Galaxy S23 Ultra (17 November, the build before the phone smoothness pass) the match averaged 49.9 frames a second with 3.1% of frames at 50 ms or more. The pass removes the causes on a slowed-down stand-in; his second measurement is awaited, and no mid-range phone has been measured at all. The desktop figures are from headless Chromium.
+* The player sheets are now also held at a byte a pixel: about 10 MB more memory on a phone and 22 MB on a desktop stage while the page is open.
+* A full garbage collection still costs a frame or two once or twice a minute on a slow device, and the first frame of a match paints its whole screen before the clock starts.

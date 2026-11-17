@@ -18,7 +18,7 @@
   const MATS = ['SKIN','HAIR','SHIRT','TRIM','SHORTS','SOCKS','BOOTS','GLOVE','EYE','CARD','LINE','COAT','HAT','SCARF'];
   const SKINS = MD.sprites.SKINS, HAIRS = MD.sprites.HAIRS;
   const sheets = {};                               // style -> spr -> { img, manifest, keepers, crowd, grass, index }
-  const cache = new Map(); const CACHE_MAX = 2400;
+  const cache = new Map(); const CACHE_MAX = 2400; let builtCount = 0;   // builtCount: every frame recoloured since the page loaded (for tools)
   let createCanvas = (w, h) => { const c = root.document.createElement('canvas'); c.width = w; c.height = h; return c; };
   let style = 'B';
 
@@ -32,6 +32,7 @@
     const t = x => Math.max(0, Math.min(255, Math.round(f > 0? x + (255 - x)*f : x*(1 + f))));
     return [t(r), t(g), t(b)];
   }
+  // (a kit's table is the same for every picture of a player, so the quick way works it out once: tableFor below)
   function paletteFor(kit, variant, K){
     const shirt = hex(kit.primary), trim = hex(kit.secondary);
     let shorts = trim; if (Math.abs(lum(shorts)-lum(shirt)) < 0.12) shorts = lum(shirt) > 0.5? '#1F2A44' : '#F2F2F2';
@@ -112,24 +113,85 @@
   const available = () => Object.keys(sheets).map(st => st+': '+Object.keys(sheets[st]).join(','));
   function has(spr, st){ const s = sheets[st||style]; return !!(s && s[spr]); }
 
+  // ---- the sheets at one byte a pixel ----
+  // A player's picture used to be made by drawing his cell of the sheet onto a small canvas and reading its pixels back,
+  // and a second cell for the pattern of a striped shirt: thousands of pictures in the first minute of a match (3,500 on
+  // a phone, which holds two scales), each a read-back from a five-megapixel image that the browser may have to decode
+  // again first. On John's phone that was a few milliseconds on most frames and the best part of a tenth of a second at
+  // a cut, when twenty new pictures are wanted at once. prime(scale) reads each sheet once, a band at a time, into one
+  // byte a pixel: 0 for a clear pixel, otherwise the material and tone the recolouring looks up, and for a shirt pixel
+  // the pattern sheet's value as well. A picture is then written from those bytes and the kit's table with nothing
+  // drawn and nothing read back. The pixels are the same (tools/sprite-reference.js holds every cell of every sheet to
+  // that for a spread of kits). A sheet with a half-clear pixel or a material outside the table cannot be held this
+  // way and keeps the old way, as does any picture asked for before its sheet has been read.
+  const PLANE_SHIRT = 113, BAND = 96;   // 1..112: material*8 + tone + 1; 113..255: a shirt pixel, pattern value*8 + tone
+  const pause = () => new Promise(r => (root.setTimeout || (f => f()))(r, 0));
+  async function planeOf(src, patterns, gk){
+    const w = src.width, h = src.height; if (!w || !h) return null; const data = new Uint8Array(w*h);
+    if (!gk && patterns && (patterns.width!==w || patterns.height!==h)) return null;   // a pattern sheet of another size: the old way
+    const usePat = !gk && !!patterns;
+    const cv = createCanvas(w, Math.min(BAND, h)); const ctx = cv.getContext('2d', { willReadFrequently: true }); const pc = usePat? createCanvas(w, Math.min(BAND, h)) : null; const pctx = pc? pc.getContext('2d', { willReadFrequently: true }) : null;
+    for (let y0=0; y0<h; y0+=BAND){
+      const bh = Math.min(BAND, h - y0); ctx.clearRect(0, 0, w, BAND); ctx.drawImage(src, 0, y0, w, bh, 0, 0, w, bh); const d = ctx.getImageData(0, 0, w, bh).data;
+      let md = null; if (pctx){ pctx.clearRect(0, 0, w, BAND); pctx.drawImage(patterns, 0, y0, w, bh, 0, 0, w, bh); md = pctx.getImageData(0, 0, w, bh).data; }
+      for (let i=0, o=y0*w; i<d.length; i+=4, o++){
+        const a = d[i+3]; if (a===0) continue; if (a!==255) return null;                       // a half-clear pixel: the old way keeps its alpha
+        const m = d[i] >> 4; if (m >= MATS.length) return null;                                 // outside the table: the old way leaves it as drawn
+        const k = Math.max(0, Math.min(7, Math.round((d[i+1] - 20)/40)));
+        if (m===2){ const pat = md && md[i+3]? Math.round(md[i]/60) : 0; if (pat > 17) return null; data[o] = PLANE_SHIRT + pat*8 + k; } else data[o] = 1 + m*8 + k;
+      }
+      await pause();
+    }
+    return { w, h, data, patterned: !!usePat };
+  }
+  // reads the sheets of one scale; resolves when they are ready (or cannot be held this way), never rejects
+  function prime(spr, st){
+    const set = sheets[st||style] && sheets[st||style][spr]; if (!set) return Promise.resolve(false);
+    if (!set.priming) set.priming = (async () => {
+      try { set.plane = set.img? await planeOf(set.img, set.patterns, false) : null; } catch(e){ set.plane = null; }
+      try { set.keeperPlane = set.keepers? await planeOf(set.keepers, null, true) : null; } catch(e){ set.keeperPlane = null; }
+      // a striped kit asked of a sheet that came with no pattern sheet is plain either way; pictures made the old way stay as they are
+      return !!(set.plane && set.keeperPlane);
+    })();
+    return set.priming;
+  }
+  const planeState = (spr, st) => { const set = sheets[st||style] && sheets[st||style][spr]; return !set? 'no sheets' : !set.priming? 'not read' : (set.plane===undefined || set.keeperPlane===undefined)? 'reading' : (set.plane && set.keeperPlane)? 'ready' : 'old way'; };
+  // a kit's table for one look, three bytes an entry, worked out once (a few hundred bytes each; a match uses about thirty)
+  const tables = new Map(); const tableFor = (kit, variant, K) => { const k = style+'|'+kit.primary+'|'+kit.secondary+'|'+(kit.card||'')+'|'+variant.skin+'|'+variant.hair+'|'+K; let t = tables.get(k); if (!t){ if (tables.size >= 256) tables.clear(); const p = paletteFor(kit, variant, K); t = new Uint8Array(p.length*3); for (let i=0;i<p.length;i++){ t[i*3] = p[i][0]; t[i*3+1] = p[i][1]; t[i*3+2] = p[i][2]; } tables.set(k, t); } return t; };
+  // one pixel buffer per cell size, written in full every time
+  const scratch = new Map(); const scratchImage = (ctx, w, h) => { const k = w+'x'+h; let im = scratch.get(k); if (!im){ im = ctx.createImageData(w, h); scratch.set(k, im); } return im; };
+
   // ---- frames ----
   // a recoloured frame for a kit and variant; null when the sheet or frame is missing (caller falls back)
   function get(kit, variant, dir, pose, frame, spr){
     const set = sheets[style] && sheets[style][spr]; if (!set) return null;
     const pattern = kit.gk? 'plain' : (kit.pattern||'plain'); const hs = (variant.style||0);
     const key = style+'|'+spr+'|'+kit.primary+'|'+kit.secondary+'|'+pattern+'|'+(kit.gk?'g':'')+'|'+(kit.card||'')+'|'+variant.skin+'|'+variant.hair+'|'+hs+'|'+dir+'|'+pose+'|'+frame;
-    let cv = cache.get(key); if (cv) return cv;
+    let cv = cache.get(key); if (cv){ cache.delete(key); cache.set(key, cv); return cv; }   // the one given up when the cache is full is the one longest unused
     const f = kit.gk? set.index.get('gk|'+pose+'|'+frame+'|0|'+dir) : (set.index.get(pose+'|'+frame+'|'+hs+'|'+dir) || set.index.get(pose+'|'+frame+'|0|'+dir));
     if (!f) return null;
+    builtCount++;
+    const bit = pattern==='stripes'? 1 : pattern==='hoops'? 2 : pattern==='quarters' || pattern==='halves'? 4 : 0;
+    const SHIRT = 2, TRIM = 3;
+    const plane = kit.gk? set.keeperPlane : set.plane;
+    if (plane && f.x >= 0 && f.y >= 0 && f.x + f.w <= plane.w && f.y + f.h <= plane.h){
+      // the quick way: the cell is read from the sheet's one-byte-a-pixel copy and written straight to its canvas
+      cv = createCanvas(f.w, f.h); const ctx = cv.getContext('2d'); const img = scratchImage(ctx, f.w, f.h); const d = img.data; const src = plane.data, W = plane.w; const table = tableFor(kit, variant, set.manifest.tones);
+      const stripe = !kit.gk && pattern!=='plain' && plane.patterned? bit : 0;
+      for (let y=0, o=0; y<f.h; y++){ let i = (f.y + y)*W + f.x; for (let x=0; x<f.w; x++, i++, o+=4){
+        const v = src[i]; if (!v){ d[o] = 0; d[o+1] = 0; d[o+2] = 0; d[o+3] = 0; continue; }
+        let m, k; if (v < PLANE_SHIRT){ m = (v - 1) >> 3; k = (v - 1) & 7; } else { const u = v - PLANE_SHIRT; k = u & 7; m = ((u >> 3) & stripe)? TRIM : SHIRT; }
+        const c = (m*8 + k)*3; d[o] = table[c]; d[o+1] = table[c+1]; d[o+2] = table[c+2]; d[o+3] = 255; } }
+      ctx.putImageData(img, 0, 0); cv.feet = f.feet; cv.spr = spr;
+    } else {
     const src = kit.gk? set.keepers : set.img;
     cv = createCanvas(f.w, f.h); const ctx = cv.getContext('2d'); ctx.drawImage(src, f.x, f.y, f.w, f.h, 0, 0, f.w, f.h);
     const img = ctx.getImageData(0, 0, f.w, f.h); const d = img.data; const table = paletteFor(kit, variant, set.manifest.tones);
     let mask = null;
     if (!kit.gk && pattern!=='plain' && set.patterns){ const mc = createCanvas(f.w, f.h); const mx = mc.getContext('2d'); mx.drawImage(set.patterns, f.x, f.y, f.w, f.h, 0, 0, f.w, f.h); mask = mx.getImageData(0, 0, f.w, f.h).data; }
-    const bit = pattern==='stripes'? 1 : pattern==='hoops'? 2 : pattern==='quarters' || pattern==='halves'? 4 : 0;
-    const SHIRT = 2, TRIM = 3;
     for (let i=0;i<d.length;i+=4){ if (d[i+3]===0) continue; let m = d[i] >> 4; const k = Math.round((d[i+1] - 20)/40); if (mask && m===SHIRT && mask[i+3] && (Math.round(mask[i]/60) & bit)) m = TRIM; const c = table[m*8 + Math.max(0, Math.min(7, k))]; if (!c) continue; d[i] = c[0]; d[i+1] = c[1]; d[i+2] = c[2]; }
     ctx.putImageData(img, 0, 0); cv.feet = f.feet; cv.spr = spr;
+    }
     if (cache.size >= CACHE_MAX) cache.delete(cache.keys().next().value);
     cache.set(key, cv); return cv;
   }
@@ -141,6 +203,12 @@
   // a crowd strip (family 'x' along the touchlines or 'y' along the ends, variant 0..3, standing or not),
   // recoloured with a seed and the two kits' colours; null without assets. .ox/.oy is where the strip's
   // world origin lands in the image, .metres its length.
+  // how far a strip of this stand can reach from the point it is placed at, from the sheet's own table (so that a
+  // painter can pass over places that cannot touch its canvas without having the strips made first); null if unknown
+  function crowdReach(spr, fam){
+    const set = sheets[style] && sheets[style][spr]; const list = set && set.manifest && set.manifest.crowd && set.manifest.crowd.strips? set.manifest.crowd.strips.filter(x => x.fam===fam) : null; if (!list || !list.length) return null;
+    let l = 0, t = 0, r = 0, b = 0; for (const q of list){ l = Math.max(l, q.ox); t = Math.max(t, q.oy); r = Math.max(r, q.w - q.ox); b = Math.max(b, q.h - q.oy); } return { l: l + 1, t: t + 1, r: r + 1, b: b + 1 };
+  }
   function crowdStrip(spr, fam, variant, up, seed, colours){
     const set = sheets[style] && sheets[style][spr]; if (!set) return null;
     const key = 'crowd|'+style+'|'+spr+'|'+fam+'|'+variant+'|'+(up?1:0)+'|'+seed+'|'+(colours||[]).join(',');
@@ -185,7 +253,7 @@
   }
   const maskAt = (mask, u, v) => mask[Math.min(MASK_N-1, Math.floor(v*MASK_N))*MASK_N + Math.min(MASK_N-1, Math.floor(u*MASK_N))]===1;
 
-  MD.isoAssets = { MATS, load, register, has, get, crowdStrip, grass, standTexture, pieceTexture, pieceMask, maskAt, MASK_N, available, paletteFor, toneRGB,
+  MD.isoAssets = { MATS, load, register, has, get, crowdStrip, crowdReach, grass, standTexture, pieceTexture, pieceMask, maskAt, MASK_N, available, paletteFor, toneRGB,
     setStyle(s){ style = s; cache.clear(); texCache.clear(); }, getStyle(){ return style; },
-    setCanvasFactory(f){ createCanvas = f; cache.clear(); texCache.clear(); }, cacheSize(){ return cache.size; }, clear(){ cache.clear(); texCache.clear(); }, styleReady, isReady, expects };
+    setCanvasFactory(f){ createCanvas = f; cache.clear(); texCache.clear(); scratch.clear(); }, cacheSize(){ return cache.size; }, built(){ return builtCount; }, prime, planeState, clear(){ cache.clear(); texCache.clear(); }, styleReady, isReady, expects };
 })(typeof window!=='undefined'? window : globalThis);

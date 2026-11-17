@@ -147,11 +147,22 @@
     const fam = axis==='Y'? 'far' : axis==='Y+'? 'near' : axis==='X-'? 'left' : 'right';
     const AS = MD.isoAssets; const probe = AS && AS.crowdStrip(cam.P, fam, 0, false, rnd.seed, colours);
     if (probe){
+      // A tile takes only the strips that can reach it. The eight strips of this stand (four pictures, sitting and
+      // risen) are looked up once and not once a place; a row is passed over when the box round its first and last
+      // places, with the largest strip's size to spare (from the sheet's table, so no strip has to be made to know it),
+      // misses the tile; and within a row a place is passed over the
+      // same way before its strip is chosen. The places, the choice of strip and the test of the strip itself are as
+      // they were, so what is drawn is the same.
+      let strips = null; const stripAt = (variant, standing) => { if (!strips) strips = []; const i = variant*2 + (standing? 1 : 0); if (strips[i]===undefined) strips[i] = AS.crowdStrip(cam.P, fam, variant, standing, rnd.seed, colours) || probe; return strips[i]; };
+      let reach = null; const reachOf = () => { if (!reach && AS.crowdReach) reach = AS.crowdReach(cam.P, fam); if (!reach){ let l = 0, t = 0, rr = 0, b = 0; for (let v=0; v<4; v++) for (const up of (jump? [false, true] : [false])){ const q = stripAt(v, up); l = Math.max(l, q.ox); t = Math.max(t, q.oy); rr = Math.max(rr, q.width - q.ox); b = Math.max(b, q.height - q.oy); } reach = { l: l + 1, t: t + 1, r: rr + 1, b: b + 1 }; } return reach; };
+      const near = (x0, y0, x1, y1) => { const R = reachOf(); return inClip(clip, Math.min(x0, x1) - R.l, Math.min(y0, y1) - R.t, Math.abs(x1 - x0) + R.l + R.r, Math.abs(y1 - y0) + R.t + R.b); };
+      const lean = !!clip && PITCH.culling();
       for (const r of order){
-        for (let k=0, along=from; along < to; k++, along += probe.metres){
+        const pa = lean? PR.project(...place(from, r, 0), cam) : null, pb = lean? PR.project(...place(to, r, 0), cam) : null;
+        if (!lean || near(pa.sx, pa.sy, pb.sx, pb.sy)) for (let k=0, along=from; along < to; k++, along += probe.metres){
+          const p = PR.project(...place(along, r, 0), cam); if (lean && !near(p.sx, p.sy, p.sx, p.sy)) continue;
           const variant = (r*3 + k) % 4; const standing = jump && ((r + k) % 3 !== 0);
-          const strip = AS.crowdStrip(cam.P, fam, variant, standing, rnd.seed, colours) || probe;
-          const p = PR.project(...place(along, r, 0), cam); const x = Math.round(p.sx) - strip.ox, y = Math.round(p.sy) - strip.oy;
+          const strip = stripAt(variant, standing); const x = Math.round(p.sx) - strip.ox, y = Math.round(p.sy) - strip.oy;
           if (!inClip(clip, x, y, strip.width, strip.height)) continue;
           ctx.drawImage(strip, x, y); drewCrowd = true;
         }
@@ -271,32 +282,45 @@
     PITCH.poly(ctx, cam, [[xw + 0.9, ys, 0], [xw + 1.7, ys, 0], [xw + 1.7, ys, 2.1], [xw + 0.9, ys, 2.1]], TOWER.door);   // a door
   }
 
+  // the crowd strips the four stands will ask for at this scale, made beforehand (the renderer does it before the clock
+  // starts): the same stands, seed and colours as the terrace calls in groundSteps below
+  function warmCrowd(P, seed, colours){
+    const AS = MD.isoAssets; if (!AS || !AS.crowdStrip) return 0; const c = colours || []; let n = 0;
+    for (const [fam, cols] of [['far', c], ['left', c.slice(1)], ['right', c.slice(0, 1)], ['near', c]]) for (let v=0; v<4; v++) for (const up of [false, true]) if (AS.crowdStrip(P, fam, v, up, seed||1, cols)) n++;
+    return n;
+  }
+
   // The whole ground except the goals, for camera cam; clip is an optional canvas-pixel rectangle
   // (the renderer paints tiles). opts.colours are the two kits' primaries for the crowd.
   // Returns true when any spectators landed inside the clip (so a crowd-bounce variant is worth having).
   // opts.only (an array of 'pylons','far','roof','dugout','left','right','pitch','near','boards') draws just those layers; the
   // reference tool uses it to get a piece's exact silhouette. The rnd stream is kept identical either way.
   function drawGround(ctx, cam, seed, jump, clip, opts){
+    let crowd = false; for (const step of groundSteps(ctx, cam, seed, jump, clip, opts)) crowd = step() || crowd; return crowd;
+  }
+  // The same painting as a list of steps to be run in order, one layer of the ground each, every one returning true when
+  // it put spectators inside the clip. Run one after another without a pause they are drawGround; the renderer runs them
+  // a few a frame when it paints a tile ahead of need, so that no frame carries a whole tile. Each step names the clip
+  // to the primitives for its own duration only (PITCH.within), so frames drawn between two steps are not touched by it.
+  // The clip, when given, must be the whole of the canvas being painted.
+  function groundSteps(ctx, cam, seed, jump, clip, opts){
     const rnd = MD.seededRandom((seed||1) ^ 0x150); rnd.seed = (seed||1);
     const L = DIM.L, W = DIM.W, m = DIM.runoff; const colours = (opts && opts.colours) || [];
     const only = opts && opts.only; const on = k => !only || only.indexOf(k) >= 0;
-    let crowd = false;
     // painted pieces, when the style ships them, go over the generated art (holes in a texture show the generated art);
     // a reference render (only) wants the generated geometry alone
-    const sm = DIM.runoff + STAND.gap;
-    if (on('pylons')){ for (const c of CORNERS) if (!c.near){ const q = cornerPylonAt(c); pylon(ctx, cam, q.X, q.Y); if (!only) placedPiece(ctx, cam, 'pylon'+c.id, clip); } }
-    if (on('far')){ crowd = terrace(ctx, cam, rnd, 'Y', -m - 2, L + m + 2, STAND.rows, jump, clip, colours) || crowd; }
-    if (on('roof')) roof(ctx, cam, -m - 2, L + m + 2);
-    if (on('far') && !only) paintedStand(ctx, cam, -m - 2, L + m + 2, clip);
-    if (on('dugout')) for (const X0 of DUGOUT.from) drawDugout(ctx, cam, X0, clip);
-    if (on('left')){ crowd = terrace(ctx, cam, rnd, 'X-', -m - 1, W + m - 2, STAND.endRows, jump, clip, colours.slice(1)) || crowd; if (!only) paintedRun(ctx, cam, 'left', -m - 1, W + m - 2, along => [-sm, along, 0], clip); }
-    if (on('corners')) for (const c of CORNERS) if (!c.near){ crowd = cornerTerrace(ctx, cam, rnd, c, jump, clip, colours) || crowd; cornerTower(ctx, cam, c); if (!only) placedPiece(ctx, cam, 'corner'+c.id, clip); }   // the far corners: a terrace in the notch and a stair tower at the junction
-    if (on('pitch')) PITCH.draw(ctx, cam);
-    if (on('right')){ crowd = terrace(ctx, cam, rnd, 'X+', -m - 1, W + m - 2, STAND.endRows, jump, clip, colours.slice(0, 1)) || crowd; if (!only) paintedRun(ctx, cam, 'right', -m - 1, W + m - 2, along => [L + sm, along, 0], clip); }   // nearer the viewer than the pitch, so after it
-    if (on('near')){ crowd = terrace(ctx, cam, rnd, 'Y+', -m + 2, L + m - 2, STAND.nearRows, jump, clip, colours) || crowd; if (!only) paintedRun(ctx, cam, 'near', -m + 2, L + m - 2, along => [along, W + sm, 0], clip); }
-    if (on('boards')){ boards(ctx, cam); if (!only) paintedRun(ctx, cam, 'boards', -m, L + m, along => [along, W + m, 0], clip); }   // the hoardings stand in front of the near terrace's first row
-    if (on('corners')) for (const c of CORNERS) if (c.near){ crowd = cornerTerrace(ctx, cam, rnd, c, jump, clip, colours) || crowd; cornerTower(ctx, cam, c); if (!only) placedPiece(ctx, cam, 'corner'+c.id, clip); }   // the near corners: a low terrace and a turnstile block, in front of the stands' painted ends
-    return crowd;
+    const sm = DIM.runoff + STAND.gap; const steps = []; const step = fn => steps.push(() => PITCH.within(clip, fn) || false);
+    if (on('pylons')) step(() => { for (const c of CORNERS) if (!c.near){ const q = cornerPylonAt(c); pylon(ctx, cam, q.X, q.Y); if (!only) placedPiece(ctx, cam, 'pylon'+c.id, clip); } });
+    if (on('far')) step(() => terrace(ctx, cam, rnd, 'Y', -m - 2, L + m + 2, STAND.rows, jump, clip, colours));
+    if (on('roof') || (on('far') && !only) || on('dugout')) step(() => { if (on('roof')) roof(ctx, cam, -m - 2, L + m + 2); if (on('far') && !only) paintedStand(ctx, cam, -m - 2, L + m + 2, clip); if (on('dugout')) for (const X0 of DUGOUT.from) drawDugout(ctx, cam, X0, clip); });
+    if (on('left')) step(() => { const crowd = terrace(ctx, cam, rnd, 'X-', -m - 1, W + m - 2, STAND.endRows, jump, clip, colours.slice(1)); if (!only) paintedRun(ctx, cam, 'left', -m - 1, W + m - 2, along => [-sm, along, 0], clip); return crowd; });
+    if (on('corners')) step(() => { let crowd = false; for (const c of CORNERS) if (!c.near){ crowd = cornerTerrace(ctx, cam, rnd, c, jump, clip, colours) || crowd; cornerTower(ctx, cam, c); if (!only) placedPiece(ctx, cam, 'corner'+c.id, clip); } return crowd; });   // the far corners: a terrace in the notch and a stair tower at the junction
+    if (on('pitch')){ step(() => PITCH.drawGrass(ctx, cam)); step(() => PITCH.drawMarkings(ctx, cam)); }
+    if (on('right')) step(() => { const crowd = terrace(ctx, cam, rnd, 'X+', -m - 1, W + m - 2, STAND.endRows, jump, clip, colours.slice(0, 1)); if (!only) paintedRun(ctx, cam, 'right', -m - 1, W + m - 2, along => [L + sm, along, 0], clip); return crowd; });   // nearer the viewer than the pitch, so after it
+    if (on('near')) step(() => { const crowd = terrace(ctx, cam, rnd, 'Y+', -m + 2, L + m - 2, STAND.nearRows, jump, clip, colours); if (!only) paintedRun(ctx, cam, 'near', -m + 2, L + m - 2, along => [along, W + sm, 0], clip); return crowd; });
+    if (on('boards')) step(() => { boards(ctx, cam); if (!only) paintedRun(ctx, cam, 'boards', -m, L + m, along => [along, W + m, 0], clip); });   // the hoardings stand in front of the near terrace's first row
+    if (on('corners')) step(() => { let crowd = false; for (const c of CORNERS) if (c.near){ crowd = cornerTerrace(ctx, cam, rnd, c, jump, clip, colours) || crowd; cornerTower(ctx, cam, c); if (!only) placedPiece(ctx, cam, 'corner'+c.id, clip); } return crowd; });   // the near corners: a low terrace and a turnstile block, in front of the stands' painted ends
+    return steps;
   }
   // (no floodlights in the near corners: in this view they would stand between the viewer and the corner flags)
   const nearPylons = () => [];
@@ -369,5 +393,5 @@
     }
   }
 
-  MD.iso.stadium = { drawGround, drawGoal, netState, goalGeometry, drawDugout, dugoutBox, placedPiece, CORNER_T, CORNER_ROWS, CORNER_FIRST, TOWER, drawCrowdReaction, nearPylons, drawPylon, CORNERS, cornerPylonAt, CROWD_SIDES, WAVE, WAVE_ROWS, DUGOUT, STAND, COATS, BRIGHT };
+  MD.iso.stadium = { drawGround, groundSteps, warmCrowd, drawGoal, netState, goalGeometry, drawDugout, dugoutBox, placedPiece, CORNER_T, CORNER_ROWS, CORNER_FIRST, TOWER, drawCrowdReaction, nearPylons, drawPylon, CORNERS, cornerPylonAt, CROWD_SIDES, WAVE, WAVE_ROWS, DUGOUT, STAND, COATS, BRIGHT };
 })(typeof window!=='undefined'? window : globalThis);
