@@ -76,7 +76,7 @@ One scene change outside the renderer: `behaviour.js` no longer sends defenders 
 | 1366x768 | 904x619 | 16 | 60.3 | 19.1 ms | 0.9 ms | 3.6 ms | 48 tiles, 12 MB |
 | 1920x1080 | 1164x756 | 16 | 60.3 | 20.2 ms | 1.9 ms | 3.5 ms | 48 tiles, 12 MB |
 
-The Milestone 1 world image (20 MB phone, 35 MB desktop, 35 to 67 ms to build) is gone: the ground is painted in 256 px tiles on demand with a least-recently-used cap, so a match typically holds far less than the cap. E01 Pass in headless Chromium; E02 (real Android) measured on 17 November and still open (see "E02 on John's phone"); E03 (no growth over opens and toggles) Open (M5), tile sets and the sprite cache are released on dispose; E04 scene generation untouched (about 320 ms); E05 to E09 Open (M5/M6).
+The Milestone 1 world image (20 MB phone, 35 MB desktop, 35 to 67 ms to build) is gone: the ground is painted in 256 px tiles on demand with a least-recently-used cap, so a match typically holds far less than the cap. E01 Pass in headless Chromium; E02 (real Android) Pass on John's Galaxy S23 Ultra after the phone smoothness pass (see "John's second measurement"; a flagship, no mid-range phone measured); E03 (no growth over opens and toggles) Open (M5), tile sets and the sprite cache are released on dispose; E04 scene generation untouched (about 320 ms); E05 to E09 Open (M5/M6).
 
 ## Milestone 2A additions (art assets)
 
@@ -89,7 +89,7 @@ The Milestone 1 world image (20 MB phone, 35 MB desktop, 35 to 67 ms to build) i
 | E06 | Fallback: no style selected, or a missing sheet, draws the procedural art | Pass | `isoAssets.get` returns null, actors fall back |
 | E07 | Clean checkout rebuilds the sheets and the game | Pass | `node tools/iso-art.js`, `python3 build.py` |
 | E01 | 60 fps desktop with assets | Pass (headless) | 60.5 fps, 0.8 ms render, 3.8 ms per tile at 1366x768 |
-| E02 | Real Android | Open: measured 17 November on John's Galaxy S23 Ultra (49.9 frames a second, one frame in thirty at 50 ms or more); the cause is fixed and awaits his second measurement | see "E02 on John's phone" and "The phone smoothness pass" below |
+| E02 | Real Android | Pass on John's Galaxy S23 Ultra, second measurement, 17 November: 59.6 frames a second, 3 of 3,577 frames slower than 30 a second. The phone is a flagship; no mid-range phone has been measured | see "E02 on John's phone", "The phone smoothness pass" and "John's second measurement" below |
 | D02 | A shot in flight whips the camera to the goal on a phone (close camera) | Pass | `test-isometric.js` D02 shot cap; phone goalmouth captures show both posts, the keeper and the ball |
 | B12 | A painted override cell replaces the generated cell and keeps its feet anchor | Pass | `test-isometric.js` (run frame, style B, 16 px/m) |
 | B13 | The painted far-stand texture registers with its metres and anchor and tiles in the far stand | Pass / Manual | `test-isometric.js`; far-wing captures and recording |
@@ -348,7 +348,26 @@ One fault of my own making was caught by the probe and not by the suites: a comm
 
 `test-youth.js` failed about one run in seven, on the release before this one too: its club was whichever the test harness had drawn, and with some clubs the academy had produced no reserve by the point the test releases one. It is now pinned to one club (eight runs of eight pass). Nothing in the game changed for it.
 
-**E02 stays open until John's second measurement.** If his phone shows what the stand-in shows, the row closes. If not, the frame log of a slowed run is the place to look next, and lower detail (brief 10.3) remains the fallback.
+### John's second measurement (17 November, 22:56)
+
+The same phone (Samsung Galaxy S23 Ultra, Chrome 157, screen 384x692 CSS px at a pixel ratio of 3.75, stage 360x465, isometric view, close camera), the measuring screen in preview 3 (`index.html` md5 `d86995b43e4a887d22f76d1a3d74264d`, `soccer-manager-91.html` md5 `4701b295114d128ae4360b14c325dbda`, opened from a file), one minute of play at normal speed. A different match from the first run (his own new game each time).
+
+| | First run, the build before the pass | Second run, this build |
+|---|---|---|
+| Frames a second, average | 49.9 | 59.6 |
+| Typical frame | 16.7 ms | 16.7 ms |
+| Slowest 5% | 33.4 ms | 16.8 ms |
+| Slowest 1% | 83.4 ms | 16.8 ms |
+| Worst frame | 341.6 ms | 242 ms |
+| Slower than 30 a second | 175 of 2,994 by the old count (longer than 33.4 ms) | 3 of 3,577 (longer than 34 ms) |
+| Longer than 50 ms (the same count in both) | 92 (3.1%) | 2 (0.06%) |
+| Drawing a frame: average, slowest 5%, worst | 8.5, 36.8, 241.3 ms | 1.7, 4.8, 89.1 ms |
+| Ground tiles held, JS memory | 74, 37.8 MB | 74, 42.6 MB |
+| The panel's verdict | NOT met | met |
+
+Reading. The phone now holds the screen's 60 a second: ninety-nine frames in a hundred are a single refresh. The frames of 50 ms or more fell from 92 to 2, and drawing a frame costs a fifth of what it did. It did better than the slowed stand-in predicted (58.3 to 58.8 a second, 3 to 5 frames over 50 ms), so the stand-in was a little pessimistic for this phone. One frame of about a quarter of a second remains in the minute; the longest drawing was 89 ms, so most of that frame was not the game's drawing (a garbage collection or the browser itself; the panel cannot say which). Memory is up by 4.8 MB.
+
+**E02 is closed for this phone.** What the row does not have is the mid-range Android the brief names: the S23 Ultra is a flagship, and a slower phone has not been measured. The measuring screen stays in the game (What's new > Measure the match frame rate) for when one is to hand, and lower detail (brief 10.3) was not needed and was not built.
 
 ## Manual scenarios (Section 14)
 
@@ -363,6 +382,6 @@ Covered so far by the recordings and captures: 1 kick-off, 2 midfield passing, 4
 * The crowd figures in the painted stands are chunky (a head is about a player's head), in the 16-bit manner. (Since 3D the painted stands rise in a wave for a goal, with camera flashes; the main stand's rows under its roof stay still.)
 * The referee's raised card is a few pixels and is not painted from the W heading (the painter hid the arm behind the body).
 * Since Milestone 5 a cut paints no ground on its own frame and does not stop to choose its scale. What is left: the first frame of a match paints its whole screen (before the clock starts), a seek paints the screen it lands on, and on the largest desktop stage a fast pan just after a cut can paint up to five tiles in one frame.
-* On John's Galaxy S23 Ultra (17 November, the build before the phone smoothness pass) the match averaged 49.9 frames a second with 3.1% of frames at 50 ms or more. The pass removes the causes on a slowed-down stand-in; his second measurement is awaited, and no mid-range phone has been measured at all. The desktop figures are from headless Chromium.
+* The only real-phone frame-rate figures are from John's Galaxy S23 Ultra, a flagship: 59.6 frames a second after the phone smoothness pass (49.9 before), with one frame of about a quarter of a second in the minute. No mid-range phone has been measured, and quality tiers (brief 10.3) are not built. The desktop figures are from headless Chromium.
 * The player sheets are now also held at a byte a pixel: about 10 MB more memory on a phone and 22 MB on a desktop stage while the page is open.
 * A full garbage collection still costs a frame or two once or twice a minute on a slow device, and the first frame of a match paints its whole screen before the clock starts.
