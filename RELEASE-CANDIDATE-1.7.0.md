@@ -83,13 +83,13 @@ None of these is new in this candidate.
 * One long frame of about a quarter of a second remained in the measured minute on the Galaxy S23 Ultra; most of it was not the game's drawing.
 * No mid-range Android phone and no iPhone has been measured. Lower-detail settings are not built.
 * Art: the near terrace is the right end's painting mirrored; the crowd figures are chunky; the referee's raised card is a few pixels.
-* Pinch-zoom is switched off for the whole page, as it always has been (it keeps the match controls from zooming under a thumb). A player who needs larger type has the browser's own text size setting. Left as it is; say if it should change.
+* Pinch-zoom is switched off for the whole page, as it always has been. A player who needs larger type has the browser's own text size setting. Left as it is; say if it should change.
 * The football pitch itself is a picture and has no description for a screen reader; the commentary line and the event log beside it are read out as they change.
 * A browser from before 2022 shows a table's head row with square corners inside its rounded card.
 
 ## For your Galaxy
 
-1. Open `soccer-manager-91-1.7.0-rc1.html` in Chrome. A game started in an earlier preview on the same phone carries on.
+1. Open `soccer-manager-91-1.7.0-rc1.html` in Chrome.
 2. Title screen, What's new, "Measure the match frame rate", then watch any match for a minute and send the panel that appears. The figure to compare with is 59.6 frames a second, slowest 5% 16.8 ms, 2 frames longer than 50 ms.
 3. While there: a goal or a booking shows the banner in its new look; the toast shows over the club's name.
 
