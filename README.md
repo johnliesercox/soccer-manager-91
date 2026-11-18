@@ -4,7 +4,7 @@ A phone-first football management game in the spirit of the 1991 Amiga originals
 
 Live at https://johnliesercox.github.io/soccer-manager-91/
 
-**Where things stand (18 November 2026).** The live site is version 1.6.0 (`main`, tagged `v1.6.0`). Version 1.7.0 is built, tested and ready on the branch `milestone-5`, and has not been deployed: the next public release will be one combined release that also carries the Premium Dark management interface, under a version number still to be agreed. Nothing is merged to `main` without John's explicit approval. `PHASE-3-FINAL-REPORT.md` is the summary; `PHASE-4-HANDOVER.md` is where a new developer should start.
+**Where things stand (18 November 2026).** The live site is version 1.6.0 (`main`, tagged `v1.6.0`). Version 1.7.0 is built, tested and ready on the branch `milestone-5`, and has not been deployed: the next public release will be one combined release that also carries the Premium Dark management interface, under a version number still to be agreed. The Premium Dark interface is on the branch `premium-dark`, built on `milestone-5`: every screen wears the new look (Checkpoint B, 18 November) and it awaits John's review; `PREMIUM-DARK.md` is its record. Nothing is merged to `main` without John's explicit approval. `PHASE-3-FINAL-REPORT.md` is the summary; `PHASE-4-HANDOVER.md` is where a new developer should start.
 
 ## What is in this repository
 

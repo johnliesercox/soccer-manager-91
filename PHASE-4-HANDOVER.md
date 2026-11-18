@@ -6,7 +6,7 @@ Written 18 November 2026. Read `PHASE-3-FINAL-REPORT.md` first for where things 
 
 * **Live:** 1.6.0, `main` at `97a0748`, tagged `v1.6.0`. GitHub Pages serves the root of `main`.
 * **Tested baseline, not deployed:** 1.7.0 on the branch `milestone-5`. Start new work from there, on a branch of its own.
-* **Next:** the Premium Dark management interface (a visual reskin of the management screens, no change to matchday), then one combined release. Phase 4 comes after and is not scheduled.
+* **In hand:** the Premium Dark interface, on the branch `premium-dark` (built on `milestone-5`). It is a visual reskin: the same words, controls and saved games, a new stylesheet under one class on `<body>`. `PREMIUM-DARK.md` is its record, and `node tools/ui-parity.js` (with `--compare`, `--layout` and `--stage`) is how any change to a screen's presentation is checked against the build before it. Then one combined release. Phase 4 comes after and is not scheduled.
 
 ## The rules that stand
 
@@ -57,6 +57,7 @@ Run suites one at a time; two UI suites at once share a temporary file.
 | All 21 suites | `for f in test-*.js; do node $f; done` after `npm install`, `python3 build.py`, and `cp soccer-manager-91.html /tmp/sm91-ladder-test.html` | about 27 minutes (`test-locomotion.js` alone up to nine) |
 | Results unchanged by watching | `node test-equivalence.js`, `node test-record.js` | seconds |
 | Saves from the live release | `node tools/save-compat.js legacy/release-1.6.0 .` and the reverse | 2 minutes |
+| The screens say, offer and do the same as another build | `node tools/ui-parity.js <site> <out>` on both, then `--compare`; `--layout <site>` for the five sizes; `--stage <site>` for the match screen's boxes | 5 minutes a build; 12 for the sizes |
 | Five screen sizes | `node tools/viewport-audit.js . <out>` | 5 minutes |
 | Memory, forced failures, offline, hot-seat, measuring screen | `node tools/soak-audit.js . <out> all` | 12 minutes |
 | Phone pacing between real measurements | `node tools/phone-probe.js . 6 out.json` | 90 seconds |

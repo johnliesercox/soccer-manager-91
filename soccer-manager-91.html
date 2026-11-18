@@ -84,12 +84,12 @@ input{width:100%;font:inherit;padding:12px;background:var(--white);color:var(--b
 .bar{height:12px;background:var(--deep);box-shadow:inset 1px 1px 0 var(--black);margin:6px 0 12px}
 .bar i{display:block;height:100%;background:var(--orange)}
 .wrap{white-space:normal}
-/* ---- Premium Dark: the management reskin (Checkpoint A: Home, Squad, Transfer Market) ----
-   Everything is under body.pd, which render() sets only on the screens that wear the new look, so every other screen and
-   the whole of matchday are drawn by the rules above and below exactly as before. The tokens are the brief's. */
+/* ---- Premium Dark: the management reskin ----
+   Everything is under body.pd, which render() sets on every screen unless the address carries ?classic, in which case
+   the rules above and below draw the game exactly as before. The tokens are the brief's. PREMIUM-DARK.md has the rest. */
 .ic,.pdonly{display:none}
 b.num{font-weight:inherit}
-body.pd{--pg:#07131E;--panel:#102637;--panel2:#18354A;--line:#466C82;--line2:rgba(70,108,130,.5);--tx:#F4F7FA;--tx2:#B6CFDE;--mut:#7EA8BF;--sky:#86C5EE;--amber:#FFAC22;--ok:#75C5A6;--warn:#F08A75;--ink:#1B1205;background:var(--pg)}
+body.pd{--pg:#07131E;--panel:#102637;--panel2:#18354A;--line:#466C82;--line2:rgba(70,108,130,.5);--tx:#F4F7FA;--tx2:#B6CFDE;--mut:#7EA8BF;--sky:#86C5EE;--amber:#FFAC22;--ok:#75C5A6;--warn:#F08A75;--ink:#1B1205;--stad:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 260 48'><defs><radialGradient id='g'><stop offset='0' stop-color='%23EAF5FF' stop-opacity='.75'/><stop offset='.3' stop-color='%239CCBEE' stop-opacity='.28'/><stop offset='1' stop-color='%239CCBEE' stop-opacity='0'/></radialGradient><linearGradient id='f' x1='0' x2='1'><stop offset='0' stop-color='%230C1F30'/><stop offset='.5' stop-color='%230C1F30' stop-opacity='0'/></linearGradient></defs><circle cx='196' cy='11' r='30' fill='url(%23g)'/><path d='M195 48V17h2.4v31z' fill='%232A5C80'/><path d='M190 48l6-16 6 16' stroke='%232A5C80' stroke-width='1' fill='none'/><rect x='184' y='3' width='24' height='14' rx='1.5' fill='%232F6690'/><g fill='%23F4FAFF'><circle cx='188.5' cy='6.5' r='1.5'/><circle cx='193.5' cy='6.5' r='1.5'/><circle cx='198.5' cy='6.5' r='1.5'/><circle cx='203.5' cy='6.5' r='1.5'/><circle cx='188.5' cy='10' r='1.5'/><circle cx='193.5' cy='10' r='1.5'/><circle cx='198.5' cy='10' r='1.5'/><circle cx='203.5' cy='10' r='1.5'/><circle cx='188.5' cy='13.5' r='1.5'/><circle cx='193.5' cy='13.5' r='1.5'/><circle cx='198.5' cy='13.5' r='1.5'/><circle cx='203.5' cy='13.5' r='1.5'/></g><path d='M40 48V40l40-3h180v11z' fill='%23173A55'/><path d='M80 37V30h180v7z' fill='%231F4B6C'/><path d='M84 32.5h176M84 35h176' stroke='%238FBFE0' stroke-opacity='.5' stroke-width='1.2' stroke-dasharray='1.4 2.2'/><path d='M44 42.5h216M44 45.5h216' stroke='%238FBFE0' stroke-opacity='.35' stroke-width='1.2' stroke-dasharray='1.4 2.2'/><path d='M72 27l8-5h180v4H82z' fill='%23112D44'/><path d='M80 22h180' stroke='%233F7DA8' stroke-width='1.3'/><path d='M110 26v4M150 26v4M230 26v4' stroke='%230E2437' stroke-width='1.6'/><rect width='260' height='48' fill='url(%23f)'/></svg>");background:var(--pg)}
 body.pd #app{background:var(--pg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue","Noto Sans",Arial,sans-serif;font-weight:400;font-size:15px;line-height:1.4}
 body.pd .ic{display:inline-block;width:1.25em;height:1.25em;flex:none;vertical-align:-.24em;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 body.pd .ic.fill{fill:currentColor;stroke:none}
@@ -103,11 +103,11 @@ body.pd .wm span{color:var(--amber)}
 body.pd .st{font-size:10.5px;line-height:1.35;color:var(--tx2);text-align:right;text-transform:uppercase;letter-spacing:.7px;padding-right:12px;border-right:1px solid var(--line2);font-variant-numeric:tabular-nums;white-space:nowrap}
 body.pd .bal{font-size:18px;font-weight:700;color:var(--amber);font-variant-numeric:tabular-nums;white-space:nowrap}
 body.pd .bal.neg{color:var(--warn)}
-body.pd .clubbar{padding:7px 12px 6px;border-bottom:2px solid var(--amber);background:#0C1F30 url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 260 48'><defs><radialGradient id='g'><stop offset='0' stop-color='%23EAF5FF' stop-opacity='.75'/><stop offset='.3' stop-color='%239CCBEE' stop-opacity='.28'/><stop offset='1' stop-color='%239CCBEE' stop-opacity='0'/></radialGradient><linearGradient id='f' x1='0' x2='1'><stop offset='0' stop-color='%230C1F30'/><stop offset='.5' stop-color='%230C1F30' stop-opacity='0'/></linearGradient></defs><circle cx='196' cy='11' r='30' fill='url(%23g)'/><path d='M195 48V17h2.4v31z' fill='%232A5C80'/><path d='M190 48l6-16 6 16' stroke='%232A5C80' stroke-width='1' fill='none'/><rect x='184' y='3' width='24' height='14' rx='1.5' fill='%232F6690'/><g fill='%23F4FAFF'><circle cx='188.5' cy='6.5' r='1.5'/><circle cx='193.5' cy='6.5' r='1.5'/><circle cx='198.5' cy='6.5' r='1.5'/><circle cx='203.5' cy='6.5' r='1.5'/><circle cx='188.5' cy='10' r='1.5'/><circle cx='193.5' cy='10' r='1.5'/><circle cx='198.5' cy='10' r='1.5'/><circle cx='203.5' cy='10' r='1.5'/><circle cx='188.5' cy='13.5' r='1.5'/><circle cx='193.5' cy='13.5' r='1.5'/><circle cx='198.5' cy='13.5' r='1.5'/><circle cx='203.5' cy='13.5' r='1.5'/></g><path d='M40 48V40l40-3h180v11z' fill='%23173A55'/><path d='M80 37V30h180v7z' fill='%231F4B6C'/><path d='M84 32.5h176M84 35h176' stroke='%238FBFE0' stroke-opacity='.5' stroke-width='1.2' stroke-dasharray='1.4 2.2'/><path d='M44 42.5h216M44 45.5h216' stroke='%238FBFE0' stroke-opacity='.35' stroke-width='1.2' stroke-dasharray='1.4 2.2'/><path d='M72 27l8-5h180v4H82z' fill='%23112D44'/><path d='M80 22h180' stroke='%233F7DA8' stroke-width='1.3'/><path d='M110 26v4M150 26v4M230 26v4' stroke='%230E2437' stroke-width='1.6'/><rect width='260' height='48' fill='url(%23f)'/></svg>") right bottom/auto 100% no-repeat}
+body.pd .clubbar{padding:7px 12px 6px;border-bottom:2px solid var(--amber);background:#0C1F30 var(--stad) right bottom/auto 100% no-repeat}
 body.pd header .club{color:var(--tx);font-size:20px;font-weight:800;letter-spacing:.7px;text-transform:uppercase;line-height:1.1;text-shadow:0 1px 0 rgba(0,0,0,.5)}
 body.pd header .club .mg{font-size:12px;font-weight:500;color:var(--tx2);text-transform:none;letter-spacing:0}
 /* type */
-body.pd main{padding:10px 10px 16px}
+body.pd:not(.md-wide) main{padding:10px 10px 16px}
 body.pd h1{font-size:17px;font-weight:700;color:var(--tx);margin:0 0 8px;letter-spacing:.1px}
 body.pd h1.pg{display:flex;align-items:center;gap:12px;font-size:14px;text-transform:uppercase;letter-spacing:1.5px;margin:2px 2px 10px}
 body.pd h1.pg::after{content:"";flex:1;height:2px;background:linear-gradient(90deg,var(--amber),rgba(255,172,34,0))}
@@ -131,10 +131,16 @@ body.pd p.cta .b{flex:none;margin:0!important;white-space:nowrap}
 body.pd .card.kvs{padding:2px 12px}
 body.pd .kv{gap:12px;padding:7px 0;border-bottom:1px solid var(--line2);font-size:14.5px;align-items:center}
 body.pd .kv:last-child{border-bottom:0}
-body.pd .kv>span:first-child{font-weight:600;display:flex;align-items:center;gap:10px;white-space:nowrap}
+body.pd .kv>span:first-child{color:var(--tx2);font-weight:500;white-space:nowrap}
+body.pd .kv>span:last-child{color:var(--tx);font-weight:600;font-variant-numeric:tabular-nums}
+body.pd .kv>span.wrap:first-child{color:var(--tx);font-weight:600;white-space:normal}
+body.pd .kv>span.dim:first-child{color:var(--mut);font-weight:700;font-size:12.5px}
+body.pd .kv>span.hot{color:var(--amber)}
+body.pd .kv .dim{font-weight:400}
+body.pd .card.kvs .kv>span:first-child{color:var(--tx);font-weight:600;display:flex;align-items:center;gap:10px}
 body.pd .kv .ic{color:var(--sky)}
-body.pd .kv>span:last-child{color:var(--tx2)}
-body.pd .kv>span.hot{color:var(--warn)}
+body.pd .card.kvs .kv>span:last-child{color:var(--tx2);font-weight:400;font-variant-numeric:normal}
+body.pd .bad,body.pd .kv>span.bad,body.pd .card.kvs .kv>span.bad{color:var(--warn)}
 body.pd .card.nw{border-left:3px solid var(--amber)}
 body.pd .news li{padding:7px 0;font-size:14.5px;border-bottom:1px solid var(--line2)}
 body.pd .news li:last-child{border-bottom:0;padding-bottom:2px}
@@ -207,15 +213,17 @@ body.pd nav button .ic{width:21px;height:21px}
 body.pd nav button.on{background:var(--amber);color:var(--ink);box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
 body.pd nav button:focus-visible{outline:2px solid var(--amber);outline-offset:-3px}
 body.pd nav button.on:focus-visible{outline-color:var(--ink)}
-body.pd .action{border-top:0;padding:8px 10px calc(10px + env(safe-area-inset-bottom));background:var(--pg)}
-body.pd .action .b,body.pd .action .b:hover{background:var(--amber);border:1px solid #FFC766;color:var(--ink);box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 6px 18px rgba(255,172,34,.16);font-size:17px;font-weight:800;min-height:50px;border-radius:11px;display:flex;align-items:center;justify-content:center;gap:10px}
+body.pd .action{background:var(--pg)}
+body.pd:not(.md-wide) .action{border-top:0;padding:8px 10px calc(10px + env(safe-area-inset-bottom))}
+body.pd .action .b,body.pd .action .b:hover{background:var(--amber);border:1px solid #FFC766;color:var(--ink);box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 6px 18px rgba(255,172,34,.16);font-weight:800}
+body.pd:not(.md-wide) .action .b{font-size:17px;min-height:50px;border-radius:11px;display:flex;align-items:center;justify-content:center;gap:10px}
 body.pd .action .b:active{background:#FFC04F}
 body.pd .action .b.quiet,body.pd .action .b.quiet:hover{background:var(--panel2);border-color:var(--line);color:var(--tx);box-shadow:none}
 body.pd .toast{background:#0C1F30;color:var(--tx,#F4F7FA);border:1px solid #466C82;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.45);font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;font-weight:600}
 /* a wide screen: room for a second column, and the sections spelt out beside their icons */
 @media (min-width:900px){
-  body.pd #app{max-width:1180px}
-  body.pd main{padding:18px 22px 22px}
+  body.pd:not(.md-wide) #app{max-width:1180px}
+  body.pd:not(.md-wide) main{padding:18px 22px 22px}
   body.pd .cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start}
   body.pd .cols.wide2{grid-template-columns:minmax(0,5fr) minmax(0,7fr)}
   body.pd .mkt{max-width:900px;margin:0 auto}
@@ -227,9 +235,105 @@ body.pd .toast{background:#0C1F30;color:var(--tx,#F4F7FA);border:1px solid #466C
   body.pd .clubbar{padding:13px 22px 12px}
   body.pd header .club{font-size:27px}
   body.pd nav button{flex-direction:row;gap:10px;font-size:14.5px;min-height:50px}
-  body.pd .action{padding:12px 22px 16px}
-  body.pd .action .b{max-width:560px;margin:0 auto}
+  body.pd:not(.md-wide) .action{padding:12px 22px 16px}
+  body.pd:not(.md-wide) .action .b{max-width:560px;margin:0 auto}
   body.pd td{padding:8px 8px}body.pd th{padding:10px 8px}
+}
+/* ---- Checkpoint B: the rest of the management screens ---- */
+body.pd #updatebar{background:var(--amber)!important;color:var(--ink)!important;box-shadow:0 4px 14px rgba(0,0,0,.4)!important;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif!important;font-weight:700!important}
+body.pd .card:has(>table){overflow:hidden}
+body.pd .card.tb{overflow-x:auto}
+body.pd p:not(.mgr)>a.b.small{display:inline-flex!important;align-items:center;white-space:nowrap;vertical-align:middle;margin:3px 2px!important}
+body.pd .card:not(.tb)>table{width:calc(100% + 24px);margin:6px -12px}
+body.pd .card:not(.tb)>table:first-child{margin-top:-10px}
+body.pd .card:not(.tb)>table:last-child{margin-bottom:-10px}
+body.pd .card>p.dim+h2,body.pd .card>div+h2{margin-top:12px}
+body.pd .card.kvl{padding:2px 12px}
+body.pd .card.kvl>h2{margin:10px 0 2px}
+body.pd .card.kvl>p{margin:8px 0 0!important}
+body.pd .kv.lead{background:var(--panel2);margin:0 -12px 0;padding:10px 12px;border-bottom:1px solid var(--line2)}
+body.pd .card>.kv.lead:first-child{margin-top:-10px}
+body.pd .kv.lead>span:last-child{font-size:19px;font-weight:700;color:var(--amber)}
+body.pd .kv.lead>span.bad:last-child{color:var(--warn)}
+body.pd h1.hero{display:flex;align-items:center;gap:12px;font-size:22px;font-weight:800;line-height:1.15;margin:2px 2px 10px;overflow-wrap:anywhere}
+body.pd h1.hero>.ic{width:40px;height:40px;padding:8px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);color:var(--sky)}
+body.pd .card>h1.hero{margin:2px 0 6px;font-size:20px}
+body.pd .card>h1.hero+p.dim{font-size:14.5px}
+/* forms */
+body.pd input{background:#EAF1F6;color:#0B1A26;border:1px solid var(--line);border-radius:9px;box-shadow:inset 0 1px 2px rgba(0,0,0,.18);padding:10px 12px;min-height:44px;margin-bottom:8px;font-weight:600}
+body.pd input:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+body.pd input::placeholder{color:#4F6678;font-weight:400}
+body.pd label.dim{font-size:13px;font-weight:600}
+/* buttons with a job: amber for the one way forward, blue for a decision you are confirming, the warning colour once a
+   destructive button has been tapped and is asking "really?" (the words on the button change as they always did) */
+body.pd .b[data-a="start"],body.pd .b[data-a="taketurn"],body.pd .b[data-a="md-watch"],body.pd .title>button.b:first-of-type,body.pd .b[data-a="toggle"][data-back]{background:var(--amber);border-color:#FFC766;color:var(--ink);font-weight:700;box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
+body.pd .b[data-a="start"]:hover,body.pd .b[data-a="taketurn"]:hover,body.pd .b[data-a="md-watch"]:hover,body.pd .title>button.b:first-of-type:hover,body.pd .b[data-a="toggle"][data-back]:hover{background:#FFB73D}
+body.pd .b[data-a="start"]:active,body.pd .b[data-a="taketurn"]:active,body.pd .b[data-a="md-watch"]:active,body.pd .title>button.b:first-of-type:active,body.pd .b[data-a="toggle"][data-back]:active{background:#FFC04F;color:var(--ink)}
+body.pd .b[data-a="md-watch"] .dim{color:#5A3A00}
+body.pd .b[data-a="start"],body.pd .b[data-a="toggle"][data-back]{text-align:center;font-size:16px}
+body.pd .b:is([data-a="list"],[data-a="unlist"],[data-a="bid"],[data-a="buy"][data-back],[data-a="contract"],[data-a="renameplayer"],[data-a="signfree"],[data-a="promote"]:not(.small),[data-a="saveslot"],[data-a="setnick"],[data-a="renameclub"],[data-a="renameother"],[data-a="scoutgo"],[data-a="repay"],[data-a="joinladder"],[data-a="acceptjob"],[data-a="takesack"],[data-a="academy"],[data-a="accept"]){background:#1B5C96;border-color:#4E9BDA;color:#fff;text-align:center}
+body.pd .b:is([data-a="list"],[data-a="unlist"],[data-a="bid"],[data-a="buy"][data-back],[data-a="contract"],[data-a="renameplayer"],[data-a="signfree"],[data-a="promote"]:not(.small),[data-a="saveslot"],[data-a="setnick"],[data-a="renameclub"],[data-a="renameother"],[data-a="scoutgo"],[data-a="repay"],[data-a="joinladder"],[data-a="acceptjob"],[data-a="takesack"],[data-a="academy"],[data-a="accept"]):hover{background:#2168A8}
+body.pd .b:is([data-a="list"],[data-a="unlist"],[data-a="bid"],[data-a="buy"][data-back],[data-a="contract"],[data-a="renameplayer"],[data-a="signfree"],[data-a="promote"]:not(.small),[data-a="saveslot"],[data-a="setnick"],[data-a="renameclub"],[data-a="renameother"],[data-a="scoutgo"],[data-a="repay"],[data-a="joinladder"],[data-a="acceptjob"],[data-a="takesack"],[data-a="academy"],[data-a="accept"]):active{background:#2877BD;color:#fff}
+body.pd .b[data-a="academy"] .dim{color:#D5E6F2}
+body.pd .b:is([data-a="release"],[data-a="releasereserve"],[data-a="delslot"]).on,body.pd .b:is([data-a="release"],[data-a="releasereserve"],[data-a="delslot"]).on:hover{background:var(--warn);border-color:#F6AC9C;color:#2A0D06}
+body.pd .b .dim{font-weight:400;font-size:13px}
+body.pd .b .hot{color:var(--amber)}
+body.pd .b.on .hot{color:inherit}
+body.pd main>.b,body.pd .card>.b,body.pd .flow>.b{line-height:1.35}
+body.pd main:not([data-s="transfers"]) .grid2[style*="repeat("]:not(.q4)>.b{font-size:13px!important;padding:8px 2px!important;line-height:1.2}
+body.pd .grid2.tabs>.b{font-size:14.5px!important;min-height:42px}
+body.pd .grid2[style*="repeat(5"].tabs>.b{font-size:13.5px!important}
+body.pd .grid2 .b .dim,body.pd .grid3 .b .dim{font-size:12.5px}
+body.pd .grid3>.b[style*="font-size:12px"]{font-size:13px!important;line-height:1.2}
+@media (max-width:599px){body.pd .grid2[style*="repeat(8"]{grid-template-columns:repeat(4,1fr)!important}}
+/* tables everywhere: the managed club's row in amber, the promotion and relegation lines as quiet dashes */
+body.pd table.tight{font-size:14px}
+body.pd table.tight td{padding:6px 4px}
+body.pd table.tight td.n,body.pd table.tight th.n{padding-left:6px;padding-right:6px}
+body.pd table.tight th{white-space:normal;letter-spacing:.4px;line-height:1.25;vertical-align:bottom}
+@media (max-width:430px){body.pd main[data-s="standings"] table.tight td.n,body.pd main[data-s="standings"] table.tight th.n{padding-left:4px;padding-right:4px}}
+@media (max-width:379px){body.pd main[data-s="standings"] table.tight{font-size:13px}body.pd main[data-s="standings"] table.tight td.n,body.pd main[data-s="standings"] table.tight th.n{padding-left:3px;padding-right:3px}}
+body.pd table.tight td:first-child,body.pd table.tight th:first-child{padding-left:10px}
+body.pd table.tight td:last-child,body.pd table.tight th:last-child{padding-right:10px}
+body.pd table.tight tr:nth-child(odd) td{background:rgba(255,255,255,.018)}
+body.pd tr.me td,body.pd table.tight tr.me td{background:rgba(255,172,34,.15);color:var(--amber);font-weight:700}
+body.pd tr.me td .dim{color:inherit;opacity:.9}
+body.pd tr.line-promo td{border-bottom:1px dashed var(--sky)}
+body.pd tr.line-releg td{border-top:1px dashed var(--sky)}
+body.pd td .hot{color:var(--amber)}
+body.pd .bar{height:10px;border-radius:999px;background:var(--panel2);box-shadow:inset 0 1px 2px rgba(0,0,0,.45);margin:8px 0 12px;overflow:hidden}
+body.pd .bar i{background:linear-gradient(90deg,#4FA3DB,var(--sky));border-radius:999px}
+body.pd .grp{margin-bottom:9px}
+body.pd .grp>.grid2{margin-bottom:8px}
+/* the title, the hand-over between managers, and the end of a job */
+body.pd .title{max-width:460px;margin:0 auto;padding:44px 4px 16px}
+body.pd .title .logo{font-style:italic;font-weight:800;font-size:36px;line-height:1.02;letter-spacing:1px;color:var(--tx);text-transform:uppercase;margin-bottom:10px;overflow-wrap:anywhere;text-shadow:0 2px 0 rgba(0,0,0,.45)}
+body.pd .title .logo span{color:var(--amber)}
+body.pd .title .sub{color:var(--tx2);font-size:14.5px;margin-bottom:30px}
+body.pd .title .b{text-align:center!important;min-height:48px;font-size:15.5px}
+body.pd .title p{font-size:15px}
+body.pd main[data-s="title"]{background:linear-gradient(var(--amber),var(--amber)) left 62px/100% 2px no-repeat,var(--stad) right top/auto 62px no-repeat,linear-gradient(#0C1F30,#0C1F30) left top/100% 62px no-repeat}
+body.pd main[data-s="title"] .title{padding-top:104px}
+body.pd main[data-s="title"] .title .logo::before{content:"";display:block;width:64px;height:9px;margin:0 auto 16px;background:linear-gradient(90deg,#2E7DBE 0 44%,transparent 44% 56%,var(--amber) 56%);transform:skewX(-24deg)}
+/* the week's result and the match result: the old "clock", "score" and "events" blocks as a scoreboard */
+body.pd .clock{font-size:28px;font-weight:800;letter-spacing:1.5px;color:var(--amber);margin:12px 0 10px;text-transform:uppercase}
+body.pd .score{font-size:23px;font-weight:700;line-height:1.25;background:var(--panel);border:1px solid var(--line2);border-radius:11px;padding:14px 12px;margin-bottom:9px;font-variant-numeric:tabular-nums}
+body.pd .score small{color:var(--tx2);font-size:13px;font-weight:400;margin-top:6px}
+body.pd .events{background:var(--panel);border:1px solid var(--line2);border-radius:11px;padding:6px 12px;min-height:120px;font-size:14.5px}
+body.pd .events div{padding:6px 0;border-bottom:1px solid var(--line2)}
+body.pd .events div:last-child{border-bottom:0}
+body.pd .events .us{color:var(--amber);font-weight:600}
+body.pd .md-tie{background:var(--panel);border:1px solid var(--line2);border-radius:11px;padding:16px 12px;margin:10px 0 12px;font-size:21px;font-weight:700;line-height:1.3}
+body.pd .md-tie .dim{color:var(--mut);font-weight:600}
+@media (min-width:900px){
+  body.pd .flow{columns:2;column-gap:18px}
+  body.pd .flow>*{break-inside:avoid}
+  body.pd:not(.md-wide) main[data-w="n"]{padding-left:max(22px,calc(50% - 380px));padding-right:max(22px,calc(50% - 380px))}
+  body.pd h1.hero{font-size:26px}
+  body.pd table.tight td{padding:7px 8px}
+  body.pd .title{padding-top:70px}
+  body.pd main[data-s="title"] .title{padding-top:130px}
+  body.pd .title .logo{font-size:46px}
 }
 @media (prefers-reduced-motion:no-preference){body.pd .b,body.pd nav button{transition:background-color .12s}}
 /* matchday viewer */
@@ -265,6 +369,31 @@ body.pd .toast{background:#0C1F30;color:var(--tx,#F4F7FA);border:1px solid #466C
 @media (max-width:899px) and (orientation:portrait){.md-controls .b,.md-controls2 .b,.action .b[data-a="md-fulltime"]{min-height:44px}}
 @media (max-width:599px) and (orientation:portrait){.md-stage{height:min(calc(64vh - 14px),560px)}}
 .md-tie{font-size:20px;text-align:center;margin:18px 0;line-height:1.3}
+/* ---- Premium Dark on the match screen: colour and type for the surround only. Every size here is the old size, so the
+   stage, and the picture on it, are exactly what they were; the stage's own overlays (the goal and card banner, the
+   measuring panel) are pinned to the old look. tools/ui-parity.js --stage checks the sizes. ---- */
+body.pd .md-board{font-weight:700;color:var(--tx)}
+body.pd .md-board .s{color:var(--amber);font-weight:800;font-variant-numeric:tabular-nums}
+body.pd .md-clock{color:var(--tx2);line-height:1.35;font-weight:600;font-variant-numeric:tabular-nums}
+body.pd .md-clock.ff{color:var(--amber)}
+body.pd .md-comm{background:var(--panel);box-shadow:inset 0 0 0 1px var(--line2);border-radius:9px;line-height:1.35;font-weight:600}
+body.pd .md-log{line-height:1.35}
+body.pd .md-log div{border-bottom:1px solid var(--line2)}
+body.pd .md-log .us{color:var(--amber)}
+body.pd .md-badge,body.pd .md-meter{font-family:"Courier New",Courier,"Lucida Console",monospace;font-weight:700;line-height:1}
+body.pd .md-meter.card{border:0;border-radius:0;margin:0;padding:10px 12px;background:rgba(0,0,0,.9);box-shadow:inset 1px 1px 0 var(--white),1px 1px 0 var(--black);line-height:1.5;overflow:auto}
+body.pd .md-meter.card .b{margin:10px 0 0}
+body.pd.md-wide .action{border-top:3px solid var(--line2)}
+body.pd.md-wide .action .b,body.pd .md-controls2 .b{border:0;border-radius:9px;min-height:0;margin:0;font-weight:700}
+body.pd.md-wide .action .b{padding:12px 12px;font-size:16px;box-shadow:inset 0 1px 0 rgba(255,255,255,.4)}
+body.pd.md-wide .action .md-controls .b{padding:11px 4px;font-size:14px}
+body.pd .md-controls2 .b{padding:9px 6px;font-size:13px;background:var(--panel2);color:var(--tx);box-shadow:inset 0 0 0 1px var(--line)}
+body.pd .md-controls2 .b:hover{background:#1E4059}
+body.pd .md-controls2 .b[aria-pressed="true"]{box-shadow:inset 0 0 0 1.5px var(--amber);color:var(--amber)}
+body.pd.md-wide .action .b.quiet,body.pd.md-wide .action .b.quiet:hover{background:var(--panel2);color:var(--tx);box-shadow:inset 0 0 0 1px var(--line)}
+body.pd.md-wide .action .b.quiet.on,body.pd.md-wide .action .b.quiet.on:hover{background:rgba(255,172,34,.12);color:var(--amber);box-shadow:inset 0 0 0 1.5px var(--amber)}
+@media (max-width:380px){body.pd .md-controls2 .b{font-size:12px;padding:9px 4px}}
+@media (max-width:899px) and (orientation:portrait){body.pd.md-wide .action .md-controls .b,body.pd .md-controls2 .b,body.pd.md-wide .action .b[data-a="md-fulltime"]{min-height:44px}}
 </style>
 </head>
 <body>
@@ -7843,14 +7972,30 @@ function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add
 function go(screen){ if (S.md && S.md.viewer && screen!=='matchview') Matchday.ui.closeViewer(); S.screen = screen; document.body.classList.toggle('md-wide', screen==='matchview'); render(); $('#main').scrollTop = 0; }
 
 // ---------- Premium Dark (the management reskin; presentation only) ----------
-// Checkpoint A: Home, Squad and the Transfer Market wear the new look; every other screen is drawn as it was until the
-// look is approved. The look is a class on <body> ("pd") and the rules under "Premium Dark" in the stylesheet; the
-// markup of the three screens carries a few wrappers and icons that the old stylesheet ignores, so the same markup
-// draws either way and ?classic in the address shows any screen in the old look for comparison. Nothing here reads
-// or writes the game: no action, label, figure or saved field is added, removed or changed.
+// Checkpoint B: every screen wears the new look, the match screen's surround included (its pitch, its overlays and
+// the size of its stage are left exactly as they were). The look is a class on <body> ("pd") and the rules under
+// "Premium Dark" in the stylesheet; the markup carries a few wrappers and icons that the old stylesheet ignores, so
+// the same markup draws either way and ?classic in the address shows any screen in the old look for comparison.
+// Nothing here reads or writes the game: no action, label, figure or saved field is added, removed or changed.
 const PD_THEME = !/[?&]classic\b/.test(location.search);
-const PD_SCREENS = new Set(['home', 'squad', 'transfers']);
-const pdOn = () => PD_THEME && PD_SCREENS.has(S.screen);
+const pdOn = () => PD_THEME;
+const PD_NARROW = new Set(['title','setup','hof','pass','weekmulti','standings','fixtures','results','sacked','weekdone','gameover','saves','matchpick','matchresult']);   /* on a wide screen these keep to one centred column */
+const PD_HERO = { h1:'hero', icon:'user', flow:true };
+/* Grouping, and nothing else: the page heading stays on top; each <h2> with what follows it, up to the next <h2>,
+   goes into one card, and so does whatever comes before the first <h2>. No word, figure or control is added, removed
+   or reordered. o.lead: a class for the first card; o.bare: leave what comes before the first <h2> ungrouped;
+   o.keep: the heading stays inside the first card; o.flow: the cards run in two columns on a wide screen. */
+function cards(html, o){
+  o = o || {};
+  const parts = html.split(/(?=<h2[\s>])/);
+  let first = parts.shift() || '', head = '';
+  const m = first.match(/^\s*<h1>[\s\S]*?<\/h1>/);
+  if (m && o.keep) first = first.replace('<h1>', '<h1 class="hero">');
+  else if (m){ head = m[0].replace('<h1>', `<h1 class="${o.h1||'pg'}">${o.icon? ic(o.icon) : ''}`); first = first.slice(m[0].length); }
+  const wrap = (x, cls) => x.trim()? `<section class="card${cls? ' '+cls : ''}">${x}</section>` : x;
+  const body = (o.bare? first : wrap(first, o.lead)) + parts.map(x=>wrap(x)).join('');
+  return head + (o.flow? `<div class="flow">${body}</div>` : body);
+}
 const ICONS = {
   home: 'M3 11l9-7 9 7M5 10v10h5v-6h4v6h5V10', squad: 'M8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM16 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM2 20c0-3 3-5 6-5s6 2 6 5M15 15.2c3-.7 7 1 7 4.8',
   market: 'M4 8h15l-3-3M20 16H5l3 3', table: 'M7 4h10v5a5 5 0 0 1-10 0V4zM7 6H4c0 3 1 5 3.2 5M17 6h3c0 3-1 5-3.2 5M12 14v4M8 20h8', club: 'M12 3l8 3v6c0 4-3 7-8 9-5-2-8-5-8-9V6l8-3z',
@@ -7866,6 +8011,8 @@ function render(){
   const st = S.state;
   const hdr = $('#hdr'), main = $('#main'), nav = $('#nav'), act = $('#act');
   const pd = pdOn(); document.body.classList.toggle('pd', pd);
+  main.dataset.s = S.screen; main.dataset.w = PD_NARROW.has(S.screen)? 'n' : '';
+  const tc = document.querySelector('meta[name="theme-color"]'); if (tc) tc.content = pd? '#07131E' : '#0055AA';
   if (!st || S.screen==='title' || S.screen==='setup' || S.screen==='pass' || S.screen==='matchview' || S.screen==='matchpick' || ((S.screen==='saves'||S.screen==='help'||S.screen==='hof'||S.screen==='whatsnew') && !st)){
     hdr.innerHTML = ''; hdr.style.display='none'; nav.style.display='none';
   } else {
@@ -7884,7 +8031,7 @@ function render(){
 
 const SCREENS = {
   title(){
-    return { main: `<div class="title"><div class="logo">Soccer<br>Manager '91</div><div class="sub">Four divisions. Sixteen players. One overdraft.</div>
+    return { main: `<div class="title"><div class="logo">Soccer<br>Manager <span>'91</span></div><div class="sub">Four divisions. Sixteen players. One overdraft.</div>
       ${S.hasSave? `<button class="b" data-a="continue">Continue current game</button>`:''}
       ${S.slotCount? `<button class="b" data-a="saves">Load a saved game</button>`:''}
       <button class="b" data-a="setup">${S.hasSave?'Start a new game':'Start'}</button>
@@ -7898,20 +8045,19 @@ const SCREENS = {
     const n = S.setupCount || 1; const mode = S.setupMode || 'classic';
     const modes = E.MODES;
     const modePick = `<h2>How do you want to start?</h2>${Object.keys(modes).map(k=>`<button class="b ${mode===k?'on':''}" data-a="mode" data-m="${k}" ${n>1&&k!=='classic'?'disabled':''}>${modes[k].name}<br><span class="dim">${modes[k].blurb}</span></button>`).join('')}${n>1? '<p class="dim">Challenge starts are single-manager games.</p>' : ''}`;
-    return { main: `<h1>Who's managing?</h1><p class="dim">One phone, up to eight managers, everyone starts in Division 4 at a random club. Pass the phone round each week.</p>
+    return { main: cards(`<h1>Who's managing?</h1><p class="dim">One phone, up to eight managers, everyone starts in Division 4 at a random club. Pass the phone round each week.</p>
       <div class="grid2" style="grid-template-columns:repeat(8,1fr)">${[1,2,3,4,5,6,7,8].map(k=>`<button class="b ${n===k?'on':''}" data-a="setupcount" data-n="${k}" style="padding:10px 0;text-align:center">${k}</button>`).join('')}</div>
       ${Array.from({length:n}).map((_,i)=>`<input class="mgrname" maxlength="18" placeholder="Manager ${i+1}" autocomplete="off" value="${esc((S.setupNames||[])[i]||'')}">`).join('')}
-      ${n===1? modePick : ''}
-      <button class="b" data-a="start">${n===1? 'Take the job' : 'Start the season'}</button>` };
+      ${n===1? modePick : ''}`) + `<button class="b" data-a="start">${n===1? 'Take the job' : 'Start the season'}</button>` };
   },
   whatsnew(){
     const st = S.state;
     const body = CHANGELOG.map((c,i)=>`<h2>Version ${c.v}${i===0? ' (this one)':''} <span class="dim" style="font-size:12px">${c.when}</span></h2>${c.notes.map(n=>`<p>${n}</p>`).join('')}`).join('');
-    return { main: `<h1>What's new</h1>${body}<p class="dim">Have a view on any of it? The feedback button is on the home screen.</p><p class="dim">For testing: this times the next match you watch for one minute and shows how smoothly your phone draws it. <button class="b quiet" data-a="md-measure" style="margin-top:8px">Measure the match frame rate</button></p>`, action: `<button class="b quiet" data-a="${st? 'back' : 'title'}">Back</button>` };
+    return { main: cards(`<h1>What's new</h1>${body}`, {flow:true}) + `<p class="dim">Have a view on any of it? The feedback button is on the home screen.</p><p class="dim">For testing: this times the next match you watch for one minute and shows how smoothly your phone draws it. <button class="b quiet" data-a="md-measure" style="margin-top:8px">Measure the match frame rate</button></p>`, action: `<button class="b quiet" data-a="${st? 'back' : 'title'}">Back</button>` };
   },
   hof(){
     const st = S.state; const tab = S.tab.hof || (LADDER_URL? 'ladder' : 'mine');
-    const tabs = LADDER_URL? `<div class="grid2"><button class="b ${tab==='ladder'?'on':''}" data-a="hoftab" data-t="ladder">Ladder</button><button class="b ${tab==='mine'?'on':''}" data-a="hoftab" data-t="mine">Your careers</button></div>` : '';
+    const tabs = LADDER_URL? `<div class="grid2 tabs"><button class="b ${tab==='ladder'?'on':''}" data-a="hoftab" data-t="ladder">Ladder</button><button class="b ${tab==='mine'?'on':''}" data-a="hoftab" data-t="mine">Your careers</button></div>` : '';
     let body = '';
     if (tab==='ladder'){
       const board = S.tab.board || 'career';
@@ -7921,21 +8067,21 @@ const SCREENS = {
       const nickBox = `<p class="dim">${nick? `You are on the ladder as <span class="hot">${esc(nick)}</span>.` : 'Pick a nickname to join. No account, nothing else is sent.'}</p><input id="nick" maxlength="16" value="${esc(nick)}" placeholder="Nickname" autocomplete="off"><button class="b" data-a="setnick">${nick? 'Change nickname' : 'Join the ladder'}</button>`;
       const rows = S.ladderRows;
       const me = S.ladderMe && S.ladderMe[board];
-      let table = rows===undefined? '<p class="dim">Loading...</p>' : rows===null? '<p class="dim">Could not reach the ladder. Try again later.</p>' : rows.length? `<table class="tight"><tr><th class="n">#</th><th>Manager</th><th>Club</th><th class="n">${board==='career'?'Pts':'Seasons'}</th></tr>${rows.map(r=>`<tr class="${nick && r.nick===nick?'me':''}"><td class="n">${r.rank}</td><td class="wrap">${esc(r.nick)}<br><span class="dim">${esc((r.detail&&r.detail.manager)||'')}${r.detail&&r.detail.seasons? ', '+r.detail.seasons+' seasons':''}</span></td><td class="wrap">${esc((r.detail&&r.detail.club)||'')}${r.detail&&r.detail.division? ' <span class="dim">D'+r.detail.division+'</span>':''}</td><td class="n">${r.score}</td></tr>`).join('')}</table>` : '<p class="dim">Nobody on this board yet. Finish a season.</p>';
+      let table = rows===undefined? '<p class="dim">Loading...</p>' : rows===null? '<p class="dim">Could not reach the ladder. Try again later.</p>' : rows.length? `<section class="card tb"><table class="tight"><tr><th class="n">#</th><th>Manager</th><th>Club</th><th class="n">${board==='career'?'Pts':'Seasons'}</th></tr>${rows.map(r=>`<tr class="${nick && r.nick===nick?'me':''}"><td class="n">${r.rank}</td><td class="wrap">${esc(r.nick)}<br><span class="dim">${esc((r.detail&&r.detail.manager)||'')}${r.detail&&r.detail.seasons? ', '+r.detail.seasons+' seasons':''}</span></td><td class="wrap">${esc((r.detail&&r.detail.club)||'')}${r.detail&&r.detail.division? ' <span class="dim">D'+r.detail.division+'</span>':''}</td><td class="n">${r.score}</td></tr>`).join('')}</table></section>` : '<p class="dim">Nobody on this board yet. Finish a season.</p>';
       if (me) table = `<p>Your best: <span class="hot">${me.score}</span>, ${ordinal(me.rank)} of ${me.of}.</p>` + table;
-      body = picker + nickBox + table + `<p class="dim" style="margin-top:8px">${{career:'Points for trophies and promotions: European Cup 100, Division 1 title 60, Cup Winners\' Cup and UEFA Cup 60, FA Cup 40, League Cup 25, lower titles 25/15/10, promotions 30/20/10, plus 2 a season up to 40.', fastest_title:'Seasons from a random Division 4 start to the Division 1 title. Classic starts only.', fastest_euro:'Seasons from a random Division 4 start to a European trophy. Classic starts only.'}[board]} Posted automatically at each season end; switch it off under How to play.</p>`;
+      body = picker + `<section class="card">${nickBox}</section>` + table + `<p class="dim note" style="margin-top:8px">${{career:'Points for trophies and promotions: European Cup 100, Division 1 title 60, Cup Winners\' Cup and UEFA Cup 60, FA Cup 40, League Cup 25, lower titles 25/15/10, promotions 30/20/10, plus 2 a season up to 40.', fastest_title:'Seasons from a random Division 4 start to the Division 1 title. Classic starts only.', fastest_euro:'Seasons from a random Division 4 start to a European trophy. Classic starts only.'}[board]} Posted automatically at each season end; switch it off under How to play.</p>`;
     } else {
       const entries = Object.values(Ladder.local()).sort((a,b)=>b.score-a.score);
-      body = entries.length? `<table class="tight"><tr><th class="n">#</th><th>Manager</th><th>Club</th><th class="n">Pts</th></tr>${entries.map((e,i)=>`<tr><td class="n">${i+1}</td><td class="wrap">${esc(e.manager)}${e.retired?' <span class="dim">(retired)</span>':''}<br><span class="dim">${e.seasons} season${e.seasons===1?'':'s'}, ${trophyLine(e.trophies)}</span></td><td class="wrap">${esc(e.currentClub)} <span class="dim">D${e.division}</span></td><td class="n">${e.score}</td></tr>`).join('')}</table><p class="dim" style="margin-top:8px">Every manager from every game on this phone. Updated at each season end.</p>` : '<p class="dim">No careers yet. Finish a season.</p>';
+      body = entries.length? `<section class="card tb"><table class="tight"><tr><th class="n">#</th><th>Manager</th><th>Club</th><th class="n">Pts</th></tr>${entries.map((e,i)=>`<tr><td class="n">${i+1}</td><td class="wrap">${esc(e.manager)}${e.retired?' <span class="dim">(retired)</span>':''}<br><span class="dim">${e.seasons} season${e.seasons===1?'':'s'}, ${trophyLine(e.trophies)}</span></td><td class="wrap">${esc(e.currentClub)} <span class="dim">D${e.division}</span></td><td class="n">${e.score}</td></tr>`).join('')}</table></section><p class="dim note" style="margin-top:8px">Every manager from every game on this phone. Updated at each season end.</p>` : '<p class="dim">No careers yet. Finish a season.</p>';
     }
-    return { main: `<h1>Hall of fame</h1>${tabs}${body}`, action: `<button class="b quiet" data-a="${st? 'back' : 'title'}">Back</button>` };
+    return { main: `<h1 class="pg">Hall of fame</h1>${tabs}${body}`, action: `<button class="b quiet" data-a="${st? 'back' : 'title'}">Back</button>` };
   },
   records(){
     const st = S.state, u = user(); const r = E.clubRecords(st, u); const m = mgr(); const cs = E.careerSummary(st, m);
     const line = (x, f) => x? f(x) : '<span class="dim">none yet</span>';
     const scorers = E.topClubScorers(st, u, 10);
     const honours = (st.honours||[]).slice().reverse().slice(0, 15).map(h=>`<div class="kv"><span>Season ${h.season}</span><span class="wrap">${[1,2,3,4].map(d=>'D'+d+' '+esc(st.clubs[h.champions[d]].short)).join(', ')}<br><span class="dim">LC ${esc(st.clubs[h.lc].short)}, FA ${esc(st.clubs[h.fa].short)}${['ec','cwc','uefa'].filter(k=>h[k]!==null&&h[k]!==undefined).map(k=>', '+euroComp(k).short+' '+esc(st.clubs[h[k]].short)).join('')}</span></span></div>`).join('');
-    return { main: `<h1>Records</h1>
+    return { main: cards(`<h1>Records</h1>
       <h2>Your career: ${esc(m.managerName)}</h2>
       <div class="kv"><span>Career points</span><span class="hot">${cs.score}</span></div>
       <div class="kv"><span>Seasons</span><span>${cs.seasons}</span></div>
@@ -7952,12 +8098,12 @@ const SCREENS = {
       <div class="kv"><span>Longest unbeaten run</span><span>${r.unbeaten.best? r.unbeaten.best+' league games (season '+r.unbeaten.bestSeason+')' : 'none yet'}${r.unbeaten.cur>=5? ', currently '+r.unbeaten.cur : ''}</span></div>
       <h2>All-time scorers at the club</h2>${scorers.length? `<table class="tight"><tr><th class="n">#</th><th>Player</th><th class="n">Goals</th></tr>${scorers.map((x,i)=>`<tr><td class="n">${i+1}</td><td class="wrap">${esc(x.name)}</td><td class="n">${x.goals}</td></tr>`).join('')}</table>` : '<p class="dim">No goals yet.</p>'}
       <p class="dim">Records count from when the game started.</p>
-      <h2>Roll of honour</h2>${honours||'<p class="dim">No seasons finished yet.</p>'}`,
+      <h2>Roll of honour</h2>${honours||'<p class="dim">No seasons finished yet.</p>'}`, {flow:true}),
       action: `<button class="b quiet" data-a="back">Back</button>` };
   },
   help(){
     const st = S.state;
-    return { main: `<h1>How to play</h1>
+    return { main: cards(`<h1>How to play</h1>
       <p>You've been handed a Division 4 club and a modest bank balance. Get promoted, win cups, get to Europe, don't go bust. Each week you pick a team, do your business, then play the match.</p>
       <h2>The week</h2><p>Home shows this week's fixture, the board's mood and the news. Squad is where you pick the XI, set a formation and choose how hard to train. Play the match from Home. On cup weeks you might have no game, which is a good week for hard training.</p>
       <h2>Money</h2><p>Gates, sponsorship and television money in; wages, staff and ground upkeep out. Summer wages land in one lump at the season review. The overdraft limit is half your turnover; eight weeks past it and the bank has you sacked. Loans are separate and cheaper than the overdraft. Cash in the bank earns interest.</p>
@@ -7975,7 +8121,7 @@ const SCREENS = {
       <h2>Several managers</h2><p>Up to eight on one phone, passing it round each week. You can bid for each other's players (they decide on their turn), rename each other's rivals, and the managers' table settles who's winning.</p>
       <h2>Saves</h2><p>The game autosaves every week. Saves on the home screen keeps named copies you can load later, for instance before a cup final.</p>
       ${LADDER_URL? `<h2>The ladder</h2><p>At each season end the game posts your nickname, career points and a few career facts (clubs, trophies, seasons) to a shared ladder so you can see how you compare. No account and nothing from your save beyond that. <button class="b" data-a="ladderopt" style="margin-top:8px">${ladderOn()? 'Posting to the ladder: on (tap to turn off)' : 'Posting to the ladder: off (tap to turn on)'}</button></p>` : ''}
-      <h2>Usage counts</h2><p>To see whether anyone plays past the first week, the game sends a handful of anonymous counts (game started, weeks 1 and 5 reached, season finished) with a random id. No names, no club names, nothing from your save. ${ANALYTICS_TOKEN? `<button class="b" data-a="analytics" style="margin-top:8px">${analyticsOn()? 'Sending counts: on (tap to turn off)' : 'Sending counts: off (tap to turn on)'}</button><button class="b" data-a="pingtest">Send a test ping</button>${S.pingResult? `<span class="dim">${esc(S.pingResult)}</span>`:''}` : '<span class="dim">Not active in this build.</span>'}</p>`,
+      <h2>Usage counts</h2><p>To see whether anyone plays past the first week, the game sends a handful of anonymous counts (game started, weeks 1 and 5 reached, season finished) with a random id. No names, no club names, nothing from your save. ${ANALYTICS_TOKEN? `<button class="b" data-a="analytics" style="margin-top:8px">${analyticsOn()? 'Sending counts: on (tap to turn off)' : 'Sending counts: off (tap to turn on)'}</button><button class="b" data-a="pingtest">Send a test ping</button>${S.pingResult? `<span class="dim">${esc(S.pingResult)}</span>`:''}` : '<span class="dim">Not active in this build.</span>'}</p>`, {flow:true}),
       action: `<button class="b quiet" data-a="${st? 'back' : 'title'}">Back</button>` };
   },
   saves(){
@@ -7985,7 +8131,7 @@ const SCREENS = {
       <input id="slotname" maxlength="30" value="${esc(S.slotName||`${user().short}, season ${st.season} week ${st.week}`)}" autocomplete="off"><button class="b" data-a="saveslot">Save</button>` : '';
     const list = slots.length? slots.map(s=>`<div style="margin:12px 0 4px"><span class="hot">${esc(s.name)}</span><br><span class="dim">${esc(s.club)}, ${esc(s.manager)}${s.managers>1? ' +'+(s.managers-1) : ''}. Season ${s.season}, week ${s.week}. ${when(s.ts)}</span></div>
       <div class="grid2"><button class="b" data-a="loadslot" data-i="${s.id}">Load</button><button class="b ${S.confirmDel===s.id?'on':''}" data-a="delslot" data-i="${s.id}">${S.confirmDel===s.id? 'Really delete?' : 'Delete'}</button></div>`).join('') : '<p class="dim">No saved games yet.</p>';
-    return { main: `<h1>Saved games</h1>${cur}<h2>Saved games</h2><p class="dim">Loading one replaces the game in progress. Cowards' corner is open.</p>${list}`,
+    return { main: cards(`<h1>Saved games</h1>${cur}<h2>Saved games</h2><p class="dim">Loading one replaces the game in progress. Cowards' corner is open.</p>${list}`),
       action: `<button class="b quiet" data-a="${st? 'back' : 'title'}">Back</button>` };
   },
   pass(){
@@ -8003,14 +8149,14 @@ const SCREENS = {
       const euroLine = er? `<div class="kv"><span class="wrap"><span class="dim">${euroComp(er.euro.comp).short}</span> ${esc(er.home.short)} v ${esc(er.away.short)}</span><span>${er.gH}-${er.gA}${er.extra?'*':''}${er.agg? ` <span class="dim">(agg)</span>`:''}</span></div>` : '';
       return `<div class="kv"><span class="wrap"><span class="hot">${esc(m.managerName)}</span> ${esc(r.home.short)} v ${esc(r.away.short)}</span><span class="${won?'hot':''}">${r.gH}-${r.gA}${r.extra?'*':''} ${won?'W':drew?'D':'L'}</span></div>${euroLine}`; }).join('');
     const label = R.type==='cup'? E.CFG.CUPS[R.cup].name : 'League';
-    return { main: `<h1>Week ${R.week}: ${label}</h1>${lines}${sleighBogey(st)}<button class="b" data-a="results" style="margin-top:12px">All results</button><button class="b" data-a="standings">Managers' table</button>`,
+    return { main: cards(`<h1>Week ${R.week}: ${label}</h1>${lines}${sleighBogey(st)}`, {lead:'kvl'}) + `<button class="b" data-a="results" style="margin-top:12px">All results</button><button class="b" data-a="standings">Managers' table</button>`,
       action: `<button class="b" data-a="nextround">${S.pendingReview? 'Season over. Standings' : 'Next week'}</button>` };
   },
   standings(){
     const st = S.state; const rows = E.standings(st).map((r,i)=>`<tr class="${r.m===mgr()?'me':''}"><td class="n">${i+1}</td><td class="wrap">${esc(r.m.managerName)}<br><span class="dim">${esc(r.c.short)}</span></td><td class="n">D${r.c.div}</td><td class="n">${ordinal(r.pos)}</td><td class="n">${money(r.c.balance)}</td><td class="n">${r.m.trophies.league}/${r.m.trophies.lc}/${r.m.trophies.fa}/${r.m.trophies.promo}/${(r.m.trophies.ec||0)+(r.m.trophies.cwc||0)+(r.m.trophies.uefa||0)}</td></tr>`).join('');
     const retired = st.managers.filter(m=>m.retired).map(m=>esc(m.managerName)).join(', ');
-    return { main: `<h1>Managers' table</h1><table class="tight"><tr><th class="n">#</th><th>Manager</th><th class="n">Div</th><th class="n">Pos</th><th class="n">Bank</th><th class="n">Ttl/LC/FA/Up/Eur</th></tr>${rows}</table>
-      <p class="dim" style="margin-top:8px">Ranked by division, then league position, then bank balance. Trophies: titles, League Cups, FA Cups, promotions, European trophies.</p>${retired? `<p class="dim">Walked away: ${retired}.</p>`:''}`,
+    return { main: cards(`<h1>Managers' table</h1><table class="tight"><tr><th class="n">#</th><th>Manager</th><th class="n">Div</th><th class="n">Pos</th><th class="n">Bank</th><th class="n">Ttl/LC/FA/Up/Eur</th></tr>${rows}</table>`, {lead:'tb'}) + `
+      <p class="dim note" style="margin-top:8px">Ranked by division, then league position, then bank balance. Trophies: titles, League Cups, FA Cups, promotions, European trophies.</p>${retired? `<p class="dim">Walked away: ${retired}.</p>`:''}`,
       action: `<button class="b quiet" data-a="back">Back</button>` };
   },
   home(){
@@ -8044,7 +8190,7 @@ const SCREENS = {
       ${st.sponsor? kv('Sponsor', esc(st.sponsor.name)) : ''}
       ${kv('Selected', selectionSummary())}
       ${u.build? kv('Builders', `${E.fmt(u.build.seats)} seats, ${u.build.weeksLeft} wk to go`) : ''}
-      ${u.safety<E.CFG.CROWD_TROUBLE_BELOW? kv('Ground', u.safety<E.CFG.SAFETY_RESTRICT_BELOW?'capacity restricted':'crowd trouble risk', 'hot') : ''}</section>
+      ${u.safety<E.CFG.CROWD_TROUBLE_BELOW? kv('Ground', u.safety<E.CFG.SAFETY_RESTRICT_BELOW?'capacity restricted':'crowd trouble risk', 'hot bad') : ''}</section>
       ${st.jobOffer!==null? `<section class="card">${jobOfferPanel()}</section>` : ''}
       <div class="grid2 q4" style="grid-template-columns:repeat(4,1fr);margin-top:12px"><button class="b" data-a="fixtures" style="padding:12px 4px;text-align:center">${ic('cal')}Fixtures</button><button class="b" data-a="results" style="padding:12px 4px;text-align:center">${ic('bars')}Results</button><button class="b" data-a="saves" style="padding:12px 4px;text-align:center">${ic('save')}Saves</button><button class="b danger ${S.confirmResign?'on':''}" data-a="resign" style="padding:12px 4px;text-align:center">${ic('exit')}${S.confirmResign?'Really?':'Resign'}</button></div>
       </div><div>
@@ -8062,7 +8208,7 @@ const SCREENS = {
     const tickets = ps.ticketsDone? `<p>${E.fmt(st.seasonTicket.sold)} sold at ${money(st.seasonTicket.price)}, ${money(st.seasonTicket.sold*st.seasonTicket.price)} in the bank.</p>`
       : `<p class="dim">Match tickets are £${E.ticketOf(u)} (change that on the Ground tab first if you want to). Holders get all 15 home league games. Cheap tickets bring cash now but most of those fans would have paid on the gate anyway.</p>` +
         [8,10,12,15].map(m=>{ const f = E.seasonTicketForecast(st,u,m); return `<button class="b" data-a="tickets" data-m="${m}">£${f.price} <span class="dim">(${m} games' worth)</span><br><span class="dim">about ${E.fmt(f.sold)} sold, ${money(f.income)} now</span></button>`; }).join('');
-    return { main: `<h1>Pre-season, season ${st.season}</h1><h2>Shirt sponsor</h2>${sponsor}<h2>Season tickets</h2>${tickets}`,
+    return { main: cards(`<h1>Pre-season, season ${st.season}</h1><h2>Shirt sponsor</h2>${sponsor}<h2>Season tickets</h2>${tickets}`, {flow:true}),
       action: ps.pending? `<button class="b quiet" data-a="home">Decide later (defaults apply at kick-off)</button>` : `<button class="b" data-a="home">Done</button>` };
   },
   squad(){
@@ -8104,7 +8250,7 @@ const SCREENS = {
     const club = st.clubs[p.club];
     if (p.club===-2) return freeAgentPage(p);
     if (p.reserve && mine) return reservePage(p);
-    if (!club) return { main: `<h1>${esc(p.name)}</h1><p class="dim">He has left the league.</p>`, action: `<button class="b quiet" data-a="back">Back</button>` };
+    if (!club) return { main: cards(`<h1>${esc(p.name)}</h1><p class="dim">He has left the league.</p>`, PD_HERO), action: `<button class="b quiet" data-a="back">Back</button>` };
     const on = sel().includes(p.id);
     let actions = '';
     if (mine){
@@ -8132,7 +8278,7 @@ const SCREENS = {
         <div class="grid3">${[p.value, fair, gen].map(a=>`<button class="b" data-a="setamt" data-amt="${a}">${money(a)}</button>`).join('')}</div>
         <input id="amt" inputmode="numeric" value="${fair}" autocomplete="off"><button class="b" data-a="bid" data-id="${p.id}">Bid this amount</button>`;
     }
-    return { main: `<h1>${esc(p.name)}</h1>
+    return { main: cards(`<h1>${esc(p.name)}</h1>
       <div class="kv"><span>Club</span><span>${esc(club? club.name : 'Abroad')}${club && club.div===0? ' <span class="dim">(Europe)</span>':''}</span></div>
       <div class="kv"><span>Position</span><span>${p.pos}</span></div>
       <div class="kv"><span>Skill</span><span>${p.skill}${potTag(p)}</span></div>
@@ -8140,13 +8286,13 @@ const SCREENS = {
       <div class="kv"><span>Age</span><span>${p.age}</span></div>
       <div class="kv"><span>Fitness</span><span>${p.injury>0? `injured, ${p.injury} wk` : p.fitness}</span></div>
       ${mine? `<div class="kv"><span>Mood</span><span>${E.moraleWord(p.morale||60)}${p.requested? ', has asked to leave' : p.unsettled? ', unsettled by '+esc(p.unsettled.club) : ''}</span></div>` : ''}
-      <div class="kv"><span>Discipline</span><span>${p.ban>0? `<span class="hot">banned for ${p.ban} match${p.ban>1?'es':''}</span>, ` : ''}${p.yellows||0} yellow${(p.yellows||0)===1?'':'s'}${p.reds? ', '+p.reds+' red'+(p.reds>1?'s':'') : ''}</span></div>
+      <div class="kv"><span>Discipline</span><span>${p.ban>0? `<span class="hot bad">banned for ${p.ban} match${p.ban>1?'es':''}</span>, ` : ''}${p.yellows||0} yellow${(p.yellows||0)===1?'':'s'}${p.reds? ', '+p.reds+' red'+(p.reds>1?'s':'') : ''}</span></div>
       <div class="kv"><span>Wage</span><span>${money(p.wage)} a week</span></div>
       <div class="kv"><span>Contract</span><span>${p.years<=1? '<span class="hot">expires this summer</span>' : p.years+' years left'}</span></div>
       <div class="kv"><span>Value</span><span>${money(p.value)}</span></div>
       <div class="kv"><span>This season</span><span>${p.apps} apps, ${p.goals} goals</span></div>
       ${p.signedS!==undefined? `<div class="kv"><span>Signed</span><span>season ${p.signedS}, week ${p.signedW}${p.paid? ' for '+money(p.paid) : ''}</span></div>` : ''}
-      <div style="height:12px"></div>${actions}`,
+      <div style="height:12px"></div>${actions}`, PD_HERO),
       action: `<button class="b quiet" data-a="back">Back</button>` };
   },
   transfers(){
@@ -8161,7 +8307,7 @@ const SCREENS = {
       body = `<p class="dim">Squad ${u.players.length}/20. Overdraft limit ${money(E.overdraftLimit(st, u))}.</p><section class="card tb"><table><tr><th>Pos</th><th>Player</th><th class="n">Sk</th><th class="n">Age</th><th class="n">Price</th></tr>`+
         st.transferList.filter(tl=>{ const p = st.players[tl.pid]; return p && p.club>=0 && p.club!==u.id; }).map(tl=>{ const p = st.players[tl.pid]; const c = st.clubs[p.club]; return `<tr class="tap" data-a="player" data-id="${p.id}"><td class="ps"><span class="pos">${p.pos}</span></td><td class="wrap">${esc(p.name)}<br><span class="dim">${esc(c.short)}, D${c.div}</span></td><td class="n">${p.skill}${potTag(p)}</td><td class="n">${p.age}</td><td class="n pr">${money(tl.price)}<br><button class="b small amber" data-a="buy" data-id="${p.id}">Buy</button></td></tr>`; }).join('')+`</table></section>${humanMarket()}<p class="dim note card" style="margin-top:10px">${ic('info')}<span>The list changes every week. ${['A useless scout brings you six names and no opinions.','An average scout brings eight names.','A good scout brings ten names and picks out a couple with room to grow.','An excellent scout brings twelve names and can tell you about any player in the game.'][u.staff.scout]}</span></p>`;
     } else if (t==='offers'){
-      body = st.offers.length? st.offers.map((o,i)=>{ const p = st.players[o.pid]; if (!p || p.club!==u.id) return ''; return `<p><span class="hot">${esc(o.name)}</span> offer <span class="hot">${money(o.amount)}</span> for ${esc(p.name)} (${p.pos} ${p.skill}, valued ${money(p.value)}).${o.human!==undefined? ' <span class="dim">A rival manager. They pay when you accept.</span>':''}<br><span class="dim">Expires week ${o.expires}.</span></p><div class="grid2"><button class="b" data-a="accept" data-i="${i}">Accept</button><button class="b" data-a="reject" data-i="${i}">Reject</button></div>`; }).join('')
+      body = st.offers.length? st.offers.map((o,i)=>{ const p = st.players[o.pid]; if (!p || p.club!==u.id) return ''; return `<section class="card"><p><span class="hot">${esc(o.name)}</span> offer <span class="hot">${money(o.amount)}</span> for ${esc(p.name)} (${p.pos} ${p.skill}, valued ${money(p.value)}).${o.human!==undefined? ' <span class="dim">A rival manager. They pay when you accept.</span>':''}<br><span class="dim">Expires week ${o.expires}.</span></p><div class="grid2"><button class="b" data-a="accept" data-i="${i}">Accept</button><button class="b" data-a="reject" data-i="${i}">Reject</button></div></section>`; }).join('')
         : `<p class="dim">No offers on the table. Put a player up for sale from his page in the Squad screen and clubs will come sniffing.</p>`;
     } else {
       const sc = S.tab.scout;
@@ -8184,13 +8330,13 @@ const SCREENS = {
     const tb = E.tableFor(st,d);
     const rows = tb.map((c,i)=>`<tr class="${c.id===u.id?'me':''} ${i===1&&d>1?'line-promo':''} ${i===14&&d<4?'line-releg':''}"><td class="n">${i+1}</td><td class="wrap">${esc(c.short)}</td><td class="n">${c.st.p}</td><td class="n">${c.st.w}</td><td class="n">${c.st.d}</td><td class="n">${c.st.l}</td><td class="n">${c.st.gf-c.st.ga>0?'+':''}${c.st.gf-c.st.ga}</td><td class="n">${c.st.pts}</td></tr>`).join('');
     const cupLines = ['lc','fa'].map(k=>`<h2>${E.CFG.CUPS[k].name}</h2><p class="dim">${st.cups[k].history.length? cupSummary(k) : 'First round draw: '+cupTie(u,k)}</p>`).join('') + euroSection();
-    return { main: `<h1>League tables</h1><div class="grid2" style="grid-template-columns:repeat(4,1fr)">${[1,2,3,4].map(x=>`<button class="b ${d===x?'on':''}" data-a="tdiv" data-d="${x}">Div ${x}</button>`).join('')}</div>
-      <table class="tight"><tr><th class="n">#</th><th>Club</th><th class="n">P</th><th class="n">W</th><th class="n">D</th><th class="n">L</th><th class="n">GD</th><th class="n">Pts</th></tr>${rows}</table>
-      <p class="dim" style="margin-top:8px">Top two go up, bottom two go down.</p><div class="grid2"><button class="b" data-a="records">Records</button><button class="b" data-a="hof">Hall of fame</button></div>${multi()? `<button class="b" data-a="standings">Managers' table</button>`:''}${scorersTable(d)}${cupLines}` };
+    return { main: `<h1 class="pg">League tables</h1><div class="grid2 tabs" style="grid-template-columns:repeat(4,1fr)">${[1,2,3,4].map(x=>`<button class="b ${d===x?'on':''}" data-a="tdiv" data-d="${x}">Div ${x}</button>`).join('')}</div>
+      <div class="flow"><div class="grp"><section class="card tb"><table class="tight"><tr><th class="n">#</th><th>Club</th><th class="n">P</th><th class="n">W</th><th class="n">D</th><th class="n">L</th><th class="n">GD</th><th class="n">Pts</th></tr>${rows}</table></section>
+      <p class="dim note" style="margin-top:8px">Top two go up, bottom two go down.</p><div class="grid2"><button class="b" data-a="records">Records</button><button class="b" data-a="hof">Hall of fame</button></div>${multi()? `<button class="b" data-a="standings">Managers' table</button>`:''}</div>${cards(scorersTable(d)+cupLines)}</div>` };
   },
   club(){
     const t = S.tab.club;
-    const tabs = `<div class="grid2" style="grid-template-columns:repeat(5,1fr)">${['money','ground','staff','youth','name'].map(k=>`<button class="b ${t===k?'on':''}" data-a="ctab" data-t="${k}" style="padding:10px 2px;font-size:12px;text-align:center">${{money:'Money',ground:'Ground',staff:'Staff',youth:'Youth',name:'Name'}[k]}</button>`).join('')}</div>`;
+    const tabs = `<div class="grid2 tabs" style="grid-template-columns:repeat(5,1fr)">${['money','ground','staff','youth','name'].map(k=>`<button class="b ${t===k?'on':''}" data-a="ctab" data-t="${k}" style="padding:10px 2px;font-size:12px;text-align:center">${{money:'Money',ground:'Ground',staff:'Staff',youth:'Youth',name:'Name'}[k]}</button>`).join('')}</div>`;
     const body = t==='ground'? groundScreen() : t==='staff'? staffScreen() : t==='youth'? youthScreen() : t==='name'? nameScreen() : SCREENS.money().main;
     return { main: tabs + body };
   },
@@ -8201,8 +8347,8 @@ const SCREENS = {
     const ledger = u.ledger.slice(-25).reverse();
     const rn = r => r>=6?'won':r===5?'final':r===4?'SF':r===3?'QF':'R'+(r+1);
     const hist = u.history.slice().reverse().map(h=>`<div class="kv"><span>Season ${h.season}</span><span>Div ${h.div}, ${ordinal(h.pos)}, ${h.pts} pts, LC ${rn(h.lc||0)}, FA ${rn(h.fa||0)}</span></div>`).join('');
-    return { main: `<h1>Finances</h1>
-      <div class="kv"><span>Balance</span><span class="${u.balance<0?'hot':''}">${money(u.balance)}</span></div>
+    return { main: cards(`<h1>Finances</h1>
+      <div class="kv lead"><span>Balance</span><span class="${u.balance<0?'hot bad':''}">${money(u.balance)}</span></div>
       <div class="kv"><span>Overdraft limit</span><span>${money(E.overdraftLimit(st, u))}</span></div>
       <div class="kv"><span>Turnover</span><span>about ${money(Math.round(E.turnover(st,u)/1000)*1000)} a season</span></div>
       <div class="kv"><span>Player wages</span><span>${money(wages)} a week</span></div>
@@ -8218,7 +8364,7 @@ const SCREENS = {
         : `<p class="dim">Up to ${money(E.loanMax(st, u))} at 12%, repaid over 36 weeks. Separate from the overdraft, which is ${money(E.overdraftLimit(st, u))}.</p><div class="grid3">${[0.25,0.5,1].map(f=>{ const mx = E.loanMax(st, u); const a = f===1? mx : Math.floor(mx*f/5000)*5000; return `<button class="b" data-a="loan" data-amt="${a}">${money(a)}<br><span class="dim">${money(Math.round(a*1.12/36))}/wk</span></button>`; }).join('')}</div>`}
       <p class="dim" style="margin-top:10px">Money in the bank earns 0.1% a week (about 5% a year). Anything below zero costs 0.25% a week. Eight weeks past the overdraft limit and the bank pulls the plug. The limit is half your turnover (gates, television and sponsorship), so it grows as the club does.</p>
       <h2>Recent</h2>${ledger.length? ledger.map(l=>`<div class="kv"><span class="dim">Wk ${l.w}</span><span>${esc(l.label)} <span class="${l.amount<0?'':'hot'}">${money(l.amount)}</span></span></div>`).join('') : '<p class="dim">Nothing yet.</p>'}
-      ${hist? `<h2>Past seasons</h2>${hist}`:''}` };
+      ${hist? `<h2>Past seasons</h2>${hist}`:''}`, {flow:true}) };
   },
   fixtures(){
     const st = S.state, u = user();
@@ -8248,30 +8394,31 @@ const SCREENS = {
       else if (slot && inEurope(u) && w>=st.week){ const et = E.euroTieFor(st, u.id); const mine = (slot.final && et && et.final) || (et && !et.final && !slot.final && et.round===slot.slot); euroRow = `<tr class="${w===st.week?'me':''}"><td></td><td>${euroComp(u.euro.comp).short}</td><td class="wrap">${mine? esc(et.opp.short) : '<span class="dim">if still in</span>'}</td><td>${mine? (slot.final?'N': (slot.leg===1? (et.homeFirst?'H':'A') : (et.homeFirst?'A':'H'))) : ''}</td><td></td></tr>`; }
       return `<tr class="${w===st.week?'me':''}"><td class="n">${w}</td><td>${comp}</td><td class="wrap">${oppName}</td><td>${where}</td><td class="n">${res}</td></tr>${euroRow}`;
     }).join('');
-    return { main: `<h1>Season ${st.season} fixtures</h1><table class="tight"><tr><th class="n">Wk</th><th>Comp</th><th>Opponent</th><th></th><th class="n">Score</th></tr>${rows}</table><p class="dim" style="margin-top:8px">* after extra time or penalties. N is a neutral ground.</p>`,
+    return { main: cards(`<h1>Season ${st.season} fixtures</h1><table class="tight"><tr><th class="n">Wk</th><th>Comp</th><th>Opponent</th><th></th><th class="n">Score</th></tr>${rows}</table>`, {lead:'tb'}) + `<p class="dim note" style="margin-top:8px">* after extra time or penalties. N is a neutral ground.</p>`,
       action: `<button class="b quiet" data-a="back">Back</button>` };
   },
   results(){
     const st = S.state, u = user(); const info = st.lastWeekInfo;
-    if (!info) return { main: `<h1>Results</h1><p class="dim">No games played yet.</p>`, action: `<button class="b quiet" data-a="back">Back</button>` };
+    if (!info) return { main: cards(`<h1>Results</h1><p class="dim">No games played yet.</p>`), action: `<button class="b quiet" data-a="back">Back</button>` };
     let body = '';
     if (info.type==='league'){
       const d = S.tab.results || u.div;
-      body = `<div class="grid2" style="grid-template-columns:repeat(4,1fr)">${[1,2,3,4].map(x=>`<button class="b ${d===x?'on':''}" data-a="rdiv" data-d="${x}">Div ${x}</button>`).join('')}</div>` + resultLines(st.lastSlim.filter(m=>m.div===d));
+      body = `<div class="grid2 tabs" style="grid-template-columns:repeat(4,1fr)">${[1,2,3,4].map(x=>`<button class="b ${d===x?'on':''}" data-a="rdiv" data-d="${x}">Div ${x}</button>`).join('')}</div><section class="card kvl">` + resultLines(st.lastSlim.filter(m=>m.div===d)) + `</section>`;
     } else {
-      body = `<p class="dim">${E.CFG.CUPS[info.cup].name} ${E.CUP_ROUND_NAMES[info.round]}</p>` + resultLines(st.lastSlim);
+      body = `<p class="dim note">${E.CFG.CUPS[info.cup].name} ${E.CUP_ROUND_NAMES[info.round]}</p><section class="card kvl">` + resultLines(st.lastSlim) + `</section>`;
     }
     const euroRes = st.lastSlim.filter(m=>m.euro);
-    if (euroRes.length){ body += `<h2>Europe</h2>` + ['ec','cwc','uefa'].map(k=>{ const ms = euroRes.filter(m=>m.euro.comp===k); return ms.length? `<p class="dim" style="margin-bottom:4px">${euroComp(k).name} ${E.euroRoundName(k, ms[0].euro.round)}${ms[0].euro.leg? ', '+(ms[0].euro.leg===1?'first':'second')+' legs' : ''}</p>` + resultLines(ms) : ''; }).join(''); }
-    return { main: `<h1>Week ${info.week} results</h1>${body}${sleighBogey(st)}`, action: `<button class="b quiet" data-a="back">Back</button>` };
+    if (euroRes.length){ body += `<section class="card kvl"><h2>Europe</h2>` + ['ec','cwc','uefa'].map(k=>{ const ms = euroRes.filter(m=>m.euro.comp===k); return ms.length? `<p class="dim" style="margin-bottom:4px">${euroComp(k).name} ${E.euroRoundName(k, ms[0].euro.round)}${ms[0].euro.leg? ', '+(ms[0].euro.leg===1?'first':'second')+' legs' : ''}</p>` + resultLines(ms) : ''; }).join('') + `</section>`; }
+    const bogey = sleighBogey(st);
+    return { main: `<h1 class="pg">Week ${info.week} results</h1>${body}${bogey? `<section class="card kvl">${bogey}</section>` : ''}`, action: `<button class="b quiet" data-a="back">Back</button>` };
   },
   sacked(){
     const st = S.state, u = user(); const c = st.clubs[st.sackOffer];
     const resigned = /resigned/.test(st.gameOver||'');
     return { main: `<div class="title" style="padding-top:30px"><div class="logo">${resigned? 'Resigned' : 'Sacked'}</div><p>${esc(st.gameOver)}</p>
       <p class="dim">${esc(st.managerName)} leaves ${esc(u.name)} after ${u.history.length} full season${u.history.length===1?'':'s'}, with the club ${ordinal(u.leaguePos)} in Division ${u.div} and ${money(u.balance)} in the bank.</p></div>
-      ${c? `<h2>One door closes</h2><p><span class="hot">${esc(c.name)}</span>, bottom of Division 4, will take anyone. They have ${money(c.balance)} in the bank and a ${E.fmt(c.capacity)} seat ground.</p>
-      <div class="grid2"><button class="b" data-a="takesack">Take the job</button><button class="b" data-a="walkaway">Walk away</button></div>` : `<button class="b" data-a="walkaway">Start again</button>`}` };
+      ${c? cards(`<h2>One door closes</h2><p><span class="hot">${esc(c.name)}</span>, bottom of Division 4, will take anyone. They have ${money(c.balance)} in the bank and a ${E.fmt(c.capacity)} seat ground.</p>
+      <div class="grid2"><button class="b" data-a="takesack">Take the job</button><button class="b" data-a="walkaway">Walk away</button></div>`) : `<button class="b" data-a="walkaway">Start again</button>`}` };
   },
   weekdone(){
     const st = S.state, u = user(); const R = S.results;
@@ -8289,9 +8436,9 @@ const SCREENS = {
     const label = R.type==='cup'? `${E.CFG.CUPS[R.cup].name} results` : `Division ${u.div} results`;
     const inj = R.userMatch? R.userMatch.injuries.filter(p=>p.club===u.id) : [];
     const bans = R.results.filter(m=>m.home.id===u.id||m.away.id===u.id).flatMap(m=>m.bans||[]).filter(b=>b.p.club===u.id);
-    return { main: `${mine}${inj.length? `<p class="hot">Injured: ${inj.map(p=>esc(p.name)+' ('+p.injury+' wk)').join(', ')}</p>`:''}${bans.length? `<p class="hot">Suspended: ${bans.map(b=>esc(b.p.name)+' ('+b.n+' match'+(b.n>1?'es':'')+', '+b.why+')').join(', ')}</p>`:''}
+    return { main: cards(`${mine}${inj.length? `<p class="hot bad">Injured: ${inj.map(p=>esc(p.name)+' ('+p.injury+' wk)').join(', ')}</p>`:''}${bans.length? `<p class="hot bad">Suspended: ${bans.map(b=>esc(b.p.name)+' ('+b.n+' match'+(b.n>1?'es':'')+', '+b.why+')').join(', ')}</p>`:''}
       ${st.week>1 && R.type==='league'? `<p>Now ${ordinal(u.leaguePos)} in Division ${u.div}.</p>`:''}
-      <h2>${label}</h2>${list||'<p class="dim">None.</p>'}${R.type==='cup'? '<p class="dim">* after extra time or penalties</p>':''}${sleighBogey(st)}
+      <h2>${label}</h2>${list||'<p class="dim">None.</p>'}${R.type==='cup'? '<p class="dim">* after extra time or penalties</p>':''}${sleighBogey(st)}`, {keep:true}) + `
       <button class="b" data-a="results" style="margin-top:10px">All results</button>`,
       action: `<button class="b" data-a="continue-week">${mgr().pendingReview? 'Season review' : st.gameOver? 'See the board' : 'Continue'}</button>` };
   },
@@ -8307,7 +8454,7 @@ const SCREENS = {
     const rows = tb.map((c,i)=>`<tr class="${c.id===old.id?'me':''}"><td class="n">${i+1}</td><td class="wrap">${esc(st.clubs[c.id].short)}</td><td class="n">${c.st.pts}</td></tr>`).join('');
     let job = '';
     if (st.jobOffer!==null) job = jobOfferPanel();
-    return { main: `<h1>Season ${sm.season} review</h1>
+    return { main: cards(`<h1>Season ${sm.season} review</h1>
       <p>${moved? esc(old.short)+' finished' : 'Finished'} <span class="hot">${ordinal(sm.userPos)}</span> in Division ${sm.userDiv} (board expected ${ordinal(sm.userExpected)}). ${verdict}</p>${moved? `<p class="hot">You have moved to ${esc(u.name)} in Division ${u.div}.</p>`:''}
       <div class="kv"><span>League prize money</span><span>${money(prize)}</span></div>
       <div class="kv"><span>Television money</span><span>${money(E.CFG.TV[sm.userDiv])}</span></div>
@@ -8316,13 +8463,13 @@ const SCREENS = {
       ${sm.euro? `<div class="kv"><span>${esc(sm.euro.name)}</span><span>${sm.euro.won? '<span class="hot">Winners!</span>' : 'out in the '+E.euroRoundName(sm.euro.comp, sm.euro.round).toLowerCase()}</span></div>` : ''}
       ${sm.euroWinners? `<div class="kv"><span>Europe</span><span class="wrap">${['ec','cwc','uefa'].map(k=>sm.euroWinners[k]!==null&&sm.euroWinners[k]!==undefined? euroComp(k).short+': '+esc(st.clubs[sm.euroWinners[k]].short) : '').filter(Boolean).join(', ')}</span></div>` : ''}
       ${sm.qualified? `<div class="kv"><span>Next season</span><span class="hot">${euroComp(sm.qualified).name}</span></div>` : ''}
-      ${sm.clawback? `<div class="kv"><span>Sponsor clawback</span><span class="hot">${money(-sm.clawback)}</span></div>`:''}
+      ${sm.clawback? `<div class="kv"><span>Sponsor clawback</span><span class="hot bad">${money(-sm.clawback)}</span></div>`:''}
       <div class="kv"><span>Board mood</span><span>${E.boardMood(u.confidence)}</span></div>
-      <div class="kv"><span>Bank</span><span class="${u.balance<0?'hot':''}">${money(u.balance)}</span></div>
+      <div class="kv"><span>Bank</span><span class="${u.balance<0?'hot bad':''}">${money(u.balance)}</span></div>
       ${job}<h2>Final table</h2><table><tr><th class="n">#</th><th>Club</th><th class="n">Pts</th></tr>${rows}</table>
       <p class="dim" style="margin-top:10px">Players have aged a year. Check the squad before the new season: some will have retired and the youth team has filled the gaps.</p>
       ${S.nickPrompt? `<h2>The ladder</h2><p class="dim">Your career points go on a shared ladder with everyone else playing. Pick a nickname to join (nothing else is sent), or skip it.</p><input id="nick" maxlength="16" placeholder="Nickname" autocomplete="off"><div class="grid2"><button class="b" data-a="joinladder">Join the ladder</button><button class="b" data-a="skipladder">Not now</button></div>` : ''}
-      ${FEEDBACK_URL? `<p class="dim">A season in, you'll have opinions. <a class="b small" data-track="feedback_opened" href="${esc(FEEDBACK_URL)}" target="_blank" rel="noopener" style="display:inline;width:auto;margin-top:6px;text-decoration:none">Send feedback</a> takes two minutes.</p>`:''}`,
+      ${FEEDBACK_URL? `<p class="dim">A season in, you'll have opinions. <a class="b small" data-track="feedback_opened" href="${esc(FEEDBACK_URL)}" target="_blank" rel="noopener" style="display:inline;width:auto;margin-top:6px;text-decoration:none">Send feedback</a> takes two minutes.</p>`:''}`, {flow:true}),
       action: st.jobOffer!==null? '' : `<button class="b" data-a="newseason">${multi()? 'On to season '+st.season : 'Start season '+st.season}</button>` };
   },
   gameover(){
@@ -8338,14 +8485,14 @@ function groundScreen(){
   const restricted = u.safety < E.CFG.SAFETY_RESTRICT_BELOW;
   const risk = u.safety < E.CFG.CROWD_TROUBLE_BELOW;
   const safetyWord = u.safety>=80?'excellent':u.safety>=60?'sound':u.safety>=45?'tired':u.safety>=25?'poor':'dangerous';
-  return `<h1>${esc(u.name)}'s ground</h1>${ticketLines(u)}
+  return cards(`<h1>${esc(u.name)}'s ground</h1>${ticketLines(u)}
     <h2>The ground</h2>
-    <div class="kv"><span>Capacity</span><span>${E.fmt(u.capacity)}${restricted? ` <span class="hot">(restricted to ${E.fmt(Math.round(u.capacity*0.6))})</span>`:''}</span></div>
+    <div class="kv"><span>Capacity</span><span>${E.fmt(u.capacity)}${restricted? ` <span class="hot bad">(restricted to ${E.fmt(Math.round(u.capacity*0.6))})</span>`:''}</span></div>
     <div class="kv"><span>Upkeep</span><span>${money(Math.round(u.capacity*E.CFG.GROUND_COST_PER_SEAT))} a week</span></div>
     ${gateLines(u)}
     <div class="kv"><span>Safety</span><span>${Math.round(u.safety)}/100, ${safetyWord}</span></div>
     <div class="bar"><i style="width:${Math.round(u.safety)}%"></i></div>
-    ${risk? `<p class="hot">${restricted? 'The FA has restricted your capacity until the ground is made safe.' : 'Below 45 there is a growing risk of crowd trouble, and fines to go with it.'}</p>`:''}
+    ${risk? `<p class="hot bad">${restricted? 'The FA has restricted your capacity until the ground is made safe.' : 'Below 45 there is a growing risk of crowd trouble, and fines to go with it.'}</p>`:''}
     <p class="dim">Safety falls slowly every week. Spend on it before the FA notices.</p>
     <h2>Safety work</h2>
     <div class="grid2">
@@ -8355,7 +8502,7 @@ function groundScreen(){
     <h2>New stand</h2>
     ${u.build? `<p>Builders are in: a ${E.fmt(u.build.seats)}-seat stand, ready in ${u.build.weeksLeft} week${u.build.weeksLeft===1?'':'s'}.</p>`
       : `<p class="dim">£${E.CFG.SEAT_COST} a seat, paid up front, ${E.CFG.BUILD_WEEKS} weeks to build. Only worth it if you're turning people away.</p>
-      <div class="grid3">${[1000,2500,5000].map(n=>`<button class="b" data-a="build" data-n="${n}">+${E.fmt(n)}<br><span class="dim">${money(E.buildCost(n))}</span></button>`).join('')}</div>`}`;
+      <div class="grid3">${[1000,2500,5000].map(n=>`<button class="b" data-a="build" data-n="${n}">+${E.fmt(n)}<br><span class="dim">${money(E.buildCost(n))}</span></button>`).join('')}</div>`}`, {flow:true});
 }
 const STAFF_INFO = {
   coach: { name:'Coach', blurb:['Useless. Training barely moves anyone.','Average. Steady progress for the younger lads.','Good. Players improve noticeably faster.','Excellent. The best young players fly.'] },
@@ -8367,35 +8514,35 @@ function staffScreen(){
   const st = S.state, u = user();
   const tiers = ['Useless','Average','Good','Excellent'];
   const mult = E.CFG.STAFF_DIV_MULT[u.div];
-  return `<h1>Backroom staff</h1><p class="dim">Paid weekly, no notice needed. Division ${u.div} rates.</p>` +
+  return cards(`<h1>Backroom staff</h1><p class="dim note">Paid weekly, no notice needed. Division ${u.div} rates.</p>` +
     ['coach','physio','scout','youth'].map(r=>`<h2>${STAFF_INFO[r].name}: ${tiers[u.staff[r]||0]}</h2><p class="dim">${STAFF_INFO[r].blurb[u.staff[r]]}</p>
-      <div class="grid2" style="grid-template-columns:repeat(4,1fr)">${tiers.map((t,i)=>`<button class="b ${(u.staff[r]||0)===i?'on':''}" data-a="staff" data-r="${r}" data-t="${i}" style="padding:8px 2px;font-size:12px">${r==='youth'&&i===0?'None':t}<br><span class="dim">${money(Math.round(E.CFG.STAFF_WAGE[i]*mult))}</span></button>`).join('')}</div>`).join('') +
-    `<p class="dim" style="margin-top:8px">Total ${money(E.staffWages(u))} a week.</p>`;
+      <div class="grid2" style="grid-template-columns:repeat(4,1fr)">${tiers.map((t,i)=>`<button class="b ${(u.staff[r]||0)===i?'on':''}" data-a="staff" data-r="${r}" data-t="${i}" style="padding:8px 2px;font-size:12px">${r==='youth'&&i===0?'None':t}<br><span class="dim">${money(Math.round(E.CFG.STAFF_WAGE[i]*mult))}</span></button>`).join('')}</div>`).join(''), {bare:true, flow:true}) +
+    `<p class="dim note" style="margin-top:8px">Total ${money(E.staffWages(u))} a week.</p>`;
 }
 function youthScreen(){
   const st = S.state, u = user(); const lvl = u.academy||1; const rs = E.reservesOf(st, u);
   const grades = ['','A couple of pitches and a tea urn. One prospect a year.','A proper set-up. Two prospects a year.','Floodlit pitches and a coach for every age group. Three a year.','The best in the land. Four a year, and good ones.'];
   const build = u.academyBuild? `<p>Builders in: grade ${u.academyBuild.level} in ${u.academyBuild.weeksLeft} week${u.academyBuild.weeksLeft===1?'':'s'}.</p>`
     : lvl<4? `<button class="b" data-a="academy">Upgrade to grade ${lvl+1}<br><span class="dim">${money(E.CFG.ACADEMY_COST[lvl])}, ${E.CFG.ACADEMY_WEEKS[lvl]} weeks</span></button>` : `<p class="dim">Nothing more to build.</p>`;
-  const rows = rs.sort((a,b)=>b.pot-a.pot).map(p=>`<tr class="tap" data-a="player" data-id="${p.id}"><td>${p.pos}</td><td class="wrap">${esc(p.name)}</td><td class="n">${p.skill}${potTag(p)}</td><td class="n">${p.age}</td><td class="n"><button class="b small" data-a="promote" data-id="${p.id}">Up</button></td></tr>`).join('');
-  return `<h1>Youth academy</h1>
+  const rows = rs.sort((a,b)=>b.pot-a.pot).map(p=>`<tr class="tap" data-a="player" data-id="${p.id}"><td class="ps"><span class="pos">${p.pos}</span></td><td class="wrap">${esc(p.name)}</td><td class="n">${p.skill}${potTag(p)}</td><td class="n">${p.age}</td><td class="n"><button class="b small" data-a="promote" data-id="${p.id}">Up</button></td></tr>`).join('');
+  return cards(`<h1>Youth academy</h1>
     <div class="kv"><span>Grade</span><span>${lvl} of 4</span></div>
     <div class="kv"><span>Youth coach</span><span>${['none','average','good','excellent'][u.staff.youth||0]} <span class="dim">(Staff tab)</span></span></div>
     <div class="kv"><span>Youth wages</span><span>${money(rs.length*E.CFG.YOUTH_WAGE)} a week</span></div>
     <p class="dim">${grades[lvl]} The intake arrives each summer. A better coach adds a prospect and raises how far they can go. Promote them into the squad when you need them: they sign cheap three-year deals. Nobody stays past ${E.CFG.RESERVES_MAX_AGE}.</p>
     ${build}
     <h2>Youth team (${rs.length}/${E.CFG.RESERVES_CAP})</h2>
-    ${rs.length? `<table><tr><th>Pos</th><th>Player</th><th class="n">Sk</th><th class="n">Age</th><th></th></tr>${rows}</table><p class="dim" style="margin-top:6px">Squad ${u.players.length}/20. ▲ is how far he could go${u.staff.scout<1? ' (hire a scout to see it)':''}.</p>` : `<p class="dim">Empty. The first intake arrives at the end of the season.</p>`}`;
+    ${rs.length? `<table><tr><th>Pos</th><th>Player</th><th class="n">Sk</th><th class="n">Age</th><th></th></tr>${rows}</table><p class="dim" style="margin-top:6px">Squad ${u.players.length}/20. ▲ is how far he could go${u.staff.scout<1? ' (hire a scout to see it)':''}.</p>` : `<p class="dim">Empty. The first intake arrives at the end of the season.</p>`}`, {flow:true});
 }
 function nameScreen(){
   const u = user();
-  return `<h1>Club name</h1><p class="dim">Call it what you like. The short name is what shows in tables and results, so keep it under 12 characters.</p>
-    <p class="dim" style="margin-bottom:4px">Full name</p><input id="clubname" maxlength="28" value="${esc(u.name)}" autocomplete="off">
-    <p class="dim" style="margin-bottom:4px">Short name</p><input id="clubshort" maxlength="12" value="${esc(u.short)}" autocomplete="off">
+  return cards(`<h1>Club name</h1><p class="dim">Call it what you like. The short name is what shows in tables and results, so keep it under 12 characters.</p>
+    <label class="dim" for="clubname" style="display:block;margin-bottom:4px">Full name</label><input id="clubname" maxlength="28" value="${esc(u.name)}" autocomplete="off">
+    <label class="dim" for="clubshort" style="display:block;margin-bottom:4px">Short name</label><input id="clubshort" maxlength="12" value="${esc(u.short)}" autocomplete="off">
     <button class="b" data-a="renameclub">Save the name</button>
     <p class="dim">Players are renamed from their own page in the Squad screen.</p>
     <h2>Other clubs</h2><p class="dim">Rename any club in the game (except one another manager is running). Handy if you've borrowed a name and there are now two of them.</p>
-    ${otherClubRename()}`;
+    ${otherClubRename()}`, {flow:true});
 }
 function otherClubRename(){
   const st = S.state, u = user(); const t = S.tab.rename || (S.tab.rename = {div:u.div, club:null});
@@ -8403,8 +8550,8 @@ function otherClubRename(){
   if (t.club!==null && t.club!==undefined){
     const c = st.clubs[t.club];
     return tabs + `<p>Renaming <span class="hot">${esc(c.name)}</span></p>
-      <p class="dim" style="margin-bottom:4px">Full name</p><input id="oname" maxlength="28" value="${esc(c.name)}" autocomplete="off">
-      <p class="dim" style="margin-bottom:4px">Short name</p><input id="oshort" maxlength="12" value="${esc(c.short)}" autocomplete="off">
+      <label class="dim" for="oname" style="display:block;margin-bottom:4px">Full name</label><input id="oname" maxlength="28" value="${esc(c.name)}" autocomplete="off">
+      <label class="dim" for="oshort" style="display:block;margin-bottom:4px">Short name</label><input id="oshort" maxlength="12" value="${esc(c.short)}" autocomplete="off">
       <div class="grid2"><button class="b" data-a="renameother" data-c="${c.id}">Save</button><button class="b" data-a="rnclub" data-c="">Cancel</button></div>`;
   }
   return tabs + E.divClubs(st, t.div).filter(c=>c.id!==u.id).sort((a,b)=>a.name.localeCompare(b.name)).map(c=>{ const hm = E.managerOf(st,c.id); return `<button class="b" data-a="rnclub" data-c="${c.id}" ${hm?'disabled':''}>${esc(c.name)} <span class="dim">(${esc(c.short)})${hm? ', '+esc(hm.managerName):''}</span></button>`; }).join('');
@@ -8505,7 +8652,7 @@ function contractPanel(p){
 function reservePage(p){
   const st = S.state, u = user();
   const wage = Math.max(60, Math.round(E.wageFor(p.skill)*0.7/5)*5);
-  return { main: `<h1>${esc(p.name)}</h1>
+  return { main: cards(`<h1>${esc(p.name)}</h1>
       <div class="kv"><span>Status</span><span>youth team</span></div>
       <div class="kv"><span>Position</span><span>${p.pos}</span></div>
       <div class="kv"><span>Skill</span><span>${p.skill}${potTag(p)}</span></div>
@@ -8515,12 +8662,12 @@ function reservePage(p){
       <p class="dim">Squad ${u.players.length}/20. He develops slowly in the youth team and faster once he is playing.</p>
       <button class="b" data-a="promote" data-id="${p.id}">Promote to the squad</button>
       <button class="b ${S.confirmRelease===p.id?'on':''}" data-a="releasereserve" data-id="${p.id}">${S.confirmRelease===p.id? 'Really let him go?' : 'Let him go'}</button>
-      <h2>Rename</h2><input id="pname" maxlength="24" value="${esc(p.name)}" autocomplete="off"><button class="b" data-a="renameplayer" data-id="${p.id}">Change his name</button>`,
+      <h2>Rename</h2><input id="pname" maxlength="24" value="${esc(p.name)}" autocomplete="off"><button class="b" data-a="renameplayer" data-id="${p.id}">Change his name</button>`, PD_HERO),
     action: `<button class="b quiet" data-a="back">Back</button>` };
 }
 function freeAgentPage(p){
   const st = S.state, u = user(); const ask = E.contractAsk(st, p); const fee = Math.max(2000, Math.round(p.value*0.1/500)*500);
-  return { main: `<h1>${esc(p.name)}</h1>
+  return { main: cards(`<h1>${esc(p.name)}</h1>
       <div class="kv"><span>Status</span><span>free agent${p.lastClubName? ', last at '+esc(p.lastClubName) : ''}</span></div>
       <div class="kv"><span>Position</span><span>${p.pos}</span></div>
       <div class="kv"><span>Skill</span><span>${p.skill}${potTag(p)}</span></div>
@@ -8530,7 +8677,7 @@ function freeAgentPage(p){
       <div class="kv"><span>Signing-on fee</span><span>${money(fee)}</span></div>
       <h2>Offer terms</h2><p class="dim">No transfer fee. Squad ${u.players.length}/20.</p>${yearsPicker(p)}
       <div class="grid3">${[Math.round(ask*0.9/5)*5, ask, Math.round(ask*1.1/5)*5].map(a=>`<button class="b" data-a="setcw" data-amt="${a}">${money(a)}</button>`).join('')}</div>
-      <input id="cwage" inputmode="numeric" value="${S.cWage||ask}" autocomplete="off"><button class="b" data-a="signfree" data-id="${p.id}">Sign him</button>`,
+      <input id="cwage" inputmode="numeric" value="${S.cWage||ask}" autocomplete="off"><button class="b" data-a="signfree" data-id="${p.id}">Sign him</button>`, PD_HERO),
     action: `<button class="b quiet" data-a="back">Back</button>` };
 }
 function ladderOn(){ try{ return localStorage.getItem(LADDER_OPT)!=='off'; }catch(e){ return true; } }

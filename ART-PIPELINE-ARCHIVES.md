@@ -6,7 +6,7 @@ Written 18 November 2026, at John's request, so that the Blender and Floyo work 
 
 * **The game needs none of the missing files.** Every picture the game draws is in the repository, and the build and all the tests run from a clean checkout.
 * **The method is in the repository in full:** every script, every prompt and setting, every Floyo run id, the audit results, and the lists of what was painted.
-* **What is not on GitHub is the bulk material the method produced along the way:** the Blender reference renders (94 MB in ten zip files) and the raw paintings as they came out of Floyo. They are the exact record of how the art was made, and they save about an hour of work if a painting ever has to be redone. They can be made again from what is in the repository, with one caveat set out below.
+* **What is not on GitHub is the bulk material the method produced along the way:** the Blender reference renders (94 MB in nine zip files) and the raw paintings as they came out of Floyo. They are the exact record of how the art was made, and they save about an hour of work if a painting ever has to be redone. They can be made again from what is in the repository, with one caveat set out below.
 
 ## What is on GitHub
 
@@ -29,7 +29,7 @@ Checked on 18 November against the branch `milestone-5`: none of these folders h
 
 | Missing | What it is | Made by |
 |---|---|---|
-| `tools/visual-rnd/archives/` | ten zip files, 94 MB in all, each under 19 MB so that it could go up through GitHub's web page, with an `archives/README.md` saying what each restores. `.gitignore` already makes an exception for them, so they will be accepted the day they are added | zipped from the folders below |
+| `tools/visual-rnd/archives/` | nine zip files, 94 MB in all, each under 19 MB so that it could go up through GitHub's web page, with an `archives/README.md` saying what each restores. `.gitignore` already makes an exception for them, so they will be accepted the day they are added | zipped from the folders below |
 | `tools/visual-rnd/stage1/refs/` | the Blender renders of the 124 production grids at 108 px a metre: colour, depth map, mask, material map and a layout file for each. The depth maps are what Floyo painted over | `blender_figure.py` |
 | `tools/visual-rnd/stage2/pieces/`, `stage2b/pieces/` | the Blender ground: the four stands with crowd masks and depth maps, the four corners, pylons, goals, dugout; and the second-generation crowd | `blender_pieces.py` |
 | `tools/visual-rnd/stage0/`, `refs-a/`, `refs-b/` | the look test John approved and the R&D day's reference sets | `iso-art.js`, `blender_figure.py` |
@@ -40,10 +40,30 @@ The pipeline README refers to `archives/README.md`, which is among the missing f
 
 ## Where the missing files are retained
 
-* **The ten archives:** in `upload-2-tools.zip`, one of the four upload files produced in the chat that prepared release 1.6.0 (16 November 2026). The 1.6.0 handover note records that the archives were left out of the source zip used for deployment and "can be committed later from that zip". **I cannot see that file from here, so I cannot confirm it still exists.** John: please check that you have `upload-2-tools.zip` saved, or that it can still be downloaded from that chat. If it cannot be found, nothing is lost that cannot be made again (next section), but it is worth knowing now.
+* **The nine archives:** in `upload-2-tools.zip`, one of the four upload files produced in the chat that prepared release 1.6.0 (16 November 2026). **John still has it, and sent it on 18 November; it was checked the same day** (next section). An earlier version of this note said ten archives. That was a miscount: the tenth, `rnd-styles-CDF.zip`, was already in the repository.
 * **The raw paintings:** in the output folder of John's Floyo Personal Team, under the run ids listed in the three run files, for as long as Floyo keeps them; and in the zip files John downloaded and attached during the art work. The files uploaded to Floyo as inputs are under `#inputs/soccer-manager/` there.
 * **The working chats** hold the attachments that passed through them. The art pipeline was developed in the chat titled "Reverse engineering retro Amiga game for mobile" (https://claude.ai/chat/c1bfd279-0d2a-48a7-9a6b-0a0579a9f497).
 * **Nothing is retained on the machines the work ran on.** Each working session starts from a clean clone of the repository.
+
+## The archive file, as checked on 18 November 2026
+
+`upload-2-tools.zip`: 93,905,413 bytes, SHA-256 `d94aebd9bd38e59e17a6c9e47a18cdc684327910d5803da6b7614bae4fbc93dd`. It opens without error, and so does every archive inside it. The copy checked was the one John attached to the working chat; a working session keeps nothing, so **John's own copy is the one that counts** until a permanent home is chosen.
+
+| Archive | Bytes | Files | Restores | SHA-256 (first 16) |
+|---|---|---|---|---|
+| `stage1-refs-1.zip` | 18,610,082 | 223 | `stage1/refs/` | `e830115d81869fab` |
+| `stage1-refs-2.zip` | 18,621,720 | 184 | `stage1/refs/` | `0c0e7a53a9822f87` |
+| `stage1-refs-3.zip` | 18,435,598 | 175 | `stage1/refs/` | `a6cf32d9b6c75faa` |
+| `stage1-refs-4.zip` | 3,711,316 | 38 | `stage1/refs/` | `01471a09339d5d7f` |
+| `stage2-pieces.zip` | 9,032,962 | 64 | `stage2/pieces/` | `50853d60caacca92` |
+| `stage2b-pieces.zip` | 11,164,108 | 86 | `stage2b/pieces/`, `stage2b/option2-F/` | `4356a11471458d64` |
+| `refs-a.zip` | 4,870,222 | 65 | `refs-a/` | `3787afd5fadcd1f6` |
+| `refs-b.zip` | 5,967,952 | 65 | `refs-b/` | `162a9e095c90459b` |
+| `stage0.zip` | 2,910,504 | 33 | `stage0/` | `4770f8365c2b2da2` |
+
+* 933 files in all. The four `stage1-refs` archives hold 620 files between them, which is five files for each of the 124 production grids, as expected.
+* The file also holds `archives/README.md` (what each archive restores) and a copy of the pipeline's scripts as they stood at 1.6.0. 44 of those 47 files are byte for byte what the repository holds today. `tools/save-compat.js` and `tools/visual-rnd/README.md` have been updated in the repository since, and one is a leftover Python cache file that was never meant to be kept.
+* **Not in the file:** the raw paintings as they came out of Floyo, and the Blender Python environment. The first are covered below; the second is rebuilt with `pip`.
 
 ## What it takes to make the artwork again
 
@@ -64,7 +84,7 @@ It also follows that the animation library, which John has said is final and is 
 
 | Option | For | Against |
 |---|---|---|
-| Add the ten zips to the repository | one place for everything; `.gitignore` is ready; each file is under GitHub's web-upload limit | 94 MB added to every clone for good; only useful to someone repainting |
+| Add the nine zips to the repository | one place for everything; `.gitignore` is ready; each file is under GitHub's web-upload limit | 94 MB added to every clone for good; only useful to someone repainting |
 | Attach them to a GitHub Release (for example on the tag of the combined release) | kept with the project and its history without weighing on the repository; a release asset may be up to 2 GB | one more place to know about; this note would point to it |
 | Keep them in Google Drive or similar, with the link recorded here | simplest today | depends on an account outside the project |
 | Let them go, and rely on re-rendering | nothing to store | loses the exact record and the raw paintings; a repaint starts from step 1 |
