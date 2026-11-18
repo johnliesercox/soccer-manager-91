@@ -7,7 +7,7 @@ Written 18 November 2026 for John's approval. **This is a candidate, not a relea
 | | |
 |---|---|
 | Version shown in the game | 1.7.0 (agreed with John on 18 November: it has never been public) |
-| Branch and commit | `premium-dark`, COMMIT_HASH |
+| Branch and commit | `premium-dark`, the game file was built at `8078a95` |
 | `index.html` (the deployed file) | 7,171,036 bytes, md5 `7976271030be0bb85d7fd7cf38b11f8d` |
 | `soccer-manager-91.html` (the file that opens from disk, sent to John) | md5 `bbd574cee2d50d3bd728d8e8874e9113` |
 | `manifest.webmanifest` | md5 `544fc28982b88987ac67c443fec92959` (the two colours changed to the new navy; nothing else) |
