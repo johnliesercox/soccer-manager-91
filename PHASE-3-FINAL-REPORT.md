@@ -2,7 +2,7 @@
 
 Written 18 November 2026, for review. It answers the eight points of section 18 of the Phase 3 brief.
 
-**Status in one line: 1.7.0 is built, tested and ready for release, and has not been deployed.** The live site is 1.6.0. By John's decision of 18 November the next public release will be one combined release that also carries the Premium Dark management interface, under a version number still to be agreed. The sections marked "to complete at publication" at the end are left open for that release.
+**Status in one line: 1.7.0 was released on 18 November 2026 as one combined release with the Premium Dark interface.** It was published on 18 November 2026: `main` was moved forward from `97a0748` (1.6.0) to `fe24d6c` at 18:39, with John's explicit go-ahead, and GitHub Pages reported that commit served at 18:40 (deployment 7892734120). The body of this report was written that morning, before the release, and is left as written; the section "At publication" at the end records the release.
 
 | | |
 |---|---|
@@ -126,12 +126,11 @@ Yes, technically: every suite and audit passes on it, saved games from the live 
 
 It is not being released on its own because John prefers one coordinated release with the new interface to two in quick succession. Nothing in 1.7.0 goes stale by waiting; it is the baseline the interface work starts from. Rolling back, should it ever be needed, is in `ROLLBACK.md`.
 
-## To complete at publication
+## At publication (18 November 2026)
 
-These are left open on purpose and are filled in when the combined release is approved and published:
-
-* the released version number, its commit on `main`, the `index.html` size and md5, and the service worker cache name;
-* the tag of that release and confirmation that GitHub Pages served it;
-* John's check on his phone that the installed game shows the new version with his save intact;
-* the final results of every suite and audit on the released file, including the interface work;
-* the release notes shown under What's new.
+* **Released version:** 1.7.0 (John agreed the number that afternoon: it had never been public). `main` at `fe24d6c`; the game file was built at `8078a95` and not changed after. `index.html` 7,171,278 bytes, md5 `7976271030be0bb85d7fd7cf38b11f8d`; `sw.js` unchanged from the 1.7.0 baseline, cache name `sm91-v1.7.0`; `manifest.webmanifest` changed in its two colours only.
+* **What it carries beyond this report:** the Premium Dark interface on every screen and the match screen's surround, with the keyboard and screen-reader work of its Checkpoint C. `PREMIUM-DARK.md` is its record. No engine, matchday, service worker or art file differs from the baseline this report describes.
+* **Published:** `main` moved forward from `97a0748` to `fe24d6c` at 18:39 with John's explicit go-ahead; GitHub Pages reported the commit served at 18:40 (deployment 7892734120). Before the push `main` was confirmed to be the tag `v1.6.0`, and `legacy/release-1.6.0/` to hold the files it served, byte for byte.
+* **Results on the released file:** `RELEASE-CANDIDATE-1.7.0.md`. In short: the same words, controls and saved games as the baseline at 330 stops; the match picture identical in 198 frames; saves from 1.6.0 and back; offline; hot-seat; soak; 20 of 21 suites first time, the other a stopwatch check that failed on a busy test machine and passed on an idle one.
+* **Release notes:** the ten notes under What's new for 1.7.0 in the game, the first of them "A new look".
+* **Still open at the time of writing:** the live site could not be opened from the working session, so the checks on it are John's (the title screen says 1.7.0; an installed copy updates from 1.6.0 with its save intact; a match; offline; a measurement on his phone against 59.6 frames a second). The tag `v1.7.0` is his to create once he is satisfied. Where the nine art archives are kept is his decision, due 19 November.

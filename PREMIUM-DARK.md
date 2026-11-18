@@ -2,7 +2,7 @@
 
 Master specification: John's "Premium Dark Management UI Reskin" brief of 18 November 2026 and its six concept images. The existing game is the source of truth for every word, figure, action and flow. This file records how the brief is being carried out.
 
-**Status: Checkpoint C done on 18 November; the release candidate awaits John's approval.** Checkpoints A and B were approved the same day. `RELEASE-CANDIDATE-1.7.0.md` has the candidate's hashes, the coverage table, every test result and the known issues; this file is the record of how the reskin is built. Branch `premium-dark`, from the tested 1.7.0 baseline (`milestone-5`). Nothing is merged or deployed.
+**Status: released in 1.7.0 on 18 November 2026.** Checkpoints A, B and C were approved by John the same day. `RELEASE-CANDIDATE-1.7.0.md` has the released file's hashes, the coverage table, every test result and the known issues; this file is the record of how the reskin is built.
 
 ## How it is built
 

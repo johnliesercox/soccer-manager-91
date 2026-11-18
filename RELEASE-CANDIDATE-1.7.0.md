@@ -1,6 +1,6 @@
 # Release candidate 1.7.0: Premium Dark Checkpoint C
 
-Written 18 November 2026 for John's approval. **This is a candidate, not a release.** Nothing is merged to `main` or deployed; the live game is 1.6.0 and untouched. The brief this answers is section 3 of "Completion of current milestones, combined release and next development roadmap" (18 November).
+**Released.** John gave the go-ahead to merge and deploy at 18:38 on 18 November 2026; this candidate, unchanged, was published on 18 November 2026: `main` was moved forward from `97a0748` (1.6.0) to `fe24d6c` at 18:39, with John's explicit go-ahead, and GitHub Pages reported that commit served at 18:40 (deployment 7892734120). The rest of this report is as it was written for his approval earlier that evening, when nothing was merged or deployed and the live game was 1.6.0. The brief this answers is section 3 of "Completion of current milestones, combined release and next development roadmap" (18 November).
 
 ## The candidate
 

@@ -4,9 +4,9 @@ Written 18 November 2026. Read `PHASE-3-FINAL-REPORT.md` first for where things 
 
 ## Where things stand
 
-* **Live:** 1.6.0, `main` at `97a0748`, tagged `v1.6.0`. GitHub Pages serves the root of `main`.
-* **Tested baseline, not deployed:** 1.7.0 on the branch `milestone-5`. Start new work from there, on a branch of its own.
-* **In hand:** the combined release candidate, on the branch `premium-dark` (built on `milestone-5`): 1.7.0 with the Premium Dark interface. `RELEASE-CANDIDATE-1.7.0.md` is its report. The roadmap for after the release is John's brief of 18 November; none of it is started, and each milestone needs his approval of its scope first. It is a visual reskin: the same words, controls and saved games, a new stylesheet under one class on `<body>`. `PREMIUM-DARK.md` is its record, and `node tools/ui-parity.js` (with `--compare`, `--layout` and `--stage`) is how any change to a screen's presentation is checked against the build before it. Then one combined release. Phase 4 comes after and is not scheduled.
+* **Live:** 1.7.0 (the combined release with the Premium Dark interface), `main` at `fe24d6c`, published 18 November 2026. GitHub Pages serves the root of `main`. 1.6.0 is the tag `v1.6.0` at `97a0748`; the tag `v1.7.0` is John's to create.
+* **Start new work from `main`**, on a branch of its own. The branches `milestone-5` and `premium-dark` are wholly contained in it.
+* **Next:** nothing is in hand. The roadmap after this release is John's brief of 18 November (a fix for hairstyles changing during a match, then tactics, training, match information, matchday variety); none of it is started, and each milestone needs his approval of its scope before any code. `RELEASE-CANDIDATE-1.7.0.md` is the report on the released file, `PREMIUM-DARK.md` the record of the interface, and `node tools/ui-parity.js` (with `--compare`, `--layout`, `--keys` and `--stage`) is how any change to a screen's presentation is checked against the build before it.
 
 ## The rules that stand
 

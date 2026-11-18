@@ -1,6 +1,6 @@
 # Rolling back
 
-(State on 18 November 2026: the live site is 1.6.0 and the tag `v1.6.0` exists on `main` at `97a0748`. 1.7.0 has not been released, so nothing below has had to be used. When the next release goes out, the version to put back is 1.6.0, exactly as described here.)
+(State on the evening of 18 November 2026: the live site is 1.7.0, `main` at `fe24d6c`. The tag `v1.6.0` exists at `97a0748`; the tag `v1.7.0` is John's to create once he has checked the live site. Nothing below has had to be used. The version to put back, if it ever has to be, is 1.6.0, exactly as described here.)
 
 The site is a handful of static files on GitHub Pages. Going back to a release means putting that release's `index.html`
 and `sw.js` back at the root of the repository; nothing else about the site or anyone's saved games changes.
@@ -41,6 +41,8 @@ in `sw.js` as above, upload both over the root files, commit.
 
 ## What a rollback does not touch
 
-`worker/` (the ladder's Cloudflare worker) is deployed separately and has not changed since 1.1.1. The icons and manifest
-are the same in every release so far. Nothing in a rollback can delete or alter a player's saves: they live in the
+`worker/` (the ladder's Cloudflare worker) is deployed separately and has not changed since 1.1.1. The icons are the
+same in every release so far. The manifest changed once, in 1.7.0, and only in its two colours (the splash screen and bar
+of an installed copy went from blue to navy); to put those back as well, upload `legacy/release-1.6.0/manifest.webmanifest`
+over the root one. It is cosmetic and nothing depends on it. Nothing in a rollback can delete or alter a player's saves: they live in the
 browser's storage on their own phone, keyed by name, and only the player can delete them.
