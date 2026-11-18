@@ -84,6 +84,154 @@ input{width:100%;font:inherit;padding:12px;background:var(--white);color:var(--b
 .bar{height:12px;background:var(--deep);box-shadow:inset 1px 1px 0 var(--black);margin:6px 0 12px}
 .bar i{display:block;height:100%;background:var(--orange)}
 .wrap{white-space:normal}
+/* ---- Premium Dark: the management reskin (Checkpoint A: Home, Squad, Transfer Market) ----
+   Everything is under body.pd, which render() sets only on the screens that wear the new look, so every other screen and
+   the whole of matchday are drawn by the rules above and below exactly as before. The tokens are the brief's. */
+.ic,.pdonly{display:none}
+b.num{font-weight:inherit}
+body.pd{--pg:#07131E;--panel:#102637;--panel2:#18354A;--line:#466C82;--line2:rgba(70,108,130,.5);--tx:#F4F7FA;--tx2:#B6CFDE;--mut:#7EA8BF;--sky:#86C5EE;--amber:#FFAC22;--ok:#75C5A6;--warn:#F08A75;--ink:#1B1205;background:var(--pg)}
+body.pd #app{background:var(--pg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue","Noto Sans",Arial,sans-serif;font-weight:400;font-size:15px;line-height:1.4}
+body.pd .ic{display:inline-block;width:1.25em;height:1.25em;flex:none;vertical-align:-.24em;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+body.pd .ic.fill{fill:currentColor;stroke:none}
+body.pd .pdonly{display:block}
+/* shell: wordmark and status, then the club */
+body.pd header{display:block;padding:0;border:0;background:#0A1B2A}
+body.pd .brand{display:flex;align-items:center;gap:10px;padding:calc(6px + env(safe-area-inset-top)) 12px 6px 0;border-bottom:1px solid var(--line2);overflow:hidden}
+body.pd .brand::before{content:"";flex:none;width:30px;align-self:stretch;margin:-12px 0;background:linear-gradient(112deg,transparent 0 24%,#2E7DBE 24% 50%,transparent 50% 60%,var(--amber) 60% 72%,transparent 72%)}
+body.pd .wm{flex:1;min-width:0;font-weight:800;font-style:italic;font-size:14px;line-height:1.02;letter-spacing:.5px;text-transform:uppercase;color:var(--tx)}
+body.pd .wm span{color:var(--amber)}
+body.pd .st{font-size:10.5px;line-height:1.35;color:var(--tx2);text-align:right;text-transform:uppercase;letter-spacing:.7px;padding-right:12px;border-right:1px solid var(--line2);font-variant-numeric:tabular-nums;white-space:nowrap}
+body.pd .bal{font-size:18px;font-weight:700;color:var(--amber);font-variant-numeric:tabular-nums;white-space:nowrap}
+body.pd .bal.neg{color:var(--warn)}
+body.pd .clubbar{padding:7px 12px 6px;border-bottom:2px solid var(--amber);background:#0C1F30 url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 260 48'><defs><radialGradient id='g'><stop offset='0' stop-color='%23EAF5FF' stop-opacity='.75'/><stop offset='.3' stop-color='%239CCBEE' stop-opacity='.28'/><stop offset='1' stop-color='%239CCBEE' stop-opacity='0'/></radialGradient><linearGradient id='f' x1='0' x2='1'><stop offset='0' stop-color='%230C1F30'/><stop offset='.5' stop-color='%230C1F30' stop-opacity='0'/></linearGradient></defs><circle cx='196' cy='11' r='30' fill='url(%23g)'/><path d='M195 48V17h2.4v31z' fill='%232A5C80'/><path d='M190 48l6-16 6 16' stroke='%232A5C80' stroke-width='1' fill='none'/><rect x='184' y='3' width='24' height='14' rx='1.5' fill='%232F6690'/><g fill='%23F4FAFF'><circle cx='188.5' cy='6.5' r='1.5'/><circle cx='193.5' cy='6.5' r='1.5'/><circle cx='198.5' cy='6.5' r='1.5'/><circle cx='203.5' cy='6.5' r='1.5'/><circle cx='188.5' cy='10' r='1.5'/><circle cx='193.5' cy='10' r='1.5'/><circle cx='198.5' cy='10' r='1.5'/><circle cx='203.5' cy='10' r='1.5'/><circle cx='188.5' cy='13.5' r='1.5'/><circle cx='193.5' cy='13.5' r='1.5'/><circle cx='198.5' cy='13.5' r='1.5'/><circle cx='203.5' cy='13.5' r='1.5'/></g><path d='M40 48V40l40-3h180v11z' fill='%23173A55'/><path d='M80 37V30h180v7z' fill='%231F4B6C'/><path d='M84 32.5h176M84 35h176' stroke='%238FBFE0' stroke-opacity='.5' stroke-width='1.2' stroke-dasharray='1.4 2.2'/><path d='M44 42.5h216M44 45.5h216' stroke='%238FBFE0' stroke-opacity='.35' stroke-width='1.2' stroke-dasharray='1.4 2.2'/><path d='M72 27l8-5h180v4H82z' fill='%23112D44'/><path d='M80 22h180' stroke='%233F7DA8' stroke-width='1.3'/><path d='M110 26v4M150 26v4M230 26v4' stroke='%230E2437' stroke-width='1.6'/><rect width='260' height='48' fill='url(%23f)'/></svg>") right bottom/auto 100% no-repeat}
+body.pd header .club{color:var(--tx);font-size:20px;font-weight:800;letter-spacing:.7px;text-transform:uppercase;line-height:1.1;text-shadow:0 1px 0 rgba(0,0,0,.5)}
+body.pd header .club .mg{font-size:12px;font-weight:500;color:var(--tx2);text-transform:none;letter-spacing:0}
+/* type */
+body.pd main{padding:10px 10px 16px}
+body.pd h1{font-size:17px;font-weight:700;color:var(--tx);margin:0 0 8px;letter-spacing:.1px}
+body.pd h1.pg{display:flex;align-items:center;gap:12px;font-size:14px;text-transform:uppercase;letter-spacing:1.5px;margin:2px 2px 10px}
+body.pd h1.pg::after{content:"";flex:1;height:2px;background:linear-gradient(90deg,var(--amber),rgba(255,172,34,0))}
+body.pd h1.lab,body.pd .lab,body.pd .card h2{font-size:12px;font-weight:700;color:var(--sky);text-transform:uppercase;letter-spacing:1.3px;margin:0 0 4px}
+body.pd h2{font-size:12px;font-weight:700;color:var(--sky);text-transform:uppercase;letter-spacing:1.3px;margin:16px 2px 8px}
+body.pd p{margin:0 0 8px}
+body.pd .dim{color:var(--tx2)}
+body.pd .hot,body.pd .mark{color:var(--amber)}
+body.pd b.num{color:var(--amber);font-weight:700}
+/* cards */
+body.pd .card{background:var(--panel);border:1px solid var(--line2);border-radius:11px;padding:10px 12px;margin:0 0 9px;box-shadow:inset 0 1px 0 rgba(255,255,255,.035),0 4px 12px rgba(0,0,0,.2)}
+body.pd .card>:last-child,body.pd .card.row2>div>:last-child{margin-bottom:0}
+body.pd .card.row2{display:flex;gap:12px;align-items:flex-start}
+body.pd .card.row2>.ic{width:26px;height:26px;color:var(--sky);margin-top:1px}
+body.pd .card.row2>div{flex:1;min-width:0}
+body.pd .card.fx p{font-size:14.5px;color:var(--tx2);margin-bottom:4px}
+body.pd .card.fx p .hot{color:var(--tx);font-size:18px;font-weight:700}
+body.pd .card.fx p .dim{color:var(--mut)}
+body.pd p.cta{display:flex;align-items:center;justify-content:space-between;gap:10px;color:var(--tx);font-size:14.5px;line-height:1.3;margin-bottom:6px}
+body.pd p.cta .b{flex:none;margin:0!important;white-space:nowrap}
+body.pd .card.kvs{padding:2px 12px}
+body.pd .kv{gap:12px;padding:7px 0;border-bottom:1px solid var(--line2);font-size:14.5px;align-items:center}
+body.pd .kv:last-child{border-bottom:0}
+body.pd .kv>span:first-child{font-weight:600;display:flex;align-items:center;gap:10px;white-space:nowrap}
+body.pd .kv .ic{color:var(--sky)}
+body.pd .kv>span:last-child{color:var(--tx2)}
+body.pd .kv>span.hot{color:var(--warn)}
+body.pd .card.nw{border-left:3px solid var(--amber)}
+body.pd .news li{padding:7px 0;font-size:14.5px;border-bottom:1px solid var(--line2)}
+body.pd .news li:last-child{border-bottom:0;padding-bottom:2px}
+body.pd .news li.warn{color:var(--warn)}
+body.pd .news .dim{color:var(--mut);font-size:12.5px;font-weight:700;margin-right:4px}
+body.pd p.mgr{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:4px!important}
+body.pd p.mgr .who{flex:1 1 auto;display:flex;align-items:center;gap:8px;min-width:150px}
+body.pd p.mgr .b{margin:0!important;display:inline-flex!important;align-items:center;gap:8px}
+body.pd p.team{display:flex;align-items:center;gap:10px;color:var(--tx);font-weight:600;font-size:14.5px}
+body.pd p.team .ic{width:24px;height:24px;color:var(--sky)}
+body.pd p.note{color:var(--tx2);font-size:13.5px;margin:0 2px 12px!important}
+body.pd p.note.card{display:flex;gap:12px;align-items:center;font-style:italic;margin:0 0 12px!important;font-size:14.5px}
+body.pd p.note.card .ic{width:24px;height:24px;color:var(--sky)}
+body.pd p.ttl{font-size:17px;font-weight:700;color:var(--tx);margin:0 0 8px!important}
+/* controls: quiet by default, amber for what is chosen and for the one thing to do */
+body.pd .b{background:var(--panel2);color:var(--tx);border:1px solid var(--line);border-radius:9px;box-shadow:inset 0 1px 0 rgba(255,255,255,.05);font-weight:600;padding:11px 14px;min-height:44px;margin:0 0 8px}
+body.pd .b:hover{background:#1E4059}
+body.pd .b:active{background:#24506F;color:var(--tx);box-shadow:none}
+body.pd .b.on,body.pd .b.on:hover{background:var(--amber);border-color:#FFC766;color:var(--ink);box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
+body.pd .b.on .dim{color:#5A3A00}
+body.pd .b:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+body.pd .b.on:focus-visible{outline-color:var(--tx)}
+body.pd .b.small{padding:6px 12px;min-height:40px;border-radius:8px;font-size:14px}
+body.pd .b:disabled{opacity:.45}
+body.pd .b.amber{background:transparent;border-color:var(--amber);color:var(--amber)}
+body.pd .b.amber:hover{background:rgba(255,172,34,.1)}
+body.pd .b.amber:active{background:rgba(255,172,34,.2);color:var(--amber)}
+body.pd .b.danger.on,body.pd .b.danger.on:hover{background:var(--warn);border-color:#F6AC9C;color:#2A0D06}
+body.pd .grid2,body.pd .grid3{gap:7px;margin-bottom:8px}
+body.pd .grid2>.b,body.pd .grid3>.b{margin:0;text-align:center;padding:8px 6px!important;font-size:15px!important;min-height:40px}
+body.pd .row{gap:8px;margin-bottom:0}
+body.pd .row .b{margin:0;display:flex;align-items:center;justify-content:center;gap:7px;padding:9px 6px;font-size:14.5px;white-space:nowrap}
+body.pd .q4{margin-top:0!important}
+body.pd .q4>.b{display:flex;align-items:center;justify-content:center;gap:5px;font-size:13.5px!important;padding:8px 2px!important;min-height:44px}
+body.pd .q4 .ic{color:var(--sky);width:17px;height:17px}
+body.pd .q4 .b.on .ic{color:inherit}
+body.pd .mkt .grid2>.b{font-size:13px!important;padding:8px 2px!important;line-height:1.15}
+body.pd .mkt .tabs>.b{font-size:14.5px!important;min-height:42px}
+/* tables: figures in columns of equal width, quiet rules, the picked rows lightly marked */
+body.pd table{font-size:14.5px;font-variant-numeric:tabular-nums;border-collapse:separate;border-spacing:0}
+body.pd .card.tb{padding:0;overflow:hidden}
+body.pd th{background:var(--panel2);color:var(--sky);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.9px;border-bottom:1px solid var(--line2);padding:8px 4px}
+body.pd td{padding:5px 4px;border-bottom:1px solid var(--line2);vertical-align:middle}
+body.pd tr:last-child td{border-bottom:0}
+body.pd td:first-child,body.pd th:first-child{padding-left:10px}
+body.pd td:last-child,body.pd th:last-child{padding-right:8px}
+body.pd td.wrap{font-weight:600;line-height:1.25;width:99%}
+body.pd td.wrap .dim{font-weight:400;font-size:12px!important;color:var(--mut)}
+body.pd td.n{font-weight:600}
+body.pd td.ps{font-weight:700;font-size:13.5px}
+body.pd td.tk{padding-right:2px;width:1%}
+body.pd tr.tap:active td{background:#1B3D55;color:inherit}
+body.pd tr.sel td{background:rgba(255,172,34,.07)}
+body.pd .tick{display:inline-block;width:20px;height:20px;border:1.5px solid var(--mut);border-radius:5px;font-size:0;vertical-align:middle;position:relative}
+body.pd .tick.on{background:var(--amber);border-color:var(--amber)}
+body.pd .tick.on::after{content:"";position:absolute;left:6px;top:2px;width:5px;height:10px;border:solid var(--ink);border-width:0 2.2px 2.2px 0;transform:rotate(45deg)}
+body.pd .pos{display:inline-block;min-width:40px;text-align:center;padding:3px 4px;border:1px solid var(--line);border-radius:6px;background:var(--panel2);font-size:12.5px;font-weight:700;letter-spacing:.4px}
+body.pd .pill{background:transparent;border:1px solid var(--line);border-radius:999px;padding:1px 8px;font-size:11.5px;font-weight:600;color:var(--tx2);margin-left:6px;white-space:nowrap}
+body.pd td .b.small{min-width:44px;min-height:44px;padding:6px 10px;text-align:center;margin:0;width:auto;display:inline-block}
+body.pd td .b.small[data-a="player"]{color:var(--sky);border-color:#3D7BA6;background:transparent;font-size:22px;line-height:1;padding:0 0 3px;min-width:38px}
+body.pd td.pr{white-space:nowrap}
+body.pd td.pr br{display:none}
+body.pd td.pr .b{margin-left:8px}
+@media (max-width:430px){body.pd td,body.pd th{padding-left:3px;padding-right:3px}body.pd td:first-child,body.pd th:first-child{padding-left:9px}body.pd td:last-child,body.pd th:last-child{padding-right:7px}body.pd td .b.small[data-a="player"]{min-width:36px}}
+@media (max-width:379px){body.pd td.pr br{display:inline}body.pd td.pr .b{margin:3px 0 0;min-height:40px}body.pd .pos{min-width:36px;padding:3px 3px;font-size:12px}}
+/* the five sections, and the one thing to do */
+body.pd nav{border-top:1px solid var(--line2);background:#0C1F30}
+body.pd nav button{background:transparent;color:var(--tx);border-right:1px solid var(--line2);padding:6px 2px 5px;font-family:inherit;font-size:12px;font-weight:600;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-height:50px}
+body.pd nav button .ic{width:21px;height:21px}
+body.pd nav button.on{background:var(--amber);color:var(--ink);box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
+body.pd nav button:focus-visible{outline:2px solid var(--amber);outline-offset:-3px}
+body.pd nav button.on:focus-visible{outline-color:var(--ink)}
+body.pd .action{border-top:0;padding:8px 10px calc(10px + env(safe-area-inset-bottom));background:var(--pg)}
+body.pd .action .b,body.pd .action .b:hover{background:var(--amber);border:1px solid #FFC766;color:var(--ink);box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 6px 18px rgba(255,172,34,.16);font-size:17px;font-weight:800;min-height:50px;border-radius:11px;display:flex;align-items:center;justify-content:center;gap:10px}
+body.pd .action .b:active{background:#FFC04F}
+body.pd .action .b.quiet,body.pd .action .b.quiet:hover{background:var(--panel2);border-color:var(--line);color:var(--tx);box-shadow:none}
+body.pd .toast{background:#0C1F30;color:var(--tx,#F4F7FA);border:1px solid #466C82;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.45);font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;font-weight:600}
+/* a wide screen: room for a second column, and the sections spelt out beside their icons */
+@media (min-width:900px){
+  body.pd #app{max-width:1180px}
+  body.pd main{padding:18px 22px 22px}
+  body.pd .cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start}
+  body.pd .cols.wide2{grid-template-columns:minmax(0,5fr) minmax(0,7fr)}
+  body.pd .mkt{max-width:900px;margin:0 auto}
+  body.pd .brand{padding-right:22px;gap:16px}
+  body.pd .brand::before{width:44px}
+  body.pd .wm{font-size:19px}
+  body.pd .st{font-size:12.5px;padding-right:16px}
+  body.pd .bal{font-size:23px}
+  body.pd .clubbar{padding:13px 22px 12px}
+  body.pd header .club{font-size:27px}
+  body.pd nav button{flex-direction:row;gap:10px;font-size:14.5px;min-height:50px}
+  body.pd .action{padding:12px 22px 16px}
+  body.pd .action .b{max-width:560px;margin:0 auto}
+  body.pd td{padding:8px 8px}body.pd th{padding:10px 8px}
+}
+@media (prefers-reduced-motion:no-preference){body.pd .b,body.pd nav button{transition:background-color .12s}}
 /* matchday viewer */
 .md-board{display:flex;justify-content:space-between;align-items:center;font-size:17px;line-height:1.2;margin-bottom:4px}
 .md-board .t{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:uppercase}
@@ -340,17 +488,38 @@ function fmtEuroTie(t){ if (!t) return ''; if (t.final) return `${euroComp(t.com
 function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(()=>t.classList.remove('show'), 2200); }
 function go(screen){ if (S.md && S.md.viewer && screen!=='matchview') Matchday.ui.closeViewer(); S.screen = screen; document.body.classList.toggle('md-wide', screen==='matchview'); render(); $('#main').scrollTop = 0; }
 
+// ---------- Premium Dark (the management reskin; presentation only) ----------
+// Checkpoint A: Home, Squad and the Transfer Market wear the new look; every other screen is drawn as it was until the
+// look is approved. The look is a class on <body> ("pd") and the rules under "Premium Dark" in the stylesheet; the
+// markup of the three screens carries a few wrappers and icons that the old stylesheet ignores, so the same markup
+// draws either way and ?classic in the address shows any screen in the old look for comparison. Nothing here reads
+// or writes the game: no action, label, figure or saved field is added, removed or changed.
+const PD_THEME = !/[?&]classic\b/.test(location.search);
+const PD_SCREENS = new Set(['home', 'squad', 'transfers']);
+const pdOn = () => PD_THEME && PD_SCREENS.has(S.screen);
+const ICONS = {
+  home: 'M3 11l9-7 9 7M5 10v10h5v-6h4v6h5V10', squad: 'M8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM16 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM2 20c0-3 3-5 6-5s6 2 6 5M15 15.2c3-.7 7 1 7 4.8',
+  market: 'M4 8h15l-3-3M20 16H5l3 3', table: 'M7 4h10v5a5 5 0 0 1-10 0V4zM7 6H4c0 3 1 5 3.2 5M17 6h3c0 3-1 5-3.2 5M12 14v4M8 20h8', club: 'M12 3l8 3v6c0 4-3 7-8 9-5-2-8-5-8-9V6l8-3z',
+  cal: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4M8 14h2M12 14h2M16 14h.5M8 17h2M12 17h2', bars: 'M5 20v-6M12 20V9M19 20V4', save: 'M5 4h11l3 3v13H5zM8 4v5h7V4M8 20v-6h8v6', exit: 'M10 4H5v16h5M14 8l4 4-4 4M9 12h9',
+  ball: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 8l3.5 2.5-1.3 4h-4.4l-1.3-4L12 8zM12 3v5M20.5 9.5l-5 1M17.5 19l-3.3-4.5M6.5 19l3.3-4.5M3.5 9.5l5 1',
+  pitch: 'M3 5h18v14H3zM12 5v14M12 9.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM3 9h3v6H3M21 9h-3v6h3', help: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 1-1 1.7M12 17h.01',
+  mail: 'M3 6h18v12H3zM3 7l9 6 9-6', x: 'M6 6l12 12M18 6L6 18', play: 'M8 5v14l11-7z', info: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 11v6M12 7.5h.01', refresh: 'M20 12a8 8 0 1 1-2.3-5.7M20 4v4h-4',
+  user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c0-4 4-6 8-6s8 2 8 6', tag: 'M3 12V4h8l10 10-8 8L3 12zM7.5 8.5h.01', ground: 'M4 20V9l8-5 8 5v11M9 20v-5h6v5M3 20h18' };
+const ic = (name, cls) => `<svg class="ic${name==='play'? ' fill' : ''}${cls? ' '+cls : ''}" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="${ICONS[name]||ICONS.info}"/></svg>`;
+
 // ---------- rendering ----------
 function render(){
   const st = S.state;
   const hdr = $('#hdr'), main = $('#main'), nav = $('#nav'), act = $('#act');
+  const pd = pdOn(); document.body.classList.toggle('pd', pd);
   if (!st || S.screen==='title' || S.screen==='setup' || S.screen==='pass' || S.screen==='matchview' || S.screen==='matchpick' || ((S.screen==='saves'||S.screen==='help'||S.screen==='hof'||S.screen==='whatsnew') && !st)){
     hdr.innerHTML = ''; hdr.style.display='none'; nav.style.display='none';
   } else {
     hdr.style.display=''; nav.style.display='';
     const u = user();
-    hdr.innerHTML = `<div class="club">${esc(u.name)}${multi()? `<br><span style="font-size:12px;color:var(--grey);text-transform:none;letter-spacing:0">${esc(st.managerName)}</span>`:''}</div><div class="meta">Div ${u.div}, season ${st.season}<br>Week ${st.week} of ${E.CFG.WEEKS}<br><span class="${u.balance<0?'neg':''}">${money(u.balance)}</span></div>`;
-    nav.innerHTML = ['home','squad','transfers','table','club'].map(k=>`<button data-nav="${k}" class="${S.screen===k?'on':''}">${{home:'Home',squad:'Squad',transfers:'Market',table:'Table',club:'Club'}[k]}</button>`).join('');
+    hdr.innerHTML = pd? `<div class="brand"><div class="wm">Soccer<br>Manager <span>'91</span></div><div class="st">Div ${u.div}, season ${st.season}<br>Week ${st.week} of ${E.CFG.WEEKS}</div><div class="bal ${u.balance<0?'neg':''}">${money(u.balance)}</div></div><div class="clubbar"><div class="club">${esc(u.name)}${multi()? `<br><span class="mg">${esc(st.managerName)}</span>`:''}</div></div>`
+      : `<div class="club">${esc(u.name)}${multi()? `<br><span style="font-size:12px;color:var(--grey);text-transform:none;letter-spacing:0">${esc(st.managerName)}</span>`:''}</div><div class="meta">Div ${u.div}, season ${st.season}<br>Week ${st.week} of ${E.CFG.WEEKS}<br><span class="${u.balance<0?'neg':''}">${money(u.balance)}</span></div>`;
+    nav.innerHTML = ['home','squad','transfers','table','club'].map(k=>`<button data-nav="${k}" class="${S.screen===k?'on':''}">${ic({transfers:'market'}[k]||k)}${{home:'Home',squad:'Squad',transfers:'Market',table:'Table',club:'Club'}[k]}</button>`).join('');
   }
   const r = SCREENS[S.screen];
   const out = r();
@@ -508,23 +677,27 @@ const SCREENS = {
     const news = st.news.filter(n=>n.s===st.season || st.week<=2).slice(0,8);
     const pre = st.preseason && st.preseason.pending;
     const firstSeason = st.season===1;
-    const preLine = !pre? '' : firstSeason? `<p class="dim">Sponsor and season tickets will use safe defaults at kick-off. <button class="b small" data-a="preseason" style="display:inline;width:auto">Set them yourself</button></p>` : `<p class="hot">Pre-season: the sponsor and season ticket prices need sorting before the first game.</p>`;
-    const updNote = seenVersion()!==APP_VERSION? `<p class="hot">Updated to ${APP_VERSION}. <button class="b small" data-a="whatsnew" style="display:inline;width:auto">See what's new</button></p>` : '';
-    return { main: `<h1>This week</h1>${updNote}${preLine}${fix}${euroLine}
-      <div class="kv"><span>League</span><span>${pos}</span></div>
-      <div class="kv"><span>Board</span><span>${E.boardMood(u.confidence)}, expect ${ordinal(exp)}</span></div>
-      <div class="kv"><span>League Cup</span><span>${cupStatus(u,'lc')}</span></div>
-      <div class="kv"><span>FA Cup</span><span>${cupStatus(u,'fa')}</span></div>
-      ${u.euro? `<div class="kv"><span>${euroComp(u.euro.comp).short}</span><span>${euroStatusText(u)}</span></div>` : ''}
-      ${st.sponsor? `<div class="kv"><span>Sponsor</span><span>${esc(st.sponsor.name)}</span></div>`:''}
-      <div class="kv"><span>Selected</span><span>${selectionSummary()}</span></div>
-      ${u.build? `<div class="kv"><span>Builders</span><span>${E.fmt(u.build.seats)} seats, ${u.build.weeksLeft} wk to go</span></div>`:''}
-      ${u.safety<E.CFG.CROWD_TROUBLE_BELOW? `<div class="kv"><span>Ground</span><span class="hot">${u.safety<E.CFG.SAFETY_RESTRICT_BELOW?'capacity restricted':'crowd trouble risk'}</span></div>`:''}
-      ${st.jobOffer!==null? jobOfferPanel() : ''}
-      <div class="grid2" style="grid-template-columns:repeat(4,1fr);margin-top:12px"><button class="b" data-a="fixtures" style="padding:12px 4px;text-align:center">Fixtures</button><button class="b" data-a="results" style="padding:12px 4px;text-align:center">Results</button><button class="b" data-a="saves" style="padding:12px 4px;text-align:center">Saves</button><button class="b ${S.confirmResign?'on':''}" data-a="resign" style="padding:12px 4px;text-align:center">${S.confirmResign?'Really?':'Resign'}</button></div>
-      <h2>News</h2>${news.length? `<ul class="news">${news.map(n=>`<li class="${n.kind==='warn'?'warn':''}"><span class="dim">Wk ${n.w}</span> ${esc(n.text)}</li>`).join('')}</ul>` : '<p class="dim">Nothing yet.</p>'}
-      <p class="dim" style="margin-top:14px">Manager: ${esc(st.managerName)}. <button class="b small" data-a="help" style="display:inline;width:auto;margin-top:6px">How to play</button> ${FEEDBACK_URL? `<a class="b small" data-track="feedback_opened" href="${esc(FEEDBACK_URL)}" target="_blank" rel="noopener" style="display:inline;width:auto;margin-top:6px;text-decoration:none">Send feedback</a> `:''}${multi()? `<button class="b small ${S.confirmRetire?'on':''}" data-a="retire" style="display:inline;width:auto;margin-top:6px">${S.confirmRetire?'Really retire? Tap again':'Retire from the game'}</button>` : `<button class="b small ${S.confirmQuit?'on':''}" data-a="quit" style="display:inline;width:auto;margin-top:6px">${S.confirmQuit?'Really abandon? Tap again':'Abandon this game'}</button>`}</p>`,
-      action: (pre && !firstSeason)? `<button class="b" data-a="preseason">Pre-season decisions</button>` : multi()? `<button class="b" data-a="ready">${nf.type==='none'? 'Ready (no game this week)' : 'Ready for kick-off'}</button>` : nf.type==='none'? `<button class="b" data-a="play">Skip to next week</button>` : `<button class="b" data-a="play">Play the match</button>` };
+    const preLine = !pre? '' : firstSeason? `<p class="dim cta">Sponsor and season tickets will use safe defaults at kick-off. <button class="b small amber" data-a="preseason" style="display:inline;width:auto">Set them yourself</button></p>` : `<p class="hot">Pre-season: the sponsor and season ticket prices need sorting before the first game.</p>`;
+    const updNote = seenVersion()!==APP_VERSION? `<p class="hot cta">Updated to ${APP_VERSION}. <button class="b small amber" data-a="whatsnew" style="display:inline;width:auto">See what's new</button></p>` : '';
+    /* the same rows, words and buttons as before, grouped into cards (a second column on a wide screen), each row with an icon that the old look hides */
+    const rowIcon = { League:'table', Board:'squad', Sponsor:'tag', Selected:'pitch', Builders:'ground', Ground:'ground' };
+    const kv = (k, v, cls) => `<div class="kv"><span>${ic(rowIcon[k]||'table')}${k}</span><span${cls? ` class="${cls}"` : ''}>${v}</span></div>`;
+    return { main: `<div class="cols"><div>
+      ${(updNote||preLine)? `<section class="card row2">${ic('cal')}<div><h1 class="lab">This week</h1>${updNote}${preLine}</div></section>` : `<h1 class="lab">This week</h1>`}
+      <section class="card row2 fx">${ic('ball')}<div>${nf.type==='none'? '' : `<div class="lab pdonly">Next fixture</div>`}${fix}${euroLine}</div></section>
+      <section class="card kvs">${kv('League', pos)}${kv('Board', `${E.boardMood(u.confidence)}, expect ${ordinal(exp)}`)}${kv('League Cup', cupStatus(u,'lc'))}${kv('FA Cup', cupStatus(u,'fa'))}
+      ${u.euro? kv(euroComp(u.euro.comp).short, euroStatusText(u)) : ''}
+      ${st.sponsor? kv('Sponsor', esc(st.sponsor.name)) : ''}
+      ${kv('Selected', selectionSummary())}
+      ${u.build? kv('Builders', `${E.fmt(u.build.seats)} seats, ${u.build.weeksLeft} wk to go`) : ''}
+      ${u.safety<E.CFG.CROWD_TROUBLE_BELOW? kv('Ground', u.safety<E.CFG.SAFETY_RESTRICT_BELOW?'capacity restricted':'crowd trouble risk', 'hot') : ''}</section>
+      ${st.jobOffer!==null? `<section class="card">${jobOfferPanel()}</section>` : ''}
+      <div class="grid2 q4" style="grid-template-columns:repeat(4,1fr);margin-top:12px"><button class="b" data-a="fixtures" style="padding:12px 4px;text-align:center">${ic('cal')}Fixtures</button><button class="b" data-a="results" style="padding:12px 4px;text-align:center">${ic('bars')}Results</button><button class="b" data-a="saves" style="padding:12px 4px;text-align:center">${ic('save')}Saves</button><button class="b danger ${S.confirmResign?'on':''}" data-a="resign" style="padding:12px 4px;text-align:center">${ic('exit')}${S.confirmResign?'Really?':'Resign'}</button></div>
+      </div><div>
+      <section class="card nw"><h2>News</h2>${news.length? `<ul class="news">${news.map(n=>`<li class="${n.kind==='warn'?'warn':''}"><span class="dim">Wk ${n.w}</span> ${esc(n.text)}</li>`).join('')}</ul>` : '<p class="dim">Nothing yet.</p>'}</section>
+      <p class="dim mgr" style="margin-top:14px"><span class="who">${ic('user')}Manager: ${esc(st.managerName)}.</span> <button class="b small" data-a="help" style="display:inline;width:auto;margin-top:6px">${ic('help')}How to play</button> ${FEEDBACK_URL? `<a class="b small" data-track="feedback_opened" href="${esc(FEEDBACK_URL)}" target="_blank" rel="noopener" style="display:inline;width:auto;margin-top:6px;text-decoration:none">${ic('mail')}Send feedback</a> `:''}${multi()? `<button class="b small danger ${S.confirmRetire?'on':''}" data-a="retire" style="display:inline;width:auto;margin-top:6px">${ic('x')}${S.confirmRetire?'Really retire? Tap again':'Retire from the game'}</button>` : `<button class="b small danger ${S.confirmQuit?'on':''}" data-a="quit" style="display:inline;width:auto;margin-top:6px">${ic('x')}${S.confirmQuit?'Really abandon? Tap again':'Abandon this game'}</button>`}</p>
+      </div></div>`,
+      action: (pre && !firstSeason)? `<button class="b" data-a="preseason">Pre-season decisions</button>` : multi()? `<button class="b" data-a="ready">${nf.type==='none'? 'Ready (no game this week)' : 'Ready for kick-off'}</button>` : nf.type==='none'? `<button class="b" data-a="play">Skip to next week</button>` : `<button class="b" data-a="play">${ic('play')}Play the match</button>` };
   },
   preseason(){
     const st = S.state, u = user(); const ps = st.preseason;
@@ -554,18 +727,21 @@ const SCREENS = {
       const inXI = slotOf[p.id];
       const oop = inXI && inXI!==p.pos? `<span class="mark">@${inXI}</span>` : '';
       const tags = [`${p.years<=1? '<span class="mark">expires</span>' : p.years+'y'}`, moodTag(p), p.yellows>=4? `<span class="mark">${p.yellows}Y</span>` : p.yellows? p.yellows+'Y' : ''].filter(Boolean).join(' · ');
-      return `<tr class="tap ${on?'sel':''}" data-a="toggle" data-id="${p.id}"><td>${on?'<span class="mark">■</span>':'□'}</td><td>${p.pos}</td><td class="wrap">${esc(p.name)} ${oop}${p.listed!==null?'<span class="pill">sale</span>':''}${p.requested?'<span class="pill">wants out</span>':''}<br><span class="dim" style="font-size:12px">${tags}</span></td><td class="n">${p.skill}${potTag(p)}</td><td class="n">${p.age}</td><td class="n">${p.ban>0? `<span class="mark">ban ${p.ban}</span>` : p.injury>0?`<span class="mark">inj ${p.injury}</span>`:p.fitness}</td><td><button class="b small" data-a="player" data-id="${p.id}">›</button></td></tr>`;
+      return `<tr class="tap ${on?'sel':''}" data-a="toggle" data-id="${p.id}"><td class="tk"><span class="tick ${on?'on':''}">${on?'<span class="mark">■</span>':'□'}</span></td><td class="ps">${p.pos}</td><td class="wrap">${esc(p.name)} ${oop}${p.listed!==null?'<span class="pill">sale</span>':''}${p.requested?'<span class="pill">wants out</span>':''}<br><span class="dim" style="font-size:12px">${tags}</span></td><td class="n">${p.skill}${potTag(p)}</td><td class="n">${p.age}</td><td class="n">${p.ban>0? `<span class="mark">ban ${p.ban}</span>` : p.injury>0?`<span class="mark">inj ${p.injury}</span>`:p.fitness}</td><td><button class="b small" data-a="player" data-id="${p.id}">›</button></td></tr>`;
     }).join('');
     const modeBar = inEurope(u)? `<div class="grid2"><button class="b ${!euroMode?'on':''}" data-a="ximode" data-m="league">League XI</button><button class="b ${euroMode?'on':''}" data-a="ximode" data-m="euro">European XI</button></div><p class="dim">${euroMode? 'This side plays your '+euroComp(u.euro.comp).name+' ties. Leave it empty and the league XI is used.' : 'This side plays league and domestic cup games.'}</p>` : '';
-    return { main: `<h1>Squad and tactics</h1>${modeBar}
+    return { main: `<div class="cols wide2"><div>
+      <section class="card"><h1>Squad and tactics</h1>${modeBar}
       <div class="grid3">${fms.map(f=>`<button class="b ${fmName===f?'on':''}" data-a="formation" data-f="${f}">${f}</button>`).join('')}</div>
-      <div class="row"><button class="b" data-a="autopick">Pick the best XI</button><button class="b" data-a="clearpick">Clear</button></div>
-      <p class="dim" style="margin:12px 0 6px">Training this week</p>
+      <div class="row"><button class="b" data-a="autopick">${ic('squad')}Pick the best XI</button><button class="b" data-a="clearpick">${ic('refresh')}Clear</button></div></section>
+      <section class="card"><p class="dim ttl" style="margin:12px 0 6px">Training this week</p>
       <div class="grid3">${['light','normal','hard'].map(k=>`<button class="b ${u.training===k?'on':''}" data-a="training" data-t="${k}">${{light:'Light',normal:'Normal',hard:'Hard'}[k]}</button>`).join('')}</div>
-      <p class="dim">${{light:'Rest and recover. Fitness comes back faster, nobody improves much.',normal:'A normal week. Younger players edge forward if the coach is any good.',hard:'Push them. Faster improvement, tired legs and the odd training knock.'}[u.training]} ${u.staff.scout>=1?'':'Hire a scout to see who has room to improve.'}</p>
-      <p class="dim">Team: defence ${Math.round(str.defEff)}, midfield ${Math.round(str.mid)}, attack ${Math.round(str.att)}. ${xi.length}/11 picked${ids.length>11?', extras sit out':''}.</p>
-      <table><tr><th></th><th>Pos</th><th>Player</th><th class="n">Sk</th><th class="n">Age</th><th class="n">Fit</th><th></th></tr>${rows}</table>
-      <p class="dim" style="margin-top:10px">Tap a row to pick or drop. ■ picked, @ playing out of position. Fitness under 70 doubles the injury risk. Five bookings is a one-match ban, ten is two. Contract years and mood under each name.</p>` };
+      <p class="dim">${{light:'Rest and recover. Fitness comes back faster, nobody improves much.',normal:'A normal week. Younger players edge forward if the coach is any good.',hard:'Push them. Faster improvement, tired legs and the odd training knock.'}[u.training]} ${u.staff.scout>=1?'':'Hire a scout to see who has room to improve.'}</p></section>
+      <p class="dim team card">${ic('pitch')}<span>Team: defence <b class="num">${Math.round(str.defEff)}</b>, midfield <b class="num">${Math.round(str.mid)}</b>, attack <b class="num">${Math.round(str.att)}</b>. ${xi.length}/11 picked${ids.length>11?', extras sit out':''}.</span></p>
+      </div><div>
+      <section class="card tb"><table><tr><th></th><th>Pos</th><th>Player</th><th class="n">Sk</th><th class="n">Age</th><th class="n">Fit</th><th></th></tr>${rows}</table></section>
+      <p class="dim note" style="margin-top:10px">Tap a row to pick or drop. ■ picked, @ playing out of position. Fitness under 70 doubles the injury risk. Five bookings is a one-match ban, ten is two. Contract years and mood under each name.</p>
+      </div></div>` };
   },
   player(){
     const st = S.state, u = user(), p = st.players[S.pid];
@@ -621,15 +797,15 @@ const SCREENS = {
   },
   transfers(){
     const st = S.state, u = user(); const t = S.tab.transfers;
-    const tabs = `<div class="grid2" style="grid-template-columns:repeat(4,1fr)">${['list','free','offers','scout'].map(k=>`<button class="b ${t===k?'on':''}" data-a="ttab" data-t="${k}" style="padding:10px 2px;font-size:12px;text-align:center">${{list:'For sale',free:`Free${E.freeAgentsList(st).length? ' ('+E.freeAgentsList(st).length+')':''}`,offers:`Offers${st.offers.length?' ('+st.offers.length+')':''}`,scout:'Scout'}[k]}</button>`).join('')}</div>`;
+    const tabs = `<div class="grid2 tabs" style="grid-template-columns:repeat(4,1fr)">${['list','free','offers','scout'].map(k=>`<button class="b ${t===k?'on':''}" data-a="ttab" data-t="${k}" style="padding:10px 2px;font-size:12px;text-align:center">${{list:'For sale',free:`Free${E.freeAgentsList(st).length? ' ('+E.freeAgentsList(st).length+')':''}`,offers:`Offers${st.offers.length?' ('+st.offers.length+')':''}`,scout:'Scout'}[k]}</button>`).join('')}</div>`;
     let body = '';
     if (t==='free'){
       const fa = E.freeAgentsList(st);
-      body = `<p class="dim">Out of contract and looking for a club. No fee beyond a signing-on bonus, but they want their wages. The best go quickly, and the rest drift out of the game by week ${E.CFG.FREE_AGENT_WEEKS}.</p>` + (fa.length? `<table><tr><th>Pos</th><th>Player</th><th class="n">Sk</th><th class="n">Age</th><th class="n">Wants</th></tr>` +
-        fa.map(p=>`<tr class="tap" data-a="player" data-id="${p.id}"><td>${p.pos}</td><td class="wrap">${esc(p.name)}<br><span class="dim">${p.lastClubName? 'ex '+esc(p.lastClubName) : 'unattached'}</span></td><td class="n">${p.skill}${potTag(p)}</td><td class="n">${p.age}</td><td class="n">${money(E.contractAsk(st,p))}/wk</td></tr>`).join('') + `</table>` : `<p class="dim">Nobody is without a club at the moment.</p>`);
+      body = `<p class="dim">Out of contract and looking for a club. No fee beyond a signing-on bonus, but they want their wages. The best go quickly, and the rest drift out of the game by week ${E.CFG.FREE_AGENT_WEEKS}.</p>` + (fa.length? `<section class="card tb"><table><tr><th>Pos</th><th>Player</th><th class="n">Sk</th><th class="n">Age</th><th class="n">Wants</th></tr>` +
+        fa.map(p=>`<tr class="tap" data-a="player" data-id="${p.id}"><td class="ps"><span class="pos">${p.pos}</span></td><td class="wrap">${esc(p.name)}<br><span class="dim">${p.lastClubName? 'ex '+esc(p.lastClubName) : 'unattached'}</span></td><td class="n">${p.skill}${potTag(p)}</td><td class="n">${p.age}</td><td class="n">${money(E.contractAsk(st,p))}/wk</td></tr>`).join('') + `</table></section>` : `<p class="dim">Nobody is without a club at the moment.</p>`);
     } else if (t==='list'){
-      body = `<p class="dim">Squad ${u.players.length}/20. Overdraft limit ${money(E.overdraftLimit(st, u))}.</p><table><tr><th>Pos</th><th>Player</th><th class="n">Sk</th><th class="n">Age</th><th class="n">Price</th></tr>`+
-        st.transferList.filter(tl=>{ const p = st.players[tl.pid]; return p && p.club>=0 && p.club!==u.id; }).map(tl=>{ const p = st.players[tl.pid]; const c = st.clubs[p.club]; return `<tr class="tap" data-a="player" data-id="${p.id}"><td>${p.pos}</td><td class="wrap">${esc(p.name)}<br><span class="dim">${esc(c.short)}, D${c.div}</span></td><td class="n">${p.skill}${potTag(p)}</td><td class="n">${p.age}</td><td class="n">${money(tl.price)}<br><button class="b small" data-a="buy" data-id="${p.id}">Buy</button></td></tr>`; }).join('')+`</table>${humanMarket()}<p class="dim" style="margin-top:10px">The list changes every week. ${['A useless scout brings you six names and no opinions.','An average scout brings eight names.','A good scout brings ten names and picks out a couple with room to grow.','An excellent scout brings twelve names and can tell you about any player in the game.'][u.staff.scout]}</p>`;
+      body = `<p class="dim">Squad ${u.players.length}/20. Overdraft limit ${money(E.overdraftLimit(st, u))}.</p><section class="card tb"><table><tr><th>Pos</th><th>Player</th><th class="n">Sk</th><th class="n">Age</th><th class="n">Price</th></tr>`+
+        st.transferList.filter(tl=>{ const p = st.players[tl.pid]; return p && p.club>=0 && p.club!==u.id; }).map(tl=>{ const p = st.players[tl.pid]; const c = st.clubs[p.club]; return `<tr class="tap" data-a="player" data-id="${p.id}"><td class="ps"><span class="pos">${p.pos}</span></td><td class="wrap">${esc(p.name)}<br><span class="dim">${esc(c.short)}, D${c.div}</span></td><td class="n">${p.skill}${potTag(p)}</td><td class="n">${p.age}</td><td class="n pr">${money(tl.price)}<br><button class="b small amber" data-a="buy" data-id="${p.id}">Buy</button></td></tr>`; }).join('')+`</table></section>${humanMarket()}<p class="dim note card" style="margin-top:10px">${ic('info')}<span>The list changes every week. ${['A useless scout brings you six names and no opinions.','An average scout brings eight names.','A good scout brings ten names and picks out a couple with room to grow.','An excellent scout brings twelve names and can tell you about any player in the game.'][u.staff.scout]}</span></p>`;
     } else if (t==='offers'){
       body = st.offers.length? st.offers.map((o,i)=>{ const p = st.players[o.pid]; if (!p || p.club!==u.id) return ''; return `<p><span class="hot">${esc(o.name)}</span> offer <span class="hot">${money(o.amount)}</span> for ${esc(p.name)} (${p.pos} ${p.skill}, valued ${money(p.value)}).${o.human!==undefined? ' <span class="dim">A rival manager. They pay when you accept.</span>':''}<br><span class="dim">Expires week ${o.expires}.</span></p><div class="grid2"><button class="b" data-a="accept" data-i="${i}">Accept</button><button class="b" data-a="reject" data-i="${i}">Reject</button></div>`; }).join('')
         : `<p class="dim">No offers on the table. Put a player up for sale from his page in the Squad screen and clubs will come sniffing.</p>`;
@@ -643,11 +819,11 @@ const SCREENS = {
       } else {
         const c = st.clubs[sc.club];
         const sq = E.squadOf(st,c).slice().sort((a,b)=>posOrder(a.pos)-posOrder(b.pos)||b.skill-a.skill);
-        body = `<button class="b" data-a="scoutback">‹ ${esc(c.name)}, ${c.div? 'Division '+c.div : 'Europe'}</button><table><tr><th>Pos</th><th>Player</th><th class="n">Sk</th><th class="n">Age</th><th class="n">Value</th></tr>`+
-          sq.map(p=>`<tr class="tap" data-a="player" data-id="${p.id}"><td>${p.pos}</td><td class="wrap">${esc(p.name)}</td><td class="n">${p.skill}${potTag(p)}</td><td class="n">${p.age}</td><td class="n">${money(p.value)}</td></tr>`).join('')+`</table>`;
+        body = `<button class="b" data-a="scoutback">‹ ${esc(c.name)}, ${c.div? 'Division '+c.div : 'Europe'}</button><section class="card tb"><table><tr><th>Pos</th><th>Player</th><th class="n">Sk</th><th class="n">Age</th><th class="n">Value</th></tr>`+
+          sq.map(p=>`<tr class="tap" data-a="player" data-id="${p.id}"><td class="ps"><span class="pos">${p.pos}</span></td><td class="wrap">${esc(p.name)}</td><td class="n">${p.skill}${potTag(p)}</td><td class="n">${p.age}</td><td class="n">${money(p.value)}</td></tr>`).join('')+`</table></section>`;
       }
     }
-    return { main: `<h1>Transfer market</h1>${tabs}${body}` };
+    return { main: `<div class="mkt"><h1 class="pg">Transfer market</h1>${tabs}${body}</div>` };
   },
   table(){
     const st = S.state, u = user(); const d = S.tab.table || u.div;
@@ -886,8 +1062,8 @@ function humanMarket(){
   const st = S.state; if (!multi()) return '';
   const list = E.humanListings(st);
   if (!list.length) return `<h2>Rival managers' players</h2><p class="dim">Nobody has listed anyone. You can still bid for any of their players from the Scout tab; they decide on their turn.</p>`;
-  return `<h2>Rival managers' players for sale</h2><table><tr><th>Pos</th><th>Player</th><th class="n">Sk</th><th class="n">Age</th><th class="n">Asking</th></tr>` +
-    list.filter(({p})=>st.clubs[p.club]).map(({p,m})=>`<tr class="tap" data-a="player" data-id="${p.id}"><td>${p.pos}</td><td class="wrap">${esc(p.name)}<br><span class="dim">${esc(m.managerName)}, ${esc(st.clubs[p.club].short)}</span></td><td class="n">${p.skill}${potTag(p)}</td><td class="n">${p.age}</td><td class="n">${money(p.listed)}</td></tr>`).join('') + `</table>`;
+  return `<h2>Rival managers' players for sale</h2><section class="card tb"><table><tr><th>Pos</th><th>Player</th><th class="n">Sk</th><th class="n">Age</th><th class="n">Asking</th></tr>` +
+    list.filter(({p})=>st.clubs[p.club]).map(({p,m})=>`<tr class="tap" data-a="player" data-id="${p.id}"><td class="ps"><span class="pos">${p.pos}</span></td><td class="wrap">${esc(p.name)}<br><span class="dim">${esc(m.managerName)}, ${esc(st.clubs[p.club].short)}</span></td><td class="n">${p.skill}${potTag(p)}</td><td class="n">${p.age}</td><td class="n">${money(p.listed)}</td></tr>`).join('') + `</table></section>`;
 }
 const AGE_BANDS = { any:{label:'Any age'}, u22:{label:'Under 22', max:21}, mid:{label:'22 to 26', min:22, max:26}, prime:{label:'27 to 30', min:27, max:30}, vet:{label:'Over 30', min:31} };
 function scoutBrief(){
@@ -898,8 +1074,8 @@ function scoutBrief(){
   if (S.tab.report){
     const r = S.tab.report;
     const live = r.list.filter(p=>st.players[p.id] && p.club>=0 && p.club!==u.id);
-    results = `<p class="dim">${r.total} match${r.total===1?'':'es'}${live.length<r.total? `, showing the best ${live.length}` : ''}.</p>` + (live.length? `<table><tr><th>Pos</th><th>Player</th><th class="n">Sk</th><th class="n">Age</th><th class="n">Value</th></tr>` +
-      live.map(p=>{ const c = st.clubs[p.club]; const hm = E.managerOf(st, c.id); return `<tr class="tap" data-a="player" data-id="${p.id}"><td>${p.pos}</td><td class="wrap">${esc(p.name)}<br><span class="dim">${esc(c.short)}, ${c.div? 'D'+c.div : 'Europe'}${hm? ' ('+esc(hm.managerName)+')' : ''}</span></td><td class="n">${p.skill}${potTag(p)}</td><td class="n">${p.age}</td><td class="n">${money(p.value)}</td></tr>`; }).join('') + `</table>` : `<p class="dim">Nobody fits the brief. Loosen it.</p>`);
+    results = `<p class="dim">${r.total} match${r.total===1?'':'es'}${live.length<r.total? `, showing the best ${live.length}` : ''}.</p>` + (live.length? `<section class="card tb"><table><tr><th>Pos</th><th>Player</th><th class="n">Sk</th><th class="n">Age</th><th class="n">Value</th></tr>` +
+      live.map(p=>{ const c = st.clubs[p.club]; const hm = E.managerOf(st, c.id); return `<tr class="tap" data-a="player" data-id="${p.id}"><td class="ps"><span class="pos">${p.pos}</span></td><td class="wrap">${esc(p.name)}<br><span class="dim">${esc(c.short)}, ${c.div? 'D'+c.div : 'Europe'}${hm? ' ('+esc(hm.managerName)+')' : ''}</span></td><td class="n">${p.skill}${potTag(p)}</td><td class="n">${p.age}</td><td class="n">${money(p.value)}</td></tr>`; }).join('') + `</table></section>` : `<p class="dim">Nobody fits the brief. Loosen it.</p>`);
   }
   return `<h2>Brief the scout</h2><p class="dim">${tierNote}</p>
     ${seg('pos', [['ANY','Any'],['GK','GK'],['DEF','DEF'],['MID','MID'],['FWD','FWD']], b.pos)}
