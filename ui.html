@@ -301,6 +301,10 @@ body.pd tr.me td .dim{color:inherit;opacity:.9}
 body.pd tr.line-promo td{border-bottom:1px dashed var(--sky)}
 body.pd tr.line-releg td{border-top:1px dashed var(--sky)}
 body.pd td .hot{color:var(--amber)}
+body.pd .sk{display:inline-flex;flex-direction:row-reverse;align-items:baseline;vertical-align:baseline}
+body.pd .sk .up{min-width:2em;text-align:right;margin-right:5px;font-weight:600}
+@media (min-width:900px){body.pd .sk .up{margin-right:9px}}
+@media (max-width:379px){body.pd .sk .up{min-width:1.85em;margin-right:3px}}
 body.pd .bar{height:10px;border-radius:999px;background:var(--panel2);box-shadow:inset 0 1px 2px rgba(0,0,0,.45);margin:8px 0 12px;overflow:hidden}
 body.pd .bar i{background:linear-gradient(90deg,#4FA3DB,var(--sky));border-radius:999px}
 body.pd .grp{margin-bottom:9px}
@@ -639,8 +643,8 @@ function cards(html, o){
   if (m && o.keep) first = first.replace('<h1>', '<h1 class="hero">');
   else if (m){ head = m[0].replace('<h1>', `<h1 class="${o.h1||'pg'}">${o.icon? ic(o.icon) : ''}`); first = first.slice(m[0].length); }
   const wrap = (x, cls) => x.trim()? `<section class="card${cls? ' '+cls : ''}">${x}</section>` : x;
-  const body = (o.bare? first : wrap(first, o.lead)) + parts.map(x=>wrap(x)).join('');
-  return head + (o.flow? `<div class="flow">${body}</div>` : body);
+  const body = (o.bare? '' : wrap(first, o.lead)) + parts.map(x=>wrap(x)).join('');
+  return head + (o.bare? first : '') + (o.flow? `<div class="flow">${body}</div>` : body);
 }
 const ICONS = {
   home: 'M3 11l9-7 9 7M5 10v10h5v-6h4v6h5V10', squad: 'M8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM16 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM2 20c0-3 3-5 6-5s6 2 6 5M15 15.2c3-.7 7 1 7 4.8',
@@ -873,7 +877,7 @@ const SCREENS = {
       const inXI = slotOf[p.id];
       const oop = inXI && inXI!==p.pos? `<span class="mark">@${inXI}</span>` : '';
       const tags = [`${p.years<=1? '<span class="mark">expires</span>' : p.years+'y'}`, moodTag(p), p.yellows>=4? `<span class="mark">${p.yellows}Y</span>` : p.yellows? p.yellows+'Y' : ''].filter(Boolean).join(' · ');
-      return `<tr class="tap ${on?'sel':''}" data-a="toggle" data-id="${p.id}"><td class="tk"><span class="tick ${on?'on':''}">${on?'<span class="mark">■</span>':'□'}</span></td><td class="ps">${p.pos}</td><td class="wrap">${esc(p.name)} ${oop}${p.listed!==null?'<span class="pill">sale</span>':''}${p.requested?'<span class="pill">wants out</span>':''}<br><span class="dim" style="font-size:12px">${tags}</span></td><td class="n">${p.skill}${potTag(p)}</td><td class="n">${p.age}</td><td class="n">${p.ban>0? `<span class="mark">ban ${p.ban}</span>` : p.injury>0?`<span class="mark">inj ${p.injury}</span>`:p.fitness}</td><td><button class="b small" data-a="player" data-id="${p.id}">›</button></td></tr>`;
+      return `<tr class="tap ${on?'sel':''}" data-a="toggle" data-id="${p.id}"><td class="tk"><span class="tick ${on?'on':''}">${on?'<span class="mark">■</span>':'□'}</span></td><td class="ps">${p.pos}</td><td class="wrap">${esc(p.name)} ${oop}${p.listed!==null?'<span class="pill">sale</span>':''}${p.requested?'<span class="pill">wants out</span>':''}<br><span class="dim" style="font-size:12px">${tags}</span></td><td class="n"><span class="sk">${p.skill}${potTag(p)}</span></td><td class="n">${p.age}</td><td class="n">${p.ban>0? `<span class="mark">ban ${p.ban}</span>` : p.injury>0?`<span class="mark">inj ${p.injury}</span>`:p.fitness}</td><td><button class="b small" data-a="player" data-id="${p.id}">›</button></td></tr>`;
     }).join('');
     const modeBar = inEurope(u)? `<div class="grid2"><button class="b ${!euroMode?'on':''}" data-a="ximode" data-m="league">League XI</button><button class="b ${euroMode?'on':''}" data-a="ximode" data-m="euro">European XI</button></div><p class="dim">${euroMode? 'This side plays your '+euroComp(u.euro.comp).name+' ties. Leave it empty and the league XI is used.' : 'This side plays league and domestic cup games.'}</p>` : '';
     return { main: `<div class="cols wide2"><div>
@@ -948,10 +952,10 @@ const SCREENS = {
     if (t==='free'){
       const fa = E.freeAgentsList(st);
       body = `<p class="dim">Out of contract and looking for a club. No fee beyond a signing-on bonus, but they want their wages. The best go quickly, and the rest drift out of the game by week ${E.CFG.FREE_AGENT_WEEKS}.</p>` + (fa.length? `<section class="card tb"><table><tr><th>Pos</th><th>Player</th><th class="n">Sk</th><th class="n">Age</th><th class="n">Wants</th></tr>` +
-        fa.map(p=>`<tr class="tap" data-a="player" data-id="${p.id}"><td class="ps"><span class="pos">${p.pos}</span></td><td class="wrap">${esc(p.name)}<br><span class="dim">${p.lastClubName? 'ex '+esc(p.lastClubName) : 'unattached'}</span></td><td class="n">${p.skill}${potTag(p)}</td><td class="n">${p.age}</td><td class="n">${money(E.contractAsk(st,p))}/wk</td></tr>`).join('') + `</table></section>` : `<p class="dim">Nobody is without a club at the moment.</p>`);
+        fa.map(p=>`<tr class="tap" data-a="player" data-id="${p.id}"><td class="ps"><span class="pos">${p.pos}</span></td><td class="wrap">${esc(p.name)}<br><span class="dim">${p.lastClubName? 'ex '+esc(p.lastClubName) : 'unattached'}</span></td><td class="n"><span class="sk">${p.skill}${potTag(p)}</span></td><td class="n">${p.age}</td><td class="n">${money(E.contractAsk(st,p))}/wk</td></tr>`).join('') + `</table></section>` : `<p class="dim">Nobody is without a club at the moment.</p>`);
     } else if (t==='list'){
       body = `<p class="dim">Squad ${u.players.length}/20. Overdraft limit ${money(E.overdraftLimit(st, u))}.</p><section class="card tb"><table><tr><th>Pos</th><th>Player</th><th class="n">Sk</th><th class="n">Age</th><th class="n">Price</th></tr>`+
-        st.transferList.filter(tl=>{ const p = st.players[tl.pid]; return p && p.club>=0 && p.club!==u.id; }).map(tl=>{ const p = st.players[tl.pid]; const c = st.clubs[p.club]; return `<tr class="tap" data-a="player" data-id="${p.id}"><td class="ps"><span class="pos">${p.pos}</span></td><td class="wrap">${esc(p.name)}<br><span class="dim">${esc(c.short)}, D${c.div}</span></td><td class="n">${p.skill}${potTag(p)}</td><td class="n">${p.age}</td><td class="n pr">${money(tl.price)}<br><button class="b small amber" data-a="buy" data-id="${p.id}">Buy</button></td></tr>`; }).join('')+`</table></section>${humanMarket()}<p class="dim note card" style="margin-top:10px">${ic('info')}<span>The list changes every week. ${['A useless scout brings you six names and no opinions.','An average scout brings eight names.','A good scout brings ten names and picks out a couple with room to grow.','An excellent scout brings twelve names and can tell you about any player in the game.'][u.staff.scout]}</span></p>`;
+        st.transferList.filter(tl=>{ const p = st.players[tl.pid]; return p && p.club>=0 && p.club!==u.id; }).map(tl=>{ const p = st.players[tl.pid]; const c = st.clubs[p.club]; return `<tr class="tap" data-a="player" data-id="${p.id}"><td class="ps"><span class="pos">${p.pos}</span></td><td class="wrap">${esc(p.name)}<br><span class="dim">${esc(c.short)}, D${c.div}</span></td><td class="n"><span class="sk">${p.skill}${potTag(p)}</span></td><td class="n">${p.age}</td><td class="n pr">${money(tl.price)}<br><button class="b small amber" data-a="buy" data-id="${p.id}">Buy</button></td></tr>`; }).join('')+`</table></section>${humanMarket()}<p class="dim note card" style="margin-top:10px">${ic('info')}<span>The list changes every week. ${['A useless scout brings you six names and no opinions.','An average scout brings eight names.','A good scout brings ten names and picks out a couple with room to grow.','An excellent scout brings twelve names and can tell you about any player in the game.'][u.staff.scout]}</span></p>`;
     } else if (t==='offers'){
       body = st.offers.length? st.offers.map((o,i)=>{ const p = st.players[o.pid]; if (!p || p.club!==u.id) return ''; return `<section class="card"><p><span class="hot">${esc(o.name)}</span> offer <span class="hot">${money(o.amount)}</span> for ${esc(p.name)} (${p.pos} ${p.skill}, valued ${money(p.value)}).${o.human!==undefined? ' <span class="dim">A rival manager. They pay when you accept.</span>':''}<br><span class="dim">Expires week ${o.expires}.</span></p><div class="grid2"><button class="b" data-a="accept" data-i="${i}">Accept</button><button class="b" data-a="reject" data-i="${i}">Reject</button></div></section>`; }).join('')
         : `<p class="dim">No offers on the table. Put a player up for sale from his page in the Squad screen and clubs will come sniffing.</p>`;
@@ -966,7 +970,7 @@ const SCREENS = {
         const c = st.clubs[sc.club];
         const sq = E.squadOf(st,c).slice().sort((a,b)=>posOrder(a.pos)-posOrder(b.pos)||b.skill-a.skill);
         body = `<button class="b" data-a="scoutback">‹ ${esc(c.name)}, ${c.div? 'Division '+c.div : 'Europe'}</button><section class="card tb"><table><tr><th>Pos</th><th>Player</th><th class="n">Sk</th><th class="n">Age</th><th class="n">Value</th></tr>`+
-          sq.map(p=>`<tr class="tap" data-a="player" data-id="${p.id}"><td class="ps"><span class="pos">${p.pos}</span></td><td class="wrap">${esc(p.name)}</td><td class="n">${p.skill}${potTag(p)}</td><td class="n">${p.age}</td><td class="n">${money(p.value)}</td></tr>`).join('')+`</table></section>`;
+          sq.map(p=>`<tr class="tap" data-a="player" data-id="${p.id}"><td class="ps"><span class="pos">${p.pos}</span></td><td class="wrap">${esc(p.name)}</td><td class="n"><span class="sk">${p.skill}${potTag(p)}</span></td><td class="n">${p.age}</td><td class="n">${money(p.value)}</td></tr>`).join('')+`</table></section>`;
       }
     }
     return { main: `<div class="mkt"><h1 class="pg">Transfer market</h1>${tabs}${body}</div>` };
@@ -1170,7 +1174,7 @@ function youthScreen(){
   const grades = ['','A couple of pitches and a tea urn. One prospect a year.','A proper set-up. Two prospects a year.','Floodlit pitches and a coach for every age group. Three a year.','The best in the land. Four a year, and good ones.'];
   const build = u.academyBuild? `<p>Builders in: grade ${u.academyBuild.level} in ${u.academyBuild.weeksLeft} week${u.academyBuild.weeksLeft===1?'':'s'}.</p>`
     : lvl<4? `<button class="b" data-a="academy">Upgrade to grade ${lvl+1}<br><span class="dim">${money(E.CFG.ACADEMY_COST[lvl])}, ${E.CFG.ACADEMY_WEEKS[lvl]} weeks</span></button>` : `<p class="dim">Nothing more to build.</p>`;
-  const rows = rs.sort((a,b)=>b.pot-a.pot).map(p=>`<tr class="tap" data-a="player" data-id="${p.id}"><td class="ps"><span class="pos">${p.pos}</span></td><td class="wrap">${esc(p.name)}</td><td class="n">${p.skill}${potTag(p)}</td><td class="n">${p.age}</td><td class="n"><button class="b small" data-a="promote" data-id="${p.id}">Up</button></td></tr>`).join('');
+  const rows = rs.sort((a,b)=>b.pot-a.pot).map(p=>`<tr class="tap" data-a="player" data-id="${p.id}"><td class="ps"><span class="pos">${p.pos}</span></td><td class="wrap">${esc(p.name)}</td><td class="n"><span class="sk">${p.skill}${potTag(p)}</span></td><td class="n">${p.age}</td><td class="n"><button class="b small" data-a="promote" data-id="${p.id}">Up</button></td></tr>`).join('');
   return cards(`<h1>Youth academy</h1>
     <div class="kv"><span>Grade</span><span>${lvl} of 4</span></div>
     <div class="kv"><span>Youth coach</span><span>${['none','average','good','excellent'][u.staff.youth||0]} <span class="dim">(Staff tab)</span></span></div>
@@ -1202,7 +1206,7 @@ function otherClubRename(){
   }
   return tabs + E.divClubs(st, t.div).filter(c=>c.id!==u.id).sort((a,b)=>a.name.localeCompare(b.name)).map(c=>{ const hm = E.managerOf(st,c.id); return `<button class="b" data-a="rnclub" data-c="${c.id}" ${hm?'disabled':''}>${esc(c.name)} <span class="dim">(${esc(c.short)})${hm? ', '+esc(hm.managerName):''}</span></button>`; }).join('');
 }
-function potTag(p){ const st = S.state; if (!E.canSeePot(st,p) || p.pot<=p.skill) return ''; return ` <span class="mark">▲${p.pot-p.skill}</span>`; }
+function potTag(p){ const st = S.state; if (!E.canSeePot(st,p) || p.pot<=p.skill) return ''; return ` <span class="mark up">▲${p.pot-p.skill}</span>`; }
 
 const ROUND_SHORT = ['R1','R2','R3','QF','SF','Final'];
 function humanMarket(){
@@ -1210,7 +1214,7 @@ function humanMarket(){
   const list = E.humanListings(st);
   if (!list.length) return `<h2>Rival managers' players</h2><p class="dim">Nobody has listed anyone. You can still bid for any of their players from the Scout tab; they decide on their turn.</p>`;
   return `<h2>Rival managers' players for sale</h2><section class="card tb"><table><tr><th>Pos</th><th>Player</th><th class="n">Sk</th><th class="n">Age</th><th class="n">Asking</th></tr>` +
-    list.filter(({p})=>st.clubs[p.club]).map(({p,m})=>`<tr class="tap" data-a="player" data-id="${p.id}"><td class="ps"><span class="pos">${p.pos}</span></td><td class="wrap">${esc(p.name)}<br><span class="dim">${esc(m.managerName)}, ${esc(st.clubs[p.club].short)}</span></td><td class="n">${p.skill}${potTag(p)}</td><td class="n">${p.age}</td><td class="n">${money(p.listed)}</td></tr>`).join('') + `</table></section>`;
+    list.filter(({p})=>st.clubs[p.club]).map(({p,m})=>`<tr class="tap" data-a="player" data-id="${p.id}"><td class="ps"><span class="pos">${p.pos}</span></td><td class="wrap">${esc(p.name)}<br><span class="dim">${esc(m.managerName)}, ${esc(st.clubs[p.club].short)}</span></td><td class="n"><span class="sk">${p.skill}${potTag(p)}</span></td><td class="n">${p.age}</td><td class="n">${money(p.listed)}</td></tr>`).join('') + `</table></section>`;
 }
 const AGE_BANDS = { any:{label:'Any age'}, u22:{label:'Under 22', max:21}, mid:{label:'22 to 26', min:22, max:26}, prime:{label:'27 to 30', min:27, max:30}, vet:{label:'Over 30', min:31} };
 function scoutBrief(){
@@ -1222,7 +1226,7 @@ function scoutBrief(){
     const r = S.tab.report;
     const live = r.list.filter(p=>st.players[p.id] && p.club>=0 && p.club!==u.id);
     results = `<p class="dim">${r.total} match${r.total===1?'':'es'}${live.length<r.total? `, showing the best ${live.length}` : ''}.</p>` + (live.length? `<section class="card tb"><table><tr><th>Pos</th><th>Player</th><th class="n">Sk</th><th class="n">Age</th><th class="n">Value</th></tr>` +
-      live.map(p=>{ const c = st.clubs[p.club]; const hm = E.managerOf(st, c.id); return `<tr class="tap" data-a="player" data-id="${p.id}"><td class="ps"><span class="pos">${p.pos}</span></td><td class="wrap">${esc(p.name)}<br><span class="dim">${esc(c.short)}, ${c.div? 'D'+c.div : 'Europe'}${hm? ' ('+esc(hm.managerName)+')' : ''}</span></td><td class="n">${p.skill}${potTag(p)}</td><td class="n">${p.age}</td><td class="n">${money(p.value)}</td></tr>`; }).join('') + `</table></section>` : `<p class="dim">Nobody fits the brief. Loosen it.</p>`);
+      live.map(p=>{ const c = st.clubs[p.club]; const hm = E.managerOf(st, c.id); return `<tr class="tap" data-a="player" data-id="${p.id}"><td class="ps"><span class="pos">${p.pos}</span></td><td class="wrap">${esc(p.name)}<br><span class="dim">${esc(c.short)}, ${c.div? 'D'+c.div : 'Europe'}${hm? ' ('+esc(hm.managerName)+')' : ''}</span></td><td class="n"><span class="sk">${p.skill}${potTag(p)}</span></td><td class="n">${p.age}</td><td class="n">${money(p.value)}</td></tr>`; }).join('') + `</table></section>` : `<p class="dim">Nobody fits the brief. Loosen it.</p>`);
   }
   return `<h2>Brief the scout</h2><p class="dim">${tierNote}</p>
     ${seg('pos', [['ANY','Any'],['GK','GK'],['DEF','DEF'],['MID','MID'],['FWD','FWD']], b.pos)}

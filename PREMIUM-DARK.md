@@ -2,7 +2,7 @@
 
 Master specification: John's "Premium Dark Management UI Reskin" brief of 18 November 2026 and its six concept images. The existing game is the source of truth for every word, figure, action and flow. This file records how the brief is being carried out.
 
-**Status: Checkpoint B, awaiting John's review.** Every screen of the game wears the new look, on a phone and on a desktop. Checkpoint A (Home, Squad, Transfer Market) was approved by John on 18 November. On the same day he decided that the match screen's surround should take the new look too, which the brief had left outside the reskin; the pitch picture, its overlays and the size of the stage are untouched. Branch `premium-dark`, from the tested 1.7.0 baseline (`milestone-5`). Nothing is merged or deployed; the version is still 1.7.0 and the What's new text is untouched.
+**Status: Checkpoint B reviewed by John on 18 November ("the look and feel are really good"), with two tidy-ups asked for and made the same day (see "After John's review" below). Checkpoint C is next.** Every screen of the game wears the new look, on a phone and on a desktop. Checkpoint A (Home, Squad, Transfer Market) was approved by John on 18 November. On the same day he decided that the match screen's surround should take the new look too, which the brief had left outside the reskin; the pitch picture, its overlays and the size of the stage are untouched. Branch `premium-dark`, from the tested 1.7.0 baseline (`milestone-5`). Nothing is merged or deployed; the version is still 1.7.0 and the What's new text is untouched.
 
 ## How it is built
 
@@ -55,7 +55,7 @@ Every pair meets WCAG AA for normal text (4.5 : 1); the lowest is 5.2 : 1.
 | Button: destructive | warning fill once tapped | Resign, Abandon, Retire, Release, Let him go, Delete a save: quiet until tapped, then the warning colour with the "Really?" wording the game already used |
 | Choice group | `.grid2`, `.grid3`, `.tabs` | 40 px tall or more; the eight "how many managers" buttons become two rows of four on a phone so each is a fingertip wide |
 | Field | `input`, `label` | light field, dark text, amber focus ring; the four name fields now have real labels |
-| Table | `table`, `table.tight`, `th`, `td.n`, `td.wrap`, `.pos` chip, `.tick`, `tr.sel` | `tr.me` (the managed club, the current week, your row on the ladder) in amber; promotion and relegation lines as dashes |
+| Table | `table`, `table.tight`, `th`, `td.n`, `td.wrap`, `.pos` chip, `.tick`, `tr.sel`, `.sk` (a skill with the rise he could make, ▲, in a slot of its own in front of it, so the skills line up down the column) | `tr.me` (the managed club, the current week, your row on the ladder) in amber; promotion and relegation lines as dashes |
 | Meter | `.bar` | ground safety and average fill |
 | Title, hand-over, end of a job | `.title`, `.logo`, `.sub` | the wordmark large; a manager's name or "Sacked" in the same style |
 | Scoreboard | `.clock`, `.score`, `.events`, `.md-tie` | the match result and the fixture card before a match |
@@ -131,6 +131,17 @@ Build: `index.html` 7,166,508 bytes, md5 `5b8d09ce0b432446faa5afd460d6a80b`; `so
 | All 21 suites | pass |
 | Saves from the live 1.6.0, and back (`tools/save-compat.js`) | 19 of 19 each way |
 | Contrast of every text and background pair | 5.2 : 1 or better |
+
+### After John's review (18 November, 14:42)
+
+John asked for two tidy-ups and found everything else right.
+
+1. **The possible rise in skill (▲) pushed the skill out of line.** In every table the rise now sits first, in a slot of its own, and the skill keeps its place at the right of the column. The words are the same and in the same order in the page; only where they are drawn changed. The old look is unaffected.
+2. **On a desktop, the Scout card on Club, Staff started lower than the Coach card.** The line "Paid weekly, no notice needed" sat inside the left column. It now sits above both columns, so the four cards start level.
+
+Build: `index.html` 7,166,780 bytes, md5 `e465b18dc30dfef6b725877d721fcccc`; `soccer-manager-91.html` md5 `ed19a60331a74568b68218e96649f9ec`, sent to John as `soccer-manager-91-premium-dark-checkpoint-B2.html`.
+
+Checked on that file: the same words, controls and saved games as the 1.7.0 baseline at all 246 stops; the five screen sizes at all 123 stops. Checked on the file one rule earlier (the rule narrows the slot on phones under 380 px wide and touches nothing else): the match screen's boxes at eleven sizes; the 198 match frames; the old look against the baseline (369 of 385 pictures identical, the rest as before); `test-matchday-ui`, `test-contracts`, `test-youth`, `test-hof` and `test-touch`; saves from 1.6.0 and back, 19 of 19 each way. Against the build John reviewed, the pictures that changed are the squad, market, scout and youth tables (the skill column) and Club, Staff on a desktop. The full set of checks runs again on the release candidate at Checkpoint C.
 
 Not done at this checkpoint, and due at Checkpoint C: the states listed as not reached; a keyboard-only pass and a screen-reader pass (field captions beyond the four name fields have no label of their own, as before); the soak audit; a look on a real phone other than John's own review; the installed app's colours if John wants them changed.
 
