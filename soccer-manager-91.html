@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#0055AA">
+<meta name="theme-color" content="#07131E">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SM '91">
 
@@ -219,6 +219,11 @@ body.pd .action .b,body.pd .action .b:hover{background:var(--amber);border:1px s
 body.pd:not(.md-wide) .action .b{font-size:17px;min-height:50px;border-radius:11px;display:flex;align-items:center;justify-content:center;gap:10px}
 body.pd .action .b:active{background:#FFC04F}
 body.pd .action .b.quiet,body.pd .action .b.quiet:hover{background:var(--panel2);border-color:var(--line);color:var(--tx);box-shadow:none}
+body.pd main:focus{outline:none}
+body.pd tr.tap:focus-visible{outline:2px solid var(--amber);outline-offset:-2px}
+body.pd tr.tap:focus-visible td{background:rgba(255,172,34,.1)}
+body.pd nav button:focus-visible,body.pd .b:focus-visible{position:relative;z-index:1}
+body.pd .toast.top{bottom:auto;max-width:min(94%,560px);width:max-content;text-align:center;padding:7px 14px;line-height:1.3;z-index:20}
 body.pd .toast{background:#0C1F30;color:var(--tx,#F4F7FA);border:1px solid #466C82;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.45);font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;font-weight:600}
 /* a wide screen: room for a second column, and the sections spelt out beside their icons */
 @media (min-width:900px){
@@ -374,8 +379,9 @@ body.pd .md-tie .dim{color:var(--mut);font-weight:600}
 @media (max-width:599px) and (orientation:portrait){.md-stage{height:min(calc(64vh - 14px),560px)}}
 .md-tie{font-size:20px;text-align:center;margin:18px 0;line-height:1.3}
 /* ---- Premium Dark on the match screen: colour and type for the surround only. Every size here is the old size, so the
-   stage, and the picture on it, are exactly what they were; the stage's own overlays (the goal and card banner, the
-   measuring panel) are pinned to the old look. tools/ui-parity.js --stage checks the sizes. ---- */
+   stage, and the picture on it, are exactly what they were. The goal and card banner and the measuring panel that
+   sit over the pitch take the new colours and type too (John, 18 November); their text sizes and padding are the old
+   ones. tools/ui-parity.js --stage checks the sizes. ---- */
 body.pd .md-board{font-weight:700;color:var(--tx)}
 body.pd .md-board .s{color:var(--amber);font-weight:800;font-variant-numeric:tabular-nums}
 body.pd .md-clock{color:var(--tx2);line-height:1.35;font-weight:600;font-variant-numeric:tabular-nums}
@@ -384,9 +390,12 @@ body.pd .md-comm{background:var(--panel);box-shadow:inset 0 0 0 1px var(--line2)
 body.pd .md-log{line-height:1.35}
 body.pd .md-log div{border-bottom:1px solid var(--line2)}
 body.pd .md-log .us{color:var(--amber)}
-body.pd .md-badge,body.pd .md-meter{font-family:"Courier New",Courier,"Lucida Console",monospace;font-weight:700;line-height:1}
-body.pd .md-meter.card{border:0;border-radius:0;margin:0;padding:10px 12px;background:rgba(0,0,0,.9);box-shadow:inset 1px 1px 0 var(--white),1px 1px 0 var(--black);line-height:1.5;overflow:auto}
-body.pd .md-meter.card .b{margin:10px 0 0}
+body.pd .md-badge,body.pd .md-meter{font-weight:700;line-height:1;background:rgba(7,19,30,.88);color:var(--tx);box-shadow:inset 0 0 0 1px var(--line);border-radius:8px;font-variant-numeric:tabular-nums}
+body.pd .md-badge .sw{border-color:rgba(0,0,0,.6);border-radius:2px}
+body.pd .md-meter.card{border:0;border-radius:10px;margin:0;padding:10px 12px;background:rgba(7,19,30,.94);box-shadow:inset 0 0 0 1px var(--line),0 8px 24px rgba(0,0,0,.45);font-weight:500;line-height:1.5;overflow:auto}
+body.pd .md-meter.card b{color:var(--sky);letter-spacing:1.2px}
+body.pd .md-meter.card .b{margin:10px 0 0;text-align:center}
+body.pd .md-meter.card .dim{color:var(--mut)}
 body.pd.md-wide .action{border-top:3px solid var(--line2)}
 body.pd.md-wide .action .b,body.pd .md-controls2 .b{border:0;border-radius:9px;min-height:0;margin:0;font-weight:700}
 body.pd.md-wide .action .b{padding:12px 12px;font-size:16px;box-shadow:inset 0 1px 0 rgba(255,255,255,.4)}
@@ -403,11 +412,11 @@ body.pd.md-wide .action .b.quiet.on,body.pd.md-wide .action .b.quiet.on:hover{ba
 <body>
 <div id="app">
   <header id="hdr"></header>
-  <main id="main"></main>
+  <main id="main" tabindex="-1"></main>
   <nav id="nav"></nav>
   <div class="action" id="act"></div>
 </div>
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div id="updatebar" style="display:none;position:fixed;top:0;left:0;right:0;z-index:10;background:var(--orange);color:var(--black);text-align:center;padding:10px 12px;font:inherit;cursor:pointer;box-shadow:inset 0 -3px 0 var(--bevel-lo)">Version updated. Tap to restart.</div>
 <script>
 'use strict';
@@ -7779,6 +7788,7 @@ const SAVE_KEY = 'sm91-save';
 const APP_VERSION = '1.7.0';
 const CHANGELOG = [
   { v:'1.7.0', when:'November 2026', notes:[
+    'A new look. Every screen has been redesigned in a darker, cleaner style: clearer type, cards that group what belongs together, bigger buttons, and amber for what is chosen and what to do next. Everything is where it was and works as it did, and your saved games carry on.',
     'Tap a player to see who he is. Selecting a footballer on the match screen is far more forgiving on a phone: a fingertip close to him is enough, the man you touched wins in a crowd (on the whole-pitch camera too), and the tag over his head shows his number, name and position.',
     'The picture holds when the match is paused. Turning the phone while paused or at full time no longer leaves an empty stage, and tapping while paused no longer nudges the camera along.',
     'Skip ends on the final whistle with the players on the pitch, instead of a black screen with the last goal\'s banner left on it.',
@@ -7972,7 +7982,9 @@ function sel(){ const st = S.state; if (!st.userSel) st.userSel = []; if (!st.eu
 function inEurope(u){ return !!(u.euro && !u.euro.out); }
 function euroComp(k){ return E.CFG.EURO.comps[k]; }
 function fmtEuroTie(t){ if (!t) return ''; if (t.final) return `${euroComp(t.comp).name} final v ${esc(t.opp.name)} (neutral)`; return `${euroComp(t.comp).name} ${E.euroRoundName(t.comp, t.round)}, ${t.g1? '2nd' : '1st'} leg v ${esc(t.opp.name)} (${t.g1? (t.homeFirst? 'A' : 'H') : (t.homeFirst? 'H' : 'A')})${t.g1? `, first leg ${t.homeFirst? t.g1[0]+'-'+t.g1[1] : t.g1[1]+'-'+t.g1[0]}` : ''}`; }
-function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(()=>t.classList.remove('show'), 2200); }
+function toast(msg){ const t = $('#toast'); t.textContent = msg; toastPlace(t); t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(()=>t.classList.remove('show'), 2200); }
+/* Where the toast shows (presentation only). The old look, and the match screen in either look, keep it where it was, low on the screen. In the new look it sits over the club's name in the header, or at the top of a screen that has no header, so it never covers a figure, a row or a button. */
+function toastPlace(t){ const b = document.body.classList; if (!b.contains('pd') || b.contains('md-wide')){ t.classList.remove('top'); t.style.top = ''; return; } const c = $('.clubbar'); const r = c && c.getBoundingClientRect(); t.classList.add('top'); t.style.top = Math.round(r && r.height? r.top + 3 : 10)+'px'; }
 function go(screen){ if (S.md && S.md.viewer && screen!=='matchview') Matchday.ui.closeViewer(); S.screen = screen; document.body.classList.toggle('md-wide', screen==='matchview'); render(); $('#main').scrollTop = 0; }
 
 // ---------- Premium Dark (the management reskin; presentation only) ----------
@@ -8010,10 +8022,27 @@ const ICONS = {
   user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c0-4 4-6 8-6s8 2 8 6', tag: 'M3 12V4h8l10 10-8 8L3 12zM7.5 8.5h.01', ground: 'M4 20V9l8-5 8 5v11M9 20v-5h6v5M3 20h18' };
 const ic = (name, cls) => `<svg class="ic${name==='play'? ' fill' : ''}${cls? ' '+cls : ''}" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="${ICONS[name]||ICONS.info}"/></svg>`;
 
-// ---------- rendering ----------
+// ---------- keyboard and screen reader (nothing here can be seen, and nothing changes what a tap or a click does) ----------
+// A row that can be tapped can be reached with Tab and worked with Enter or Space; the tick, the chosen option and the
+// current section say what they are; fields that had only a heading or a placeholder have a name; and when the keyboard
+// was the last thing used, focus stays on the control just worked (or moves to the new screen) when the screen is redrawn.
+let KB = false;
+const A11Y_NAMES = { amt:'Amount in pounds', cwage:'Weekly wage in pounds', pname:"Player's name", nick:'Nickname', slotname:'Name for this save' };
+const A11Y_CONFIRMS = new Set(['release','releasereserve','delslot','resign','retire','quit','letgo']);
+function focusKey(e){ if (!e || !e.getAttribute) return null; const d = e.dataset || {}; const k = Object.keys(d).sort().map(x=>x+'='+d[x]).join('|'); return (k || e.id)? e.tagName+'|'+k+'|'+(e.id||'') : null; }
+function a11y(){
+  const app = $('#app'); if (!app || !app.querySelectorAll) return;
+  app.querySelectorAll('tr.tap').forEach(r=>{ r.tabIndex = 0; });
+  app.querySelectorAll('.tick').forEach(t=>{ t.setAttribute('role','img'); t.setAttribute('aria-label', t.classList.contains('on')? 'picked' : 'not picked'); });
+  app.querySelectorAll('nav button.on').forEach(b=>b.setAttribute('aria-current','page'));
+  app.querySelectorAll('main .b.on, .action .b.on').forEach(b=>{ if (!A11Y_CONFIRMS.has(b.dataset.a)) b.setAttribute('aria-pressed','true'); });
+  app.querySelectorAll('input').forEach(i=>{ if (i.getAttribute('aria-label') || (i.id && app.querySelector('label[for="'+i.id+'"]'))) return; const n = A11Y_NAMES[i.id] || i.getAttribute('placeholder'); if (n) i.setAttribute('aria-label', n); });
+  app.querySelectorAll('.bar').forEach(b=>b.setAttribute('aria-hidden','true'));
+}
 function render(){
   const st = S.state;
   const hdr = $('#hdr'), main = $('#main'), nav = $('#nav'), act = $('#act');
+  const held = KB && document.activeElement && main.parentNode.contains(document.activeElement)? focusKey(document.activeElement) : null;
   const pd = pdOn(); document.body.classList.toggle('pd', pd);
   main.dataset.s = S.screen; main.dataset.w = PD_NARROW.has(S.screen)? 'n' : '';
   const tc = document.querySelector('meta[name="theme-color"]'); if (tc) tc.content = pd? '#07131E' : '#0055AA';
@@ -8031,6 +8060,8 @@ function render(){
   main.innerHTML = out.main;
   act.innerHTML = out.action || '';
   act.style.display = out.action? '' : 'none';
+  a11y();
+  if (KB){ let to = null; if (held) for (const e of main.parentNode.querySelectorAll('[data-a],[data-nav],input')) if (focusKey(e)===held && !e.disabled){ to = e; break; } try { (to || main).focus({ preventScroll: !!to }); } catch(e){} }
 }
 
 const SCREENS = {
@@ -8870,6 +8901,8 @@ document.addEventListener('click', async e => {
   try { await act(t.dataset.a, t.dataset); } catch(err){ console.error(err); } finally { busy = false; }
 });
 document.addEventListener('keydown', e => { if (e.key==='Enter' && S.screen==='setup' && (S.setupCount||1)===1) act('start',{}); });
+document.addEventListener('keydown', e => { if (e.key==='Tab' || e.key==='Enter' || e.key===' ') KB = true; const r = e.target; if ((e.key==='Enter' || e.key===' ') && r && r.matches && r.matches('tr.tap')){ e.preventDefault(); r.click(); } }, true);
+document.addEventListener('pointerdown', () => { KB = false; }, true);
 
 window.__sm91 = { S, E, render, go };
 if ('serviceWorker' in navigator && /^https?:/.test(location.protocol) && document.querySelector('link[rel="manifest"]')){

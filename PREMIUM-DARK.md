@@ -2,7 +2,7 @@
 
 Master specification: John's "Premium Dark Management UI Reskin" brief of 18 November 2026 and its six concept images. The existing game is the source of truth for every word, figure, action and flow. This file records how the brief is being carried out.
 
-**Status: Checkpoint B reviewed by John on 18 November ("the look and feel are really good"), with two tidy-ups asked for and made the same day (see "After John's review" below). Checkpoint C is next.** Every screen of the game wears the new look, on a phone and on a desktop. Checkpoint A (Home, Squad, Transfer Market) was approved by John on 18 November. On the same day he decided that the match screen's surround should take the new look too, which the brief had left outside the reskin; the pitch picture, its overlays and the size of the stage are untouched. Branch `premium-dark`, from the tested 1.7.0 baseline (`milestone-5`). Nothing is merged or deployed; the version is still 1.7.0 and the What's new text is untouched.
+**Status: Checkpoint C done on 18 November; the release candidate awaits John's approval.** Checkpoints A and B were approved the same day. `RELEASE-CANDIDATE-1.7.0.md` has the candidate's hashes, the coverage table, every test result and the known issues; this file is the record of how the reskin is built. Branch `premium-dark`, from the tested 1.7.0 baseline (`milestone-5`). Nothing is merged or deployed.
 
 ## How it is built
 
@@ -10,7 +10,8 @@ Master specification: John's "Premium Dark Management UI Reskin" brief of 18 Nov
 * **One markup.** The screens' markup gained wrappers (`section.card`, `.cols`, `.flow`, `.grp`), a few class names, inline SVG icons, and four `<label>` elements where a field's caption was a paragraph. The old stylesheet gives none of them any style and hides the icons, so the same markup draws in either look.
 * **Grouping by one helper.** `cards(html, options)` takes what a screen already writes and wraps it: the page heading stays on top, and each `<h2>` with what follows it becomes one card. It adds, removes and reorders nothing. Most screens are grouped by that one call, so a screen's words and controls are still written in one place, as they were.
 * **Buttons take their role from their action.** Which buttons are amber, blue or the warning colour is decided in the stylesheet from the button's existing `data-a` name. No button was given a new name, class or handler.
-* **The match screen is styled from the stylesheet alone.** No file under `src/` is changed. Every size on that screen is the old size, so the stage and the picture on it are exactly what they were (`tools/ui-parity.js --stage` checks every box).
+* **The match screen is styled from the stylesheet alone.** No file under `src/` is changed. Every size on that screen is the old size, so the stage and the picture on it are exactly what they were (`tools/ui-parity.js --stage` checks every box). The goal and card banner and the measuring panel over the pitch take the new colours and type as well (Checkpoint C).
+* **Keyboard and screen reader support is one function and two listeners** (`a11y()`, a `keydown` and a `pointerdown` listener in `ui.html`), added at Checkpoint C. They add names, states and focus handling and change nothing that a tap or a click does.
 * **One newer CSS feature.** `:has()` is used once, to round the corners of a table that sits directly in a card. A browser without it (before 2022) shows the same table with square corners.
 * **Nothing else.** No click handler, action name, id, label, figure, saved field, engine call or matchday file is changed. `git diff milestone-5 -- engine.js src/ sw.js build.py assets/ manifest.webmanifest` is empty.
 * **To undo it:** make `pdOn` return false (or delete the two "Premium Dark" blocks); the wrappers are inert.
@@ -62,19 +63,21 @@ Every pair meets WCAG AA for normal text (4.5 : 1); the lowest is 5.2 : 1.
 | Match screen surround | `.md-board`, `.md-clock`, `.md-comm`, `.md-log`, `.md-controls`, `.md-controls2` | colour and type only; every size is the old one. The chosen speed is now marked (amber outline), which the old look did not show |
 | Navigation | `nav button`, `.on` | icon over label on a phone, beside it on a desktop |
 | Main action | `.action .b` | amber, 50 px |
-| Toast, update bar | `.toast`, `#updatebar` | restyled |
+| Toast, update bar | `.toast`, `.toast.top`, `#updatebar` | restyled. In the new look the toast shows over the club's name in the header (`toastPlace()`), or at the top of a screen with no header, so it covers no figure, row or button; on the match screen it stays low, where it was |
+| Banner and measuring panel over the pitch | `.md-badge`, `.md-meter` | new colours and type; the old text sizes and padding |
+| Keyboard focus | `:focus-visible` on `.b`, `nav button`, `input`, `tr.tap` | an amber ring; a focused row is tinted |
 
 Icons are 20 hand-drawn line paths in `ICONS` (`ui.html`), drawn by `ic(name)`, always beside a visible label and hidden from screen readers (`aria-hidden`).
 
 **Wide screens (900 px and up).** The app widens from 520 px to 1,180 px. Home and Squad use two fixed columns (`.cols`). Screens made of several cards let them run in two balanced columns (`.flow`): a player's page, League tables, the five Club tabs, Records, How to play, What's new, Pre-season, the season review. Screens that are one list or one decision keep to a centred 760 px column: the title, setup, Hall of fame, fixtures, results, saves, the managers' table, the hand-over, the match choice and result. The navigation spells its labels beside the icons. Below 900 px, including a phone held sideways, the layout is the single column it was.
 
-**The browser's bar colour** (`theme-color`) follows the look: dark navy, or the old blue with `?classic`.
+**The browser's bar colour** (`theme-color`) follows the look: dark navy, or the old blue with `?classic`. An installed copy's splash screen and bar take the same navy from `manifest.webmanifest` (changed at Checkpoint C for the release); the app icons are unchanged.
 
 ## Asset inventory
 
 Nothing is fetched at run time and no image file was added. The whole reskin is text inside `index.html`: about 27 KB of CSS (1.8 KB of it the stadium drawing) and 1.3 KB of icon paths. `index.html` grows from 7,131,899 bytes (1.7.0) to 7,166,508, about 35 KB or half of one percent.
 
-Not changed, and still the old blue: `manifest.webmanifest` (the colour of the splash screen and bar of an installed app) and the two app icons. They are separate deployed files; see the questions at the end.
+The app icons are unchanged and still blue; a new icon would be new artwork and is out of scope.
 
 ## Coverage: every screen and where it is checked
 
@@ -162,7 +165,16 @@ The concepts are generated pictures and the brief says the game wins wherever th
 
 Compared picture by picture with the Checkpoint A build, the three approved screens differ in two ways only, both from applying the Checkpoint B components to them: "Send him out" on the Scout tab is now a blue confirming button, and an offer on the Offers tab sits in a card with a blue Accept.
 
-## Questions for John
+## Checkpoint C (18 November)
 
-* **The banner over the pitch.** The goal and card banner and the measuring panel sit on top of the pitch picture. The brief lists overlays as outside the reskin and John's decision covered the surround, so they keep the old look. Say if they should change.
-* **An installed copy.** The splash screen and bar colour of a copy installed to a phone's home screen come from `manifest.webmanifest`, and are still the old blue, as are the two app icons. Changing the two colours is a two-line change to make at the combined release. The icons are artwork and would be a separate decision.
+Scope: section 3 of John's brief "Completion of current milestones, combined release and next development roadmap". Results: `RELEASE-CANDIDATE-1.7.0.md`.
+
+* **Rare states.** `tools/ui-parity.js` gained a third journey (`big`: the Big job start, in Europe from week one, a ladder that answers through canned replies, states set by hand and put back, a resignation) and the hot-seat journey grew to three managers with a listing and a retirement. 165 stops in all. The states the Checkpoint B list called "not reached" are now seen, apart from the three named in the candidate's report.
+* **Keyboard.** `--keys` presses Tab through every stop and requires every control to be reached, named, ringed and in view, then works the game from the keyboard. What it found on the build before this checkpoint, and what was done: rows that could only be tapped were not reachable (768 visits over the journeys; now focusable, with Enter and Space); four kinds of field had no name (the amount, the wage, a player's name, a save's name; now named); focus was lost at every redraw (now kept, when the keyboard is in use).
+* **Screen reader.** The tick reads "picked" or "not picked"; a chosen option is `aria-pressed`; the current section is `aria-current`; the toast is a live region; the decorative meter is hidden from it. The buttons that ask "Really?" are not marked as pressed.
+* **Toast, banner, panel, installed colours, What's new:** as described above and in the candidate's report.
+
+## Decisions on the questions raised at Checkpoint B (John, 18 November)
+
+* The goal and card banner and the measuring panel take the new look. Done at Checkpoint C.
+* An installed copy's colours change at release; the app icon is out of scope. Done in the candidate.
