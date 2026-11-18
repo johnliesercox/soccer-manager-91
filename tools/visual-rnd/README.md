@@ -17,6 +17,9 @@ The large reference sets (the Blender renders behind every painting) are zipped 
 up through GitHub's web page; `archives/README.md` says what each one restores. Unzip them in place before re-running a
 painting step; the game and the tests need none of them.
 
+**The archives are not on GitHub yet** (18 November 2026). `ART-PIPELINE-ARCHIVES.md` at the root of the repository says
+exactly what is missing, where it is kept and how every folder is made again from the scripts here.
+
 
 | File | What it is |
 |---|---|

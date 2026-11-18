@@ -1,5 +1,7 @@
 # Rolling back
 
+(State on 18 November 2026: the live site is 1.6.0 and the tag `v1.6.0` exists on `main` at `97a0748`. 1.7.0 has not been released, so nothing below has had to be used. When the next release goes out, the version to put back is 1.6.0, exactly as described here.)
+
 The site is a handful of static files on GitHub Pages. Going back to a release means putting that release's `index.html`
 and `sw.js` back at the root of the repository; nothing else about the site or anyone's saved games changes.
 
