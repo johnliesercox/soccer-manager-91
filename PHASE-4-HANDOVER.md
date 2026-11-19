@@ -5,6 +5,8 @@ Written 18 November 2026. Read `PHASE-3-FINAL-REPORT.md` first for where things 
 ## Where things stand
 
 * **Live:** 1.7.0 (the combined release with the Premium Dark interface), `main` at `fe24d6c`, published 18 November 2026. GitHub Pages serves the root of `main`. 1.6.0 is the tag `v1.6.0` at `97a0748`; the tag `v1.7.0` is John's to create.
+* **In hand (19 November 2026):** release 1.7.1, the hair fix (Milestone 0 of the roadmap), on the branch `milestone-0-hair`, built and tested, waiting for John's visual approval. Not merged, not deployed. `HAIR-FIX-1.7.1.md` is its checkpoint report.
+* **Known limitation, goalkeepers' hair:** the keepers' painted sheet has one hairstyle (the short one) where the outfield sheet has three. A goalkeeper whose look says cropped or long is drawn short all match, which nobody can notice; an outfield player who goes in goal after his keeper is sent off (`src/matchday/scene.js` gives a defender the keeper's role from that second) is drawn from the keepers' sheet from then on, so his hairstyle becomes the short one while his hair colour and skin stay his own. Curing it means painting the keepers' 58 poses in the two other hairstyles (928 cells a size).
 * **Start new work from `main`**, on a branch of its own. The branches `milestone-5` and `premium-dark` are wholly contained in it.
 * **Next:** nothing is in hand. The roadmap after this release is John's brief of 18 November (a fix for hairstyles changing during a match, then tactics, training, match information, matchday variety); none of it is started, and each milestone needs his approval of its scope before any code. `RELEASE-CANDIDATE-1.7.0.md` is the report on the released file, `PREMIUM-DARK.md` the record of the interface, and `node tools/ui-parity.js` (with `--compare`, `--layout`, `--keys` and `--stage`) is how any change to a screen's presentation is checked against the build before it.
 
@@ -62,6 +64,7 @@ Run suites one at a time; two UI suites at once share a temporary file.
 | Memory, forced failures, offline, hot-seat, measuring screen | `node tools/soak-audit.js . <out> all` | 12 minutes |
 | Phone pacing between real measurements | `node tools/phone-probe.js . 6 out.json` | 90 seconds |
 | The picture, pixel for pixel | `node tools/tile-reference.js`, `tools/sprite-reference.js`, `tools/frame-reference.js`, each with `. out.json tools/reference/<its file>` | 3 minutes in all |
+| Hair drawn as hair, and every player's look held through matches (from 1.7.1) | `node tools/hair-audit.js .` | 8 minutes (1 with `--matches 0`) |
 
 The browser tools need Playwright (`NODE_PATH` to wherever it is installed). Do not rebuild while a browser audit is running.
 

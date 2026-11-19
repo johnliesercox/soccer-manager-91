@@ -1,5 +1,7 @@
 # Rolling back
 
+(19 November 2026: release 1.7.1, the hair fix, is prepared on the branch `milestone-0-hair` and is not deployed. If it is published, the version to put back is 1.7.0, from `legacy/release-1.7.0/`, by the steps below with that folder and number; saves are format 4 in both, and `tools/save-compat.js` was run in both directions between them.)
+
 (State on the evening of 18 November 2026: the live site is 1.7.0, `main` at `fe24d6c`. The tag `v1.6.0` exists at `97a0748`; the tag `v1.7.0` is John's to create once he has checked the live site. Nothing below has had to be used. The version to put back, if it ever has to be, is 1.6.0, exactly as described here.)
 
 The site is a handful of static files on GitHub Pages. Going back to a release means putting that release's `index.html`
@@ -12,8 +14,10 @@ that is `v1.6.0`), target `main`, publish. Do this *before* uploading the new fi
 Tag the new release the same way once it is up (`v1.7.0`). A tag is a named, permanent copy of every file at that moment;
 any of them can be browsed and downloaded from the Tags page.
 
-For the last two releases there is also a copy inside the repository, so no tag is needed to go back to either:
+For the last three releases there is also a copy inside the repository, so no tag is needed to go back to any of them:
 
+* `legacy/release-1.7.0/` holds the exact `index.html`, `sw.js`, `manifest.webmanifest` and icons the site served as
+  1.7.0 (commit `cde3c8f` on `main`, 18 November 2026, `index.html` md5 `7976271030be0bb85d7fd7cf38b11f8d`).
 * `legacy/release-1.6.0/` holds the exact `index.html`, `sw.js`, `manifest.webmanifest` and icons the site served as
   1.6.0 (commit `97a0748`, 16 November 2026, `index.html` md5 `7321f34080031caf23f96212644ed046`).
 * `legacy/release-1.5.0/` holds the same for 1.5.0 (commit `382dc2e`, 14 November 2026, `index.html` md5
