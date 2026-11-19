@@ -85,7 +85,12 @@ const server = http.createServer((req, res) => { let p = decodeURIComponent(req.
 //   move             whatever takes the game forward from here (the instant result, Continue, the hand-over...)
 //   until:screen     move until that screen         week          move until Home in a later week
 //   season           move until the season review, recording the first sight of each kind of screen on the way
-const SQUAD = [['nav:squad', 'squad'], ['a:formation[data-f="4-3-3"]', 'squad-433'], ['a:autopick', null], ['a:training[data-t="hard"]', 'squad-hard'], ['a:toggle', 'squad-dropped'], ['a:autopick', null]];
+// the match plan (from the tactics milestone): the card is opened if it is shut (it is one line on a phone), two settings are chosen,
+// everything is put back, then all four are set, which is the longest the plan's line on Home can be, and left so for the journey.
+// On a build without the card (or with ?rules=1.7) every one of these steps is skipped and the stops show the Squad screen as it was.
+const PLAN_STEPS = [['eval:planopen', 'squad-plan-open'], ['a:tactic[data-k="r"][data-v="1"]', 'squad-plan-high'], ['a:tactic[data-k="s"][data-v="-1"]', null], ['a:planreset', 'squad-plan-reset'],
+  ['a:tactic[data-k="m"][data-v="1"]', null], ['a:tactic[data-k="p"][data-v="-1"]', null], ['a:tactic[data-k="r"][data-v="1"]', null], ['a:tactic[data-k="s"][data-v="1"]', 'squad-plan-all'], ['a:planopen', 'squad-plan-shut']];
+const SQUAD = [['nav:squad', 'squad'], ['a:formation[data-f="4-3-3"]', 'squad-433'], ['a:autopick', null], ['a:training[data-t="hard"]', 'squad-hard'], ['a:toggle', 'squad-dropped'], ['a:autopick', null], ...PLAN_STEPS];
 const JOURNEYS = {
   single: [
     ['', 'title'], ['a:help', 'help'], ['act', null], ['a:whatsnew', 'whatsnew'], ['act', null], ['a:hof', null], ['wait:700', 'hof-ladder'], ['a:board[data-b="fastest_title"]', 'hof-board'], ['a:hoftab[data-t="mine"]', 'hof-mine'], ['act', null],
@@ -138,6 +143,7 @@ const JOURNEYS = {
 };
 // States that need luck, set by hand in the page, the same way in whatever build is being recorded, and put back.
 const EVALS = {
+  planopen: () => { if (!document.querySelector('[data-a="tactic"]')){ const b = document.querySelector('[data-a="planopen"]'); if (b) b.click(); } },   // open the match plan card if it is shut; nothing on a build without one
   job: () => { const { S, render } = window.__sm91, st = S.state; S.__k = Object.assign(S.__k || {}, { job: st.jobOffer, exp: st.jobOfferExpires }); st.jobOffer = st.clubs.filter(c => c.div >= 1 && c.id !== st.userClub).sort((a, b) => a.id - b.id)[5].id; st.jobOfferExpires = st.week + 2; render(); },
   nojob: () => { const { S, render } = window.__sm91, st = S.state; st.jobOffer = S.__k.job; st.jobOfferExpires = S.__k.exp; render(); },
   unsafe: () => { const { S, render } = window.__sm91, st = S.state, u = st.clubs[st.userClub]; S.__k = Object.assign(S.__k || {}, { safety: u.safety }); u.safety = 20; render(); },

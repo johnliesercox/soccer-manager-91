@@ -300,7 +300,7 @@ const PLAN_KEYS = ['m','p','r','s'];
 const BALANCED = Object.freeze({m:0, p:0, r:0, s:0});
 function cleanPlan(t){ if (!t) return BALANCED; const o = {}; for (const k of PLAN_KEYS) o[k] = t[k]===1||t[k]===-1? t[k] : 0; return o; }
 function planOf(club){ return cleanPlan(club && club.tactics); }
-function setTactics(state, key, value){ const c = state.clubs[state.userClub]; if (!c || !PLAN_KEYS.includes(key)) return; const t = Object.assign({}, cleanPlan(c.tactics)); t[key] = value===1||value===-1? value : 0; c.tactics = { m:t.m, p:t.p, r:t.r, s:t.s }; }
+function setTactics(state, key, value){ const c = state.clubs[state.userClub]; if (!c || !PLAN_KEYS.includes(key)) return; const t = Object.assign({}, cleanPlan(c.tactics)); t[key] = value===1||value===-1? value : 0; if (PLAN_KEYS.some(k=>t[k])) c.tactics = { m:t.m, p:t.p, r:t.r, s:t.s }; else delete c.tactics; }   // all four in the middle: no entry, as in a save that never had one
 // a computer club's own way of playing: its passing, pressing and shooting, fixed by its id for the life of a game
 // (half the clubs in the middle on each, a quarter either side). Arithmetic on the id: no random number.
 function clubStyle(club){
@@ -308,6 +308,18 @@ function clubStyle(club){
   const pick = n => [-1,0,0,1][n&3];
   return { p: pick(h), r: pick(h>>>2), s: pick(h>>>4) };
 }
+// What a club is known for: one thing from its style, and only one, so that knowing a club's reputation is not knowing its plan.
+// Its mentality for a fixture and how it answers a formation are never part of it (scouting, a later milestone, is for those).
+// Returns {k:'p'|'r'|'s', v:-1|1}, or null for a club with no marked style, a club with a human manager, or with the rules off.
+// Fixed by the club's id like the style itself: the same club is known for the same thing in every game. No random number.
+function styleHint(state, club){
+  if (!CFG.TACTICS.on || !CFG.TACTICS.computer || !club || isHuman(state, club.id)) return null;
+  const st = clubStyle(club); const marked = ['p','r','s'].filter(k=>st[k]!==0); if (!marked.length) return null;
+  let h = Math.imul((club.id+7)|0, 0xC2B2AE35); h ^= h>>>16; h >>>= 0;
+  const k = marked[h%marked.length]; return { k, v: st[k] };
+}
+// all four settings back to the middle for the current manager's club (the entry is removed: a club with none plays all-Balanced)
+function resetTactics(state){ const c = state.clubs[state.userClub]; if (c) delete c.tactics; }
 // one number for an eleven, weighted as the match formula weighs midfield, attack and defence (two equal sides: 1 to 1)
 function sidePower(s){ return Math.pow(s.mid,0.4)*Math.pow(s.att,0.3)*Math.pow(s.defEff,0.3); }
 function planFor(state, club, sOwn, sOpp, where){
@@ -1834,7 +1846,7 @@ const Engine = { CFG, CLUB_DATA, FORMATIONS, newGame, advanceWeek, endSeason, au
   takeSackOffer, resign, bottomClub, updatePositions,
   isHuman, managerOf, activeManagers, setCurrent, saveCurrent, withManager, retireManager, standings, humanListings, renameClub, renamePlayer, scoutSearch, topScorers, gateSummary, supportOf, demandTarget, turnover, ticketOf, setTicketPrice, ticketAdvice, renameAnyClub,
   euroSlot, euroTieFor, euroStatus, euroRoundName, EURO_POOL, SAVE_VERSION, migrate,
-  PLAN_KEYS, BALANCED, cleanPlan, planOf, setTactics, clubStyle, sidePower, planFor, matchModel, playMatch,
+  PLAN_KEYS, BALANCED, cleanPlan, planOf, setTactics, resetTactics, clubStyle, styleHint, sidePower, planFor, matchModel, playMatch,
   contractAsk, offerContract, releasePlayer, freeAgentsList, signFreeAgent, playerStatus, moraleWord, moraleFactor, available, wantsYears, letGo,
   reservesOf, upgradeAcademy, promoteReserve, releaseReserve,
   clubRecords, topClubScorers, careerOf, careerScore, careerSummary, SCORE, MODES };

@@ -35,7 +35,8 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     const mgrs = st.managers.map(m => ({ name: m.managerName, club: st.clubs[m.userClub].name, gameOver: !!m.gameOver }));
     const squads = st.managers.map(m => E.squadOf(st, st.clubs[m.userClub]).map(p => p.id + ':' + p.name + ':' + p.goals + ':' + (p.years||0)).join('|'));
     const table = st.clubs.map(c => c.name + ' ' + c.div + ' ' + c.leaguePos + ' ' + (c.matches||0) + ' ' + (c.history||[]).length).sort().join('|');
-    return { season: st.season, week: st.week, mgrs, balances: st.managers.map(m => st.clubs[m.userClub].balance), squads, table, honours: (st.honours||[]).length, gameId: st.gameId, players: Object.keys(st.players).length };
+    const plans = st.managers.map(m => JSON.stringify(st.clubs[m.userClub].tactics || null));   // each manager's match plan (from the tactics milestone; null on a build without them, and for a manager who has set none)
+    return { season: st.season, week: st.week, mgrs, balances: st.managers.map(m => st.clubs[m.userClub].balance), squads, table, honours: (st.honours||[]).length, gameId: st.gameId, players: Object.keys(st.players).length, plans };
   });
   const preseason = async () => { if (await has('[data-a="preseason"]') && (await text()).includes('Pre-season')){ await click('[data-a="preseason"]'); await click('[data-a="sponsor"]'); await click('[data-a="tickets"][data-m="12"]'); await click('[data-a="home"]'); } };
   const throughMatchday = async (mode) => {
@@ -45,6 +46,9 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
       if (!(await has('[data-a="md-watch"]')) && !(await has('[data-a="md-continue"]'))) break;
     }
   };
+  // set one thing in the match plan, on a build that has one (the tactics milestone): Squad, open the card if it is shut, tap, Home
+  const setPlan = async (k, v) => { if (!(await has('[data-nav="squad"]'))) return false; await click('[data-nav="squad"]', 150); if (!(await has('[data-a="tactic"]')) && (await has('[data-a="planopen"]'))) await click('[data-a="planopen"]', 150);
+    const sel = `[data-a="tactic"][data-k="${k}"][data-v="${v}"]`; const there = await has(sel); if (there) await click(sel, 150); await click('[data-nav="home"]', 150); return there; };
   const playWeek = async (mode) => { await preseason(); if (!(await has('[data-a="play"]'))) throw new Error('no play button: ' + (await text()).slice(0, 160)); await click('[data-a="play"]', 300); await throughMatchday(mode); if (await has('[data-a="continue-week"]')) await click('[data-a="continue-week"]', 200); };
   const startGame = async (names) => {
     await page.goto(URL); await sleep(600);
@@ -53,9 +57,9 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     await click('[data-a="start"]', 500);
   };
   const saveSlot = async (name) => { if (await has('[data-a="taketurn"]')) await click('[data-a="taketurn"]', 300); if (await has('[data-a="home"]')) await click('[data-a="home"]', 150); await click('[data-a="saves"]', 200); await page.fill('#slotname', name); await click('[data-a="saveslot"]', 300); await click('[data-a="back"]', 150).catch(() => {}); };
-  const hotseatRound = async (watchWho) => {
+  const hotseatRound = async (watchWho, planFor) => {
     const n = await page.evaluate(() => window.__sm91.S.state.managers.length);
-    for (let i = 0; i < n; i++){ if (await has('[data-a="taketurn"]')) await click('[data-a="taketurn"]', 200); await preseason(); if (await has('[data-a="ready"]')) await click('[data-a="ready"]', 300); }
+    for (let i = 0; i < n; i++){ if (await has('[data-a="taketurn"]')) await click('[data-a="taketurn"]', 200); await preseason(); if (planFor === i) await setPlan('p', 1); if (await has('[data-a="ready"]')) await click('[data-a="ready"]', 300); }
     for (let i = 0; i < n; i++){ if (await has('[data-a="taketurn"]')) await click('[data-a="taketurn"]', 300); await throughMatchday(i === watchWho? 'watch' : 'instant'); }
     if (await has('[data-a="nextround"]')) await click('[data-a="nextround"]', 300);
   };
@@ -63,15 +67,18 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   // ---------- the last release ----------
   console.log('serving ' + OV + ' from', OLD, 'at', URL);
   await page.goto(URL); await sleep(600); let a = await app(); ok(a.version === OV, 'the old site is ' + OV + ' (' + a.version + ')');
-  await startGame(['John']);
+  await startGame(['John']); await preseason();
+  const plansOld = (await setPlan('m', 1)) && (await setPlan('r', -1));   // on a build with match plans the games are saved with plans set, so the update has them to carry
   for (let w = 0; w < 3; w++) await playWeek('instant');
   const single150 = await facts(); ok(single150 && single150.week === 4, 'single game played to week 4 on ' + OV + ' (week ' + (single150 && single150.week) + ')');
   await saveSlot('single, last release');
-  await startGame(['Ann', 'Bob', 'Cat']); await hotseatRound(1); await hotseatRound(-1);
+  await startGame(['Ann', 'Bob', 'Cat']); await hotseatRound(1, plansOld? 1 : undefined); await hotseatRound(-1);
   const multi150 = await facts(); ok(multi150 && multi150.mgrs.length === 3 && multi150.week === 3, 'hot-seat game played two rounds on ' + OV + ' (week ' + (multi150 && multi150.week) + ', ' + (multi150 && multi150.mgrs.length) + ' managers)');
   await saveSlot('hot-seat, last release');
   const slots150 = await page.evaluate(() => JSON.parse(localStorage.getItem('sm91-slots') || '[]').map(s => s.name));
   ok(slots150.length === 2, 'two slots saved on ' + OV + ': ' + slots150.join(', '));
+  ok(true, plansOld? 'match plans set on ' + OV + ' before saving: single ' + single150.plans.join(' ') + ', hot-seat ' + multi150.plans.join(' ') : OV + ' has no match plans to set');
+  if (plansOld) ok(single150.plans[0] === '{"m":1,"p":0,"r":-1,"s":0}' && multi150.plans[1] === '{"m":0,"p":1,"r":0,"s":0}' && multi150.plans[0] === 'null', 'the plans set are the plans saved');
   const sw150 = await page.evaluate(async () => (await caches.keys()).join(','));
   ok(sw150.includes(OC), 'service worker cache on ' + OV + ': ' + sw150);
   ok(errors.length === 0, 'no page errors on ' + OV + (errors.length? ': ' + errors.slice(0, 2).join(' | ') : ''));
@@ -98,7 +105,11 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   const id = await page.evaluate(() => JSON.parse(localStorage.getItem('sm91-slots') || '[]').find(s => s.name === 'single, last release').id);
   await click(`[data-a="loadslot"][data-i="${id}"]`, 600);
   const single160 = await facts(); same(single150, single160, 'single-manager slot identical after the update');
+  // on a build with match plans, a plan can be set on the game that came from the other build, and the match is played to it
+  const plansNew = await setPlan('s', 1);
   await playWeek('watch'); const singleOn = await facts(); ok(singleOn.week === single150.week + 1, 'single game plays on under ' + NV + ' with a watched match (week ' + singleOn.week + ')');
+  if (plansNew){ const used = await page.evaluate(() => { const S = window.__sm91.S, st = S.state, r = st.userResults[st.week - 1]; return r && r.plan? JSON.stringify(r.plan) : null; }); ok(used && JSON.parse(used).s === 1 && singleOn.plans[0] && JSON.parse(singleOn.plans[0]).s === 1, 'a plan set after the update is saved and the match is played to it (' + used + ')'); }
+  else ok(true, NV + ' has no match plans; the game' + (plansOld? ', saved with one,' : '') + ' plays on without');
   const view = await page.evaluate(() => (window.__sm91.S.md && window.__sm91.S.md.viewer && window.__sm91.S.md.viewer.renderer && window.__sm91.S.md.viewer.renderer.id) || (window.Matchday && window.Matchday.isoDefaultStyle));
   ok(true, 'match viewer drew with ' + view + ' (default style ' + (await page.evaluate(() => window.Matchday.isoDefaultStyle)) + ')');
   // the hot-seat slot too

@@ -69,6 +69,9 @@ const unsack = s => { if (s.gameOver){ s.gameOver = null; s.sackOffer = null; } 
   ok(JSON.stringify(E.cleanPlan({ m: 2, p: 'x', r: null, s: -1 })) === '{"m":0,"p":0,"r":0,"s":-1}' && E.cleanPlan(null) === E.BALANCED, 'anything else in a plan is read as Balanced');
   // a newer save opened by the older engine: it ignores the plans and plays on
   const older = Eold.restore(JSON.parse(JSON.stringify(st))); Eold.advanceWeek(older); ok(older.week === st.week + 1, 'a save with plans opens in the 1.7.1 engine and plays on (all-Balanced there)');
+  // back to the middle leaves no entry at all, by one setting at a time or by the reset
+  E.setCurrent(st, 0); E.setTactics(st, 'm', 0); E.setTactics(st, 'p', 0); ok(st.clubs[ca].tactics === undefined, 'a plan put back to all-Balanced leaves no entry on the club');
+  E.setCurrent(st, 1); E.resetTactics(st); ok(st.clubs[cb].tactics === undefined && E.planOf(st.clubs[cb]) === E.BALANCED, 'the reset removes the plan');
   console.log('a plan is its manager\'s, survives a save in format 4, and a 1.7.1 save plays all-Balanced');
 }
 
@@ -95,6 +98,14 @@ const unsack = s => { if (s.gameOver){ s.gameOver = null; s.sackOffer = null; } 
     ok(E.planFor(st, sD, own(sD), f('3-5-2'), 'home').p === 1 && E.planFor(st, sD, own(sD), f('4-5-1'), 'away').p === 1, 'against five in midfield he plays Direct, whatever his club\'s style');
     ok(E.planFor(st, sS, own(sS), f('4-4-2'), 'home').p === 1 && E.planFor(st, sD, own(sD), f('5-4-1'), 'home').p === -1, 'against four in midfield he plays his club\'s own passing');
     const ten = E.autoSelect(st, st.clubs[20], '4-3-3').slice(0, 10); ok(E.teamStrength(ten).nMid === 0 && E.planFor(st, sS, own(sS), E.teamStrength(ten), 'home').p === 1, 'and a side short of a man is not read as a formation'); }
+  // what a club is known for: one thing from its style and only one, fixed by the club, never for a human's club, no random number
+  { const hints = st.clubs.map(c => E.styleHint(st, c)); let one = 0, none = 0, wrong = 0, noStyleButHint = 0;
+    st.clubs.forEach((c, i) => { const s = E.clubStyle(c), h = hints[i]; const marked = ['p', 'r', 's'].filter(k => s[k]); if (E.isHuman(st, c.id)){ if (h) wrong++; return; } if (!marked.length){ none++; if (h) noStyleButHint++; return; } if (!h || !marked.includes(h.k) || h.v !== s[h.k] || Object.keys(h).length !== 2) wrong++; else one++; });
+    ok(wrong === 0 && noStyleButHint === 0 && one > 90 && none > 5, `a club is known for one true thing about its style, or for nothing if it has none (${one} clubs known for something, ${none} for nothing, ${wrong} wrong)`);
+    ok(st.clubs.every((c, i) => JSON.stringify(E.styleHint(st2, st2.clubs[i])) === JSON.stringify(E.isHuman(st2, c.id) || E.isHuman(st, c.id)? E.styleHint(st2, st2.clubs[i]) : hints[i])), 'and for the same thing in every game');
+    ok(E.styleHint(st, st.clubs[20]) === null, 'a human manager\'s club has no reputation to read');
+    E.seedRng(31); const a1 = E.playMatch(st, A, B, { xiH: xa, xiA: xb }); put(before); E.seedRng(31); for (const c of st.clubs) E.styleHint(st, c); const a2 = E.playMatch(st, A, B, { xiH: xa, xiA: xb }); put(before); ok(sig(a1) === sig(a2), 'reading reputations uses no random number');
+    E.CFG.TACTICS.on = false; ok(E.styleHint(st, A) === null, 'and there is none with the rules off'); E.CFG.TACTICS.on = true; }
   // a human's club is never given a computer plan, and the caller's plans (the bench) are used as given
   ok(JSON.stringify(E.planFor(st, st.clubs[20], strong, weak, 'home')) === JSON.stringify(E.BALANCED), 'a manager who has set nothing plays all-Balanced, whatever the fixture');
   E.seedRng(4); const g1 = E.playMatch(st, A, B, { xiH: xa, xiA: xb, tH: { m: 1, p: 1, r: 1, s: 1 }, tA: { m: -1, p: -1, r: -1, s: -1 } }); ok(g1.tH.m === 1 && g1.tA.s === -1, 'plans given by the caller are the plans played'); put(before);

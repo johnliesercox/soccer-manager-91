@@ -2,7 +2,9 @@
 
 **Checkpoint for John, 19 November 2026.** Milestone 1 of the roadmap (advanced tactics), slice 1 of three, as approved on 19 November ("1. Approve 2. Plans for the computer managers 3. Rebalance now 4. That one line would be very useful 5. Stay at format 4"). The approved specification is `claude/sm91-milestone-1-tactics-spec.md` in the project.
 
-**Status.** Built and tested on the branch `milestone-1-tactics`, which starts from `milestone-0-hair` (so it has the hair fix). Not merged to `main`, not deployed. The live site is still 1.7.0. I have stopped here: slice 2 (the screens) does not start until you say so.
+**Status.** Built and tested on the branch `milestone-1-tactics`, which starts from `milestone-0-hair` (so it has the hair fix). Not merged to `main`, not deployed. The live site is still 1.7.0.
+
+**Approved by John on 19 November 2026 (evening), with these decisions.** The computer managers' passing answer to the opposition's formation is approved and stays, with its balance tests. A low press giving no fitness benefit is approved; a high press keeps its fitness and bookings costs. The balance is accepted as it is, including the best whole plan being worth about 1.6 points at a club with the best physio; no further balancing for now, and the bench is kept so that later work cannot shift it unnoticed. One plan for domestic and European matches. The opponent's whole plan is not to be shown before every match, because scouting comes in a later milestone: slice 2 proposes a simpler presentation. The figures after a match are to be short, in ordinary words, and marked as the simulation's own. The camera test's limit (section 7) stays recorded for a later review and is not slice 2's business. Slice 3 is to consider how the plans show in the isometric highlights without changing results or breaking animations. The hair fix is on this development baseline and not on the public site: the version number and the release sequence are to be agreed before any deployment. Nothing is merged to `main` or deployed without his explicit approval. Slice 2 is reported in `TACTICS-SLICE-2.md`.
 
 ## 1. In short
 
