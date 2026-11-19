@@ -6880,7 +6880,11 @@ if (typeof module!=='undefined') module.exports = Engine;
     const dv = (pl.actionDetail && pl.actionDetail.variant)||0;
     if (act==='booked' || act==='dismay' || (act==='celebrate' && (dv===0 || dv===3))) a.dir = 'S';
     else if (act==='celebrate' && dv===2 && (pl.actionPhase||0) >= 0.45 && pl.aim){ a.dir = PR.dir8(angleTo(pl, pl.aim), a.dir, 0.05); }   // the knee slide faces the crowd
-    const { pose, frame, lift } = kind==='ref'? refPose(pl, a) : poseFor(pl, a, t);
+    const pf = kind==='ref'? refPose(pl, a) : poseFor(pl, a, t); const pose = pf.pose, lift = pf.lift;
+    // a pose is asked for by a frame it has: an action taken while walking or running came with the stride's frame, which a
+    // one-frame pose (set, poke, block, booked, kneel, the referee's card) does not have, so the painted picture was not
+    // found and the generated figure was drawn for those moments (found by tools/hair-audit.js, fixed in 1.7.1)
+    const frame = (pf.frame||0) % (SP.POSES[pose]||1);
     const k = kind==='ref' && pose==='card'? Object.assign({}, kit, { card: pl.signal }) : kit;
     const m = PR.toMetres(pl.x, pl.y); const g = PR.project(m.X, m.Y, 0, cam); const p = lift? PR.project(m.X, m.Y, lift, cam) : g;
     const sprite = (MD.isoAssets && MD.isoAssets.get(k, variant, a.dir, pose, frame, spr)) || SP.get(k, variant, a.dir, pose, frame, spr);
