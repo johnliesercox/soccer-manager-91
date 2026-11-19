@@ -75,7 +75,7 @@ Part 2, the look followed through matches: 20 seeded games, the first match of e
 |---|---|---|
 | Every picture asked for with the player's own skin, hair colour and hairstyle | all | all |
 | Anybody's hairstyle changing during a match | 0 | 0 |
-| A painted picture not found, the generated figure drawn instead | 98 for players, 952 for the referee | **0 and 0** (section 6) |
+| A painted picture not found, the generated figure drawn instead | 98 for players, about 950 for the referee (952 and 939 in two runs) | **0 and 0** (section 6) |
 
 The whole-pitch camera draws its figures smaller than the smallest painted sheet, so its 100,069 pictures in these matches are the small generated figure. That is how it was designed and is not counted as a fault.
 
@@ -112,7 +112,7 @@ One small leftover you may notice enlarged: a few heads have a speck or two of g
 
 You asked the audit to find any fallback to incorrect artwork. It found one in play.
 
-**What happened in 1.7.0.** A few poses have a single frame: set, poke, block, booked, kneel, appeal, dismay, and the referee's whistle, card and point. When a player or the referee took one of these while still walking or running, the game asked for it with the frame number of his stride, which that pose does not have. The painted picture was not found and the old generated figure was drawn for those moments: a different, blockier drawing with its own hair. In the 20 matches that was 98 player pictures and 952 referee pictures out of about half a million, so brief for players and fairly regular for a referee blowing up on the move.
+**What happened in 1.7.0.** A few poses have a single frame: set, poke, block, booked, kneel, appeal, dismay, and the referee's whistle, card and point. When a player or the referee took one of these while still walking or running, the game asked for it with the frame number of his stride, which that pose does not have. The painted picture was not found and the old generated figure was drawn for those moments: a different, blockier drawing with its own hair. In the 20 matches that was 98 player pictures and about 950 referee pictures out of about half a million, so brief for players and fairly regular for a referee blowing up on the move.
 
 **The fix.** One line in `src/matchday/renderers/iso-actors.js`: a pose is asked for by a frame it has. The 1.7.1 audit finds none.
 
