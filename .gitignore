@@ -6,3 +6,4 @@ baseline-v130/
 attic/
 !tools/visual-rnd/archives/*.zip
 !assets/matchday/isometric/rnd-styles-CDF.zip
+__pycache__/

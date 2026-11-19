@@ -55,6 +55,18 @@ def classify(painted, figure, refmat, kit):
     # the painter's head is a little larger than the reference's: around the reference hair, a dark pixel that the reference
     # does not call shirt is hair rather than the shirt's shadow (short dark hair and a red shirt's dark tones are close)
     hairzone = ndimage.binary_dilation(refmat == MAT['HAIR'], iterations=max(4, int(round(H*0.02)))) & (refmat != MAT['SHIRT']) if (refmat == MAT['HAIR']).any() else np.zeros((H, W), dtype=bool)
+    # 1.7.1 (the hair fix). The painter's hair is dark brown shading to near black, and before 1.7.1 its dark pixels were
+    # filed as boots (the nearest dark colour of the kit) or, where the reference has skin, as eye (the rule below for dark
+    # marks on skin); the game draws both black whatever the player's hair colour, so his hair changed colour from pose to
+    # pose. And brown shading on socks, knees and arms was filed as hair. So now:
+    #   boots only near where the reference has boots; hair only in the hair zone;
+    #   a dark pixel on or just beside the reference's hair is hair, unless it is where the reference has an eye;
+    #   an eye or a mouth only on the face.
+    # tools/hair_repair.py puts what is left right after a conversion and tools/hair-audit.js checks the result as drawn.
+    bootzone = ndimage.binary_dilation(refmat == MAT['BOOTS'], iterations=max(3, int(round(H*0.015)))) if (refmat == MAT['BOOTS']).any() else np.zeros((H, W), dtype=bool)
+    eyezone = ndimage.binary_dilation(refmat == MAT['EYE'], iterations=max(2, int(round(H*0.005)))) if (refmat == MAT['EYE']).any() else np.zeros((H, W), dtype=bool)
+    facezone = hairzone | (ndimage.binary_dilation(refmat == MAT['EYE'], iterations=max(6, int(round(H*0.035)))) if (refmat == MAT['EYE']).any() else np.zeros((H, W), dtype=bool))
+    haircore = ndimage.binary_dilation(refmat == MAT['HAIR'], iterations=max(2, int(round(H*0.008)))) & (refmat != MAT['SHIRT']) & ~eyezone if (refmat == MAT['HAIR']).any() else np.zeros((H, W), dtype=bool)
     for m in CLASSES:
         if m not in kit: continue
         base = np.array(kit[m], dtype=np.float64); bl = lum(base); bc = chroma(base)
@@ -67,12 +79,16 @@ def classify(painted, figure, refmat, kit):
         # shares the socks' yellow, so outside its zone a yellow pixel is a sock)
         if m in ('TRIM', 'GLOVE'): d = np.where(L < 0.55, d + 1.0, d)
         if m in ZONED: d = np.where(zone[m], d, d + 2.0)
-        if m == 'BOOTS': d = np.where(L > 0.35, d + 1.0, d)
-        if m == 'HAIR': d = np.where(L > 0.45, d + 0.6, d)
+        if m == 'BOOTS': d = np.where(L > 0.35, d + 1.0, d); d = np.where(bootzone, d, d + 2.0)
+        if m == 'HAIR': d = np.where(L > 0.45, d + 0.6, d); d = np.where(hairzone, d, d + 2.0)
         better = d < bestd; bestd = np.where(better, d, bestd); best = np.where(better, MAT[m], best)
     # very dark pixels inside bright materials are the model's own outlines and creases: keep the material, tone 0;
-    # dark marks on skin are the eyes and mouth, which the game draws in their own material
-    best = np.where((best == MAT['SKIN']) & (L < 0.33), MAT['EYE'], best)
+    # dark marks on the face are the eyes and mouth, which the game draws in their own material
+    best = np.where(haircore & (L < 0.33) & (best != MAT['SHIRT']) & (best != MAT['TRIM']), MAT['HAIR'], best)
+    # dark marks on skin are eyes and mouths only on the face (around the reference's eyes and hair); elsewhere a dark
+    # pixel of skin is skin in shadow, and its tone carries the shadow
+    best = np.where((best == MAT['SKIN']) & (L < 0.33) & facezone, MAT['EYE'], best)
+    best = np.where(eyezone & (L < 0.33), MAT['EYE'], best)                    # and a dark pixel where the reference has an eye is one
     mat = np.where(figure, best, -1)
     # tone: the painted pixel against the flat colour the painter used for that material in this image (its median),
     # so the game's mid tone is the flat colour and the painter's shading and highlights land either side of it
@@ -447,6 +463,13 @@ def main():
                 print(f'  wrote {name} ({pack(os.path.join(outdir, name))})')
             except Exception as e: print(f'  wrote {name} (not packed: {e})')
     print(f'{total} cells in total')
+    # 1.7.1: every conversion is followed by the hair repair (hair on the head filed as hair, none away from it, each head on
+    # the common lightness level); then node tools/hair-audit.js <site dir> checks the result as the game draws it
+    if total and a.style == 'E':
+        try:
+            sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import hair_repair
+            print('hair repair:'); hair_repair.repair_sheets(outdir, outdir, sprs=tuple(sprs))
+        except Exception as e: print(f'  the hair repair did not run ({e}): run python3 tools/hair_repair.py before building')
 
 if __name__ == '__main__':
     main()

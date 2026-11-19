@@ -431,8 +431,11 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const money = n => (n<0?'-':'')+'£'+E.fmt(Math.abs(n));
 const SAVE_KEY = 'sm91-save';
-const APP_VERSION = '1.7.0';
+const APP_VERSION = '1.7.1';
 const CHANGELOG = [
+  { v:'1.7.1', when:'November 2026', notes:[
+    'A player\'s hair no longer changes colour as he moves.',
+  ]},
   { v:'1.7.0', when:'November 2026', notes:[
     'A new look. Every screen has been redesigned in a darker, cleaner style: clearer type, cards that group what belongs together, bigger buttons, and amber for what is chosen and what to do next. Everything is where it was and works as it did, and your saved games carry on.',
     'Tap a player to see who he is. Selecting a footballer on the match screen is far more forgiving on a phone: a fingertip close to him is enough, the man you touched wins in a crowd (on the whole-pitch camera too), and the tag over his head shows his number, name and position.',
