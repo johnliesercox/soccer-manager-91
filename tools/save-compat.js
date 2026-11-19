@@ -81,8 +81,9 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await page.goto(URL); await sleep(1500);
   a = await app(); ok(a.version === NV, 'the page is ' + NV + ' after the swap (' + a.version + ')');
   // the service worker update: a reload or two for the new worker to install, activate and drop the old cache
-  let swKeys = ''; for (let i = 0; i < 6; i++){ swKeys = await page.evaluate(async () => (await caches.keys()).join(',')); if (swKeys.includes(NC) && !swKeys.includes(OC)) break; await page.reload(); await sleep(1500); }
-  ok(swKeys.includes(NC) && !swKeys.includes(OC), 'service worker cache after the update: ' + swKeys);
+  // whole names, not parts of names: a development build's cache name can begin with the release's (sm91-v1.7.1 and sm91-v1.7.1-tactics1)
+  let swKeys = ''; const swOk = () => { const k = swKeys.split(','); return k.includes(NC) && !k.includes(OC); }; for (let i = 0; i < 6; i++){ swKeys = await page.evaluate(async () => (await caches.keys()).join(',')); if (swOk()) break; await page.reload(); await sleep(1500); }
+  ok(swOk(), 'service worker cache after the update: ' + swKeys);
   const ttl = await text(); ok(/What's new \(updated\)/.test(ttl) || /updated/i.test(ttl), 'title screen flags What\'s new as updated');
   ok(/Continue current game/.test(ttl) && /Load a saved game/.test(ttl), 'title offers Continue and Load after the update');
   const slots160 = await page.evaluate(() => JSON.parse(localStorage.getItem('sm91-slots') || '[]').map(s => s.name));

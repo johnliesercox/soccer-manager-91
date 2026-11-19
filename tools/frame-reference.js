@@ -7,6 +7,7 @@
 // (after python3 build.py; needs playwright)
 const { chromium } = require('playwright'); const http = require('http'), fs = require('fs'), path = require('path');
 const SITE = path.resolve(process.argv[2] || '.'); const OUT = process.argv[3] || 'frame-reference.json'; const REF = process.argv[4] || '';
+const QUERY = process.env.SM91_QUERY || '';   // for example SM91_QUERY='?rules=1.7' plays the reference match by the match rules of 1.7.1 (no plans, the old formation values)
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.webmanifest': 'application/manifest+json' };
 const server = http.createServer((req, res) => { let p = decodeURIComponent(req.url.split('?')[0]); if (p === '/') p = '/index.html'; const f = path.join(SITE, p);
   if (path.resolve(f).indexOf(SITE) !== 0 || !fs.existsSync(f) || fs.statSync(f).isDirectory()){ res.writeHead(404); res.end('no'); return; }
@@ -21,7 +22,7 @@ const INIT = seed => { let a = seed >>> 0; Math.random = () => { a |= 0; a = a +
     await ctx.route(u => !/^http:\/\/127\.0\.0\.1[:/]/.test(u.toString()), route => route.abort()); await ctx.addInitScript(INIT, 91);
     const page = await ctx.newPage(); page.on('pageerror', e => out.errors.push(e.message));
     const click = async (sel, ms = 150) => { await page.click(sel); await sleep(ms); }; const has = sel => page.$(sel).then(x => !!x);
-    await page.goto(URL); await sleep(600); await click('[data-a="setup"]', 200); const ins = await page.$$('.mgrname'); if (ins[0]) await ins[0].fill('Frames'); await click('[data-a="start"]', 500);
+    await page.goto(URL + QUERY); await sleep(600); await click('[data-a="setup"]', 200); const ins = await page.$$('.mgrname'); if (ins[0]) await ins[0].fill('Frames'); await click('[data-a="start"]', 500);
     if (await has('[data-a="preseason"]')){ await click('[data-a="preseason"]'); await click('[data-a="sponsor"]'); await click('[data-a="tickets"][data-m="12"]'); await click('[data-a="home"]'); }
     await click('[data-a="play"]', 400); await click('[data-a="md-watch"]', 300);
     await page.waitForFunction(() => { const v = window.__sm91.S.md && window.__sm91.S.md.viewer; const A = window.Matchday.isoAssets; return v && v.playback && v.playback.state().playing && v.renderer && v.renderer.isReady && v.renderer.isReady() && (!A.planeState || [12, 16, 24].every(s => ['ready', 'old way', 'no sheets', 'not read'].indexOf(A.planeState(s)) >= 0)); }, null, { timeout: 60000 });

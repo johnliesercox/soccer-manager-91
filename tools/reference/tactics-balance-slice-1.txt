@@ -1,0 +1,203 @@
+Soccer Manager '91: the balance bench for tactics and formations, slice 1 of the tactics milestone (19 November 2026)
+The output of tools/tactics-balance.js on the engine of this commit (engine.js md5 7428a7b8ac13704a48730e880984d8ce). TACTICS-SLICE-1.md is the report that reads it.
+
+==================================================================
+node tools/tactics-balance.js --play --league --worth
+==================================================================
+
+1. The formations: equal players, all-Balanced, neutral ground. The row's edge over the column, and the goals in a match against 4-4-2
+           4-4-2   4-3-3   5-3-2   3-5-2   5-4-1   4-5-1   goals
+4-4-2      +0.00   -0.00   -0.00   -0.00   +0.00   +0.00   1.23-1.23
+4-3-3      +0.00   -0.00   +0.00   +0.00   +0.00   +0.00   1.33-1.33
+5-3-2      +0.00   -0.00   +0.00   +0.00   +0.00   +0.00   1.13-1.13
+3-5-2      +0.00   -0.00   -0.00   -0.00   +0.00   +0.00   1.33-1.33
+5-4-1      -0.00   -0.00   -0.00   -0.00   +0.00   +0.00   1.05-1.05
+4-5-1      -0.00   -0.00   -0.00   -0.00   -0.00   -0.00   1.13-1.13
+ok   F1  no formation more than 0.10 better than another with equal players (largest edge 0.002)
+   a match each suits: your points a game by formation against an all-Balanced 4-4-2 (the best in each line marked)
+   4 better, at home          4-4-2 1.847    4-3-3 1.876*   5-3-2 1.818    3-5-2 1.873    5-4-1 1.789    4-5-1 1.814 
+   equal, at home             4-4-2 1.666    4-3-3 1.687*   5-3-2 1.644    3-5-2 1.686    5-4-1 1.623    4-5-1 1.643 
+   equal, neutral ground      4-4-2 1.344    4-3-3 1.351*   5-3-2 1.337    3-5-2 1.350    5-4-1 1.329    4-5-1 1.336 
+   equal, away                4-4-2 1.033    4-3-3 1.027    5-3-2 1.041    3-5-2 1.026    5-4-1 1.046*   4-5-1 1.040 
+   4 worse, away              4-4-2 0.861    4-3-3 0.848    5-3-2 0.877    3-5-2 0.846    5-4-1 0.888*   4-5-1 0.874 
+   the best formation and passing against each all-Balanced formation: 4-4-2: 4-3-3 Direct +0.07 | 4-3-3: 3-5-2 Short +0.12 | 5-3-2: 3-5-2 Short +0.11 | 3-5-2: 4-3-3 Direct +0.15 | 5-4-1: 4-3-3 Direct +0.06 | 4-5-1: 4-3-3 Direct +0.14
+   over 207 matches against computer clubs (your players 4 worse, equal, 4 better; home, neutral, away; each of the 23 club styles in the league), with your own best passing:
+   4-4-2  the best choice in  36, within 0.02 points a game of the best in 138 | for example: equal, neutral ground, against a Mixed / Low press / Balanced club
+   4-3-3  the best choice in  68, within 0.02 points a game of the best in 111 | for example: equal, at home, against a Short / High press / Balanced club
+   5-3-2  the best choice in   4, within 0.02 points a game of the best in  54 | for example: 4 worse, neutral ground, against a Short / High press / Balanced club
+   3-5-2  the best choice in  37, within 0.02 points a game of the best in  99 | for example: equal, at home, against a Mixed / Low press / Balanced club
+   5-4-1  the best choice in  57, within 0.02 points a game of the best in  99 | for example: equal, away, against a Mixed / Low press / Balanced club
+   4-5-1  the best choice in   5, within 0.02 points a game of the best in  44 | for example: 4 worse, neutral ground, against a Mixed / Low press / Balanced club
+ok   F2  every formation is a good choice somewhere (within 0.02 points a game of the best in a tenth or more of the 207 matches), and none is the best in more than half (the most is 68); never the outright best: none
+   points a season over 4-4-2 Mixed, equal players, against the computer clubs as they play: 4-4-2 S+0.02 M+0.00 D-0.01 | 4-3-3 S-1.57 M-0.59 D+0.41 | 5-3-2 S-1.86 M-0.96 D-0.04 | 3-5-2 S+0.21 M-0.72 D-1.63 | 5-4-1 S-0.44 M-0.45 D-0.47 | 4-5-1 S-0.22 M-1.08 D-1.93   (S Short, M Mixed, D Direct)
+ok   F3  no formation and passing left on all season is worth more than 1.0 point a season over 4-4-2 Mixed, worked out exactly with equal players (the best is 4-3-3 Direct, +0.41; the worst 4-5-1 Direct, -1.93)
+
+2. One control changed, the rest Balanced, against an all-Balanced opponent: the change in your edge (and the goals)
+   equal sides, neutral ground             Balanced +0.000 | Defensive +0.002 Attacking +0.002 Short +0.000 Direct +0.000 Low press -0.009 High press -0.000 Work it in +0.005 On sight -0.008
+   you 4 better, neutral                   Balanced +0.363 | Defensive -0.022 Attacking +0.027 Short +0.034 Direct -0.033 Low press -0.015 High press +0.006 Work it in +0.007 On sight -0.010
+   you 4 worse, neutral                    Balanced -0.384 | Defensive +0.027 Attacking -0.024 Short -0.033 Direct +0.033 Low press -0.002 High press -0.007 Work it in +0.003 On sight -0.005
+   equal, you at home                      Balanced +0.633 | Defensive -0.038 Attacking +0.044 Short +0.000 Direct +0.000 Low press -0.020 High press +0.011 Work it in +0.008 On sight -0.013
+   equal, you away                         Balanced -0.633 | Defensive +0.042 Attacking -0.040 Short +0.000 Direct +0.000 Low press +0.002 High press -0.011 Work it in +0.002 On sight -0.004
+   you 4 better, at home                   Balanced +0.977 | Defensive -0.058 Attacking +0.064 Short +0.035 Direct -0.034 Low press -0.024 High press +0.016 Work it in +0.010 On sight -0.016
+   you 4 worse, away                       Balanced -0.996 | Defensive +0.063 Attacking -0.061 Short -0.027 Direct +0.027 Low press +0.009 High press -0.018 Work it in +0.001 On sight -0.002
+   you 3-5-2 against 4-4-2 (more midfield) Balanced +0.000 | Defensive +0.002 Attacking +0.002 Short +0.061 Direct -0.060 Low press -0.010 High press -0.000 Work it in +0.005 On sight -0.008
+   you 4-3-3 against 4-4-2 (less midfield) Balanced +0.001 | Defensive +0.002 Attacking +0.002 Short -0.066 Direct +0.067 Low press -0.010 High press -0.000 Work it in +0.005 On sight -0.008
+ok   B5a  mentality moves the goals in a match: Attacking 12.0%, Defensive -10.8% (5% to 20% wanted each way)
+ok   B5b  mentality suits the situation: Attacking for the stronger side at home +0.064, Defensive for the weaker side away +0.063; equal sides: Attacking at home +0.044 against -0.040 away, Defensive away +0.042 against -0.038 at home
+ok   B5c  passing is worth 0.05 or more when the midfields differ: Short with the bigger midfield +0.061 (Direct -0.060), Direct with the smaller +0.067 (Short -0.066)
+ok   B5d  pressing answers their passing: High press against Short +0.059, against Direct -0.059; Low press against Direct +0.048, against Short -0.067 (0.03 or more wanted each way)
+ok   B5e  shooting answers their mentality: On sight against a Defensive side +0.026, against an Attacking one -0.046; Work it in against an Attacking side +0.043, against a Defensive one -0.029
+
+3. All 81 plans against all 81: equal sides, 4-4-2, neutral ground
+ok   B3a  the largest edge of any plan over any other is no more than 0.30: 0.293 (Attacking / Short / High press / Work it in against Attacking / Short / Low press / On sight)
+ok   B3b  the right plan against a known plan is worth 0.05 to 0.15: the best reply gains 0.033 at least, 0.134 typically, 0.293 at most
+ok   B4a  no dominant plan: 81 of 81 plans are beaten by 0.02 or more by some other plan; plans at least as good as all-Balanced against everything: none
+ok   B4b  all-Balanced never loses more than 0.05 to any plan: its worst case is -0.033 (the safest plan of all is Balanced / Mixed / Normal / Balanced, worst case -0.033)
+   best against an all-Balanced side: Attacking / Short / High press / Work it in +0.033 | Balanced / Short / High press / Work it in +0.029 | Defensive / Short / High press / Work it in +0.029 ; worst: Balanced / Short / Low press / On sight -0.041 | Attacking / Short / Low press / On sight -0.042
+   against the computer managers' own plans: all-Balanced loses at most 0.028; the best reply to a club's style gains 0.098 on average over the 128 clubs
+ok   B7  a side five skill points better still has the edge whatever the two plans: its smallest edge is +0.137 (Defensive / Direct / High press / Work it in against Defensive / Direct / Low press / On sight; all-Balanced both +0.450)
+ok   B8  two sides swap exactly: plan X against plan Y is the mirror of Y against X for all 6,561 pairs (largest difference 1.7e-14)
+
+4. Matches played through playMatch (20000 a line): the exact working checked, and what each control does
+   exact W 34.4 D 31.2 L 34.4 | played W 34.8 D 31.3 L 33.9
+   exact W 45.5 D 30.1 L 24.4 | played W 45.3 D 30.0 L 24.7
+   exact W 53.1 D 27.5 L 19.4 | played W 52.7 D 28.0 L 19.2
+   exact W 33.6 D 34.5 L 31.9 | played W 33.8 D 34.3 L 31.9
+   exact W 49.9 D 26.1 L 24.0 | played W 49.8 D 25.7 L 24.5
+ok   CHK  the exact working agrees with matches really played, within the noise of 20000 matches (largest gap 0.55 points, allowed 1.24)
+   your side, one control changed, against all-Balanced:   goals for-against | possession | bookings | fitness lost | goals by midfielders | by forwards
+   Balanced    1.25-1.24 | 50.0% | 1.30 | 7.00 | 44.3% | 43.6%
+   Defensive   1.13-1.11 | 50.0% | 1.29 | 7.00 | 43.8% | 43.6%
+   Attacking   1.40-1.40 | 50.0% | 1.29 | 7.00 | 43.7% | 44.1%
+   Short       1.26-1.25 | 50.0% | 1.30 | 7.00 | 43.8% | 43.7%
+   Direct      1.25-1.24 | 50.0% | 1.30 | 7.00 | 43.8% | 43.8%
+   Low press   1.21-1.24 | 48.0% | 1.03 | 7.00 | 43.9% | 43.8%
+   High press  1.29-1.29 | 52.0% | 1.56 | 8.00 | 43.6% | 44.5%
+   Work it in  1.25-1.25 | 50.0% | 1.30 | 7.00 | 35.5% | 51.3%
+   On sight    1.24-1.27 | 50.0% | 1.28 | 7.00 | 51.4% | 37.1%
+ok   B5f  pressing moves possession: High 52.0%, Normal 50.0%, Low 48.0%
+ok   B5g  pressing moves bookings: High 1.56 a match, Normal 1.30, Low 1.03
+ok   B5h  a high press costs legs: fitness lost in a match High 8.0, Normal 7.0, Low 7.0
+ok   B5i  shooting moves who scores: midfielders' share of the goals On sight 51.4%, Balanced 44.3%, Work it in 35.5%; forwards' share 37.1%, 43.6%, 51.3%
+
+5. The league's shape over 24 seasons from the same starts: the rules of 1.7.1, then the rules now
+   rules of 1.7.1    23040 matches | home 46.2% draw 27.8% away 26.0% | goals 2.73 | bookings 2.44 | sent off 0.166 | injuries 0.56 | the table follows the clubs' standing 0.96
+   rules now         23040 matches | home 46.8% draw 28.0% away 25.2% | goals 2.70 | bookings 2.43 | sent off 0.167 | injuries 0.57 | the table follows the clubs' standing 0.97
+   what the computer managers chose: mentality Defensive/Balanced/Attacking 19%/61%/19%; passing Short/Mixed/Direct 22%/55%/23%; pressing Low/Normal/High 25%/50%/25%; shooting 30%/48%/22%
+ok   B2  with computer plans on the league keeps its shape: goals 2.73 to 2.70, home wins 46.2% to 46.8%, draws 27.8% to 28.0%, away wins 26.0% to 25.2%, bookings 2.44 to 2.43, injuries 0.56 to 0.57
+
+7. What tactics are worth in all: a 30-match league season against the computer clubs as they play, worked out exactly (equal fitness, so the legs a high press costs are not counted)
+   your players 4 worse: 4-4-2 all-Balanced 34.7 points | the best plan left on all season +1.06 in 4-4-2 (Defensive / Direct / Low press / Work it in), +1.06 with any formation (4-4-2, Defensive / Direct / Low press / Work it in) | the best plan chosen match by match +2.03 in 4-4-2, +2.61 with any formation | the worst left on all season -4.58 (4-3-3, Attacking / Short / Low press / On sight)
+   your players equal: 4-4-2 all-Balanced 40.5 points | the best plan left on all season +0.84 in 4-4-2 (Attacking / Short / High press / Work it in), +1.30 with any formation (4-3-3, Attacking / Direct / High press / Work it in) | the best plan chosen match by match +1.81 in 4-4-2, +2.29 with any formation | the worst left on all season -3.34 (5-3-2, Defensive / Short / Low press / On sight)
+   your players 4 better: 4-4-2 all-Balanced 45.2 points | the best plan left on all season +1.83 in 4-4-2 (Attacking / Short / High press / On sight), +1.89 with any formation (4-3-3, Attacking / Direct / High press / On sight) | the best plan chosen match by match +2.26 in 4-4-2, +2.79 with any formation | the worst left on all season -4.54 (4-5-1, Defensive / Direct / High press / Work it in)
+   for scale: one more skill point on every player is worth +1.35 points a season, three +3.41
+
+every target shown here is met
+
+==================================================================
+node tools/tactics-balance.js --only none --seasons 1000 --physio 0,1     and     --physio 2,3
+(one setting left on all season; 1,000 seasons a line. These season runs, and the whole-plan runs below, were made just before
+three lines of comment were added to the TACTICS block of engine.js; the code they ran is otherwise this commit's, to the character.)
+==================================================================
+
+6. A whole league season with one thing left on all season (1000 seasons a line, the same starts for every line; a Division 2 club)
+   physio 0  all-Balanced                 43.77 points (give or take 0.24) | fitness at the next kick-off 85.3
+   physio 0  Defensive always             43.27 points (give or take 0.23) | fitness at the next kick-off 85.2
+   physio 0  Attacking always             44.14 points (give or take 0.24) | fitness at the next kick-off 85.4
+   physio 0  Short always                 44.05 points (give or take 0.25) | fitness at the next kick-off 85.1
+   physio 0  Direct always                43.31 points (give or take 0.24) | fitness at the next kick-off 85.2
+   physio 0  Low press always             43.49 points (give or take 0.24) | fitness at the next kick-off 84.8
+   physio 0  High press always            41.40 points (give or take 0.24) | fitness at the next kick-off 75.1
+   physio 0  Work it in always            43.48 points (give or take 0.24) | fitness at the next kick-off 85.3
+   physio 0  On sight always              43.57 points (give or take 0.24) | fitness at the next kick-off 85.2
+ok   B6.0  physio 0: nothing left on all season beats all-Balanced by more than 1.5 points (the best is Attacking always, +0.37, give or take 0.27)
+   physio 1  all-Balanced                 46.45 points (give or take 0.24) | fitness at the next kick-off 95.1
+   physio 1  Defensive always             46.11 points (give or take 0.24) | fitness at the next kick-off 95.1
+   physio 1  Attacking always             46.96 points (give or take 0.24) | fitness at the next kick-off 95.2
+   physio 1  Short always                 46.95 points (give or take 0.25) | fitness at the next kick-off 95.1
+   physio 1  Direct always                46.03 points (give or take 0.24) | fitness at the next kick-off 95.1
+   physio 1  Low press always             46.32 points (give or take 0.23) | fitness at the next kick-off 95.0
+   physio 1  High press always            44.27 points (give or take 0.24) | fitness at the next kick-off 86.6
+   physio 1  Work it in always            46.52 points (give or take 0.24) | fitness at the next kick-off 95.1
+   physio 1  On sight always              46.53 points (give or take 0.24) | fitness at the next kick-off 95.2
+ok   B6.1  physio 1: nothing left on all season beats all-Balanced by more than 1.5 points (the best is Attacking always, +0.51, give or take 0.28)
+
+every target shown here is met
+
+6. A whole league season with one thing left on all season (1000 seasons a line, the same starts for every line; a Division 2 club)
+   physio 2  all-Balanced                 47.90 points (give or take 0.24) | fitness at the next kick-off 100.0
+   physio 2  Defensive always             46.77 points (give or take 0.23) | fitness at the next kick-off 100.0
+   physio 2  Attacking always             48.30 points (give or take 0.24) | fitness at the next kick-off 100.0
+   physio 2  Short always                 48.28 points (give or take 0.26) | fitness at the next kick-off 100.0
+   physio 2  Direct always                47.20 points (give or take 0.24) | fitness at the next kick-off 100.0
+   physio 2  Low press always             47.53 points (give or take 0.24) | fitness at the next kick-off 100.0
+   physio 2  High press always            47.07 points (give or take 0.24) | fitness at the next kick-off 95.4
+   physio 2  Work it in always            47.75 points (give or take 0.24) | fitness at the next kick-off 100.0
+   physio 2  On sight always              47.84 points (give or take 0.24) | fitness at the next kick-off 100.0
+ok   B6.2  physio 2: nothing left on all season beats all-Balanced by more than 1.5 points (the best is Attacking always, +0.40, give or take 0.29)
+   physio 3  all-Balanced                 48.19 points (give or take 0.24) | fitness at the next kick-off 100.0
+   physio 3  Defensive always             47.24 points (give or take 0.23) | fitness at the next kick-off 100.0
+   physio 3  Attacking always             48.51 points (give or take 0.24) | fitness at the next kick-off 100.0
+   physio 3  Short always                 48.74 points (give or take 0.24) | fitness at the next kick-off 100.0
+   physio 3  Direct always                47.21 points (give or take 0.23) | fitness at the next kick-off 100.0
+   physio 3  Low press always             47.89 points (give or take 0.23) | fitness at the next kick-off 100.0
+   physio 3  High press always            47.73 points (give or take 0.24) | fitness at the next kick-off 100.0
+   physio 3  Work it in always            47.92 points (give or take 0.24) | fitness at the next kick-off 100.0
+   physio 3  On sight always              47.76 points (give or take 0.24) | fitness at the next kick-off 100.0
+ok   B6.3  physio 3: nothing left on all season beats all-Balanced by more than 1.5 points (the best is Short always, +0.56, give or take 0.21)
+
+every target shown here is met
+
+==================================================================
+node tools/tactics-balance.js --only none --seasons 1000 --physio 2 --no-singles --plans "..." --formations     and     --physio 3 --no-singles --plans "..."
+(whole plans and formations left on all season. These two runs were made before the bench was changed to judge only single
+settings by the 1.5-point limit of B6 and to report whole plans beside it, so their last line applies that limit to whole plans:
+it reads 'ok' at physio 2 (+1.35) and 'FAIL' at physio 3 (+1.63). The figures themselves are unaffected. See the report, section 4.)
+==================================================================
+
+6. A whole league season with one thing left on all season (1000 seasons a line, the same starts for every line; a Division 2 club)
+   physio 2  all-Balanced                 47.90 points (give or take 0.24) | fitness at the next kick-off 100.0
+   physio 2  Attacking + Short + Normal + Balanced always                   49.24 points (give or take 0.25) | fitness at the next kick-off 100.0
+   physio 2  Attacking + Short + High press + On sight always               48.96 points (give or take 0.25) | fitness at the next kick-off 95.4
+   physio 2  Attacking + Short + High press + Work it in always             48.60 points (give or take 0.23) | fitness at the next kick-off 95.4
+   physio 2  4-3-3, Attacking + Direct + High press + Work it in always     48.55 points (give or take 0.24) | fitness at the next kick-off 95.3
+   physio 2  4-3-3, Attacking + Direct + High press + On sight always       48.44 points (give or take 0.24) | fitness at the next kick-off 95.4
+   physio 2  3-5-2, Attacking + Short + Low press + Work it in always       48.21 points (give or take 0.24) | fitness at the next kick-off 100.0
+   physio 2  4-3-3, Balanced + Direct + Normal + Balanced always            47.86 points (give or take 0.24) | fitness at the next kick-off 100.0
+   physio 2  3-5-2, Balanced + Short + Normal + Balanced always             47.27 points (give or take 0.24) | fitness at the next kick-off 100.0
+   physio 2  4-3-3 always, all-Balanced   48.24 points (give or take 0.25) | fitness at the next kick-off 100.0
+   physio 2  5-3-2 always, all-Balanced   47.62 points (give or take 0.25) | fitness at the next kick-off 100.0
+   physio 2  3-5-2 always, all-Balanced   46.06 points (give or take 0.24) | fitness at the next kick-off 100.0
+   physio 2  5-4-1 always, all-Balanced   47.02 points (give or take 0.24) | fitness at the next kick-off 100.0
+   physio 2  4-5-1 always, all-Balanced   46.16 points (give or take 0.24) | fitness at the next kick-off 100.0
+ok   B6.2  physio 2: nothing left on all season beats all-Balanced by more than 1.5 points (the best is Attacking + Short + Normal + Balanced always, +1.35, give or take 0.29)
+
+every target shown here is met
+
+6. A whole league season with one thing left on all season (1000 seasons a line, the same starts for every line; a Division 2 club)
+   physio 3  all-Balanced                 48.19 points (give or take 0.24) | fitness at the next kick-off 100.0
+   physio 3  Attacking + Short + Normal + Balanced always                   49.16 points (give or take 0.25) | fitness at the next kick-off 100.0
+   physio 3  Attacking + Short + High press + On sight always               49.82 points (give or take 0.24) | fitness at the next kick-off 100.0
+   physio 3  Attacking + Short + High press + Work it in always             49.68 points (give or take 0.25) | fitness at the next kick-off 100.0
+   physio 3  4-3-3, Attacking + Direct + High press + Work it in always     49.65 points (give or take 0.24) | fitness at the next kick-off 100.0
+   physio 3  4-3-3, Attacking + Direct + High press + On sight always       49.72 points (give or take 0.25) | fitness at the next kick-off 100.0
+   physio 3  3-5-2, Attacking + Short + Low press + Work it in always       48.41 points (give or take 0.24) | fitness at the next kick-off 100.0
+   physio 3  4-3-3, Balanced + Direct + Normal + Balanced always            48.30 points (give or take 0.24) | fitness at the next kick-off 100.0
+   physio 3  3-5-2, Balanced + Short + Normal + Balanced always             47.66 points (give or take 0.24) | fitness at the next kick-off 100.0
+FAIL B6.3  physio 3: nothing left on all season beats all-Balanced by more than 1.5 points (the best is Attacking + Short + High press + On sight always, +1.63, give or take 0.29)
+
+1 target(s) not met
+
+==================================================================
+node test-tactics.js
+==================================================================
+rules off: 7230 matches over three two-season worlds (the manager in 3-5-2) identical to the 1.7.1 engine, and so is the whole game state
+rules on, everyone all-Balanced in 4-4-2: 9640 matches over four two-season worlds identical to the 1.7.1 engine, and so is the saved game after two seasons; along the way the manager's results carry the new match figures (282 of them) and nothing else differs
+the same seed and plan give the same season; another plan gives another
+a plan is its manager's, survives a save in format 4, and a 1.7.1 save plays all-Balanced
+computer managers: styles fixed by the club, mentality by the fixture, no random number; a human's plan is only ever his own
+a 4-4-2 side, eleven men or ten, is worth exactly what it was; the other formations are valued by the table
+the balance bench, quick mode: 14 targets met, 0 not
+four seasons with the rules on: 3840 league matches, 2.68 goals a game, 46.3% home wins; 95% of sides played something other than all-Balanced; figures kept for 143 of the manager's matches
+
+TACTICS OK (14926 checks)

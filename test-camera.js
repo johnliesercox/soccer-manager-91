@@ -5,6 +5,12 @@
 // never pans faster than its cap except at a cut.
 //   node test-camera.js            prints the report and asserts
 const E = require('./engine.js'); globalThis.Engine = E;
+// The dozen matches this audit watches are a fixed sample, and its limits (an empty pitch one frame in a thousand, both posts
+// at the arrival) were set on that sample. The tactics milestone changes which matches a seed gives, so the sample is kept as
+// it was by playing these twelve under the match rules of 1.7.1. The camera itself is not affected by the plans. (On another
+// dozen the two phone stages miss two of the limits by a little, with the 1.7.1 rules as well: seed 1992 gives 1.5 empty
+// frames in a thousand. That is the camera's, and is noted in TACTICS-SLICE-1.md for the match-pictures slice.)
+E.CFG.TACTICS.on = false;
 for (const f of ['schema','capture','timeline','behaviour','trajectories','interactions','scene','playback','sprites','renderers/iso-projection','iso-sprites','iso-assets','renderers/iso-pitch','renderers/iso-stadium','renderers/iso-camera']) require('./src/matchday/'+f+'.js');
 const MD = globalThis.Matchday; const PR = MD.iso.projection; const CAM = MD.iso.camera;
 let fails = 0, checks = 0; const check = (c, msg) => { checks++; if (!c){ fails++; console.log('FAIL', msg); } };

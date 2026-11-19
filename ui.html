@@ -431,7 +431,7 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const money = n => (n<0?'-':'')+'£'+E.fmt(Math.abs(n));
 const SAVE_KEY = 'sm91-save';
-const APP_VERSION = '1.7.1';
+const APP_VERSION = '1.7.1-tactics1';   // a development build of the tactics milestone (slice 1), not a release: the release number is John's to name
 const CHANGELOG = [
   { v:'1.7.1', when:'November 2026', notes:[
     'A player\'s hair no longer changes colour as he moves.',

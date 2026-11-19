@@ -459,7 +459,28 @@ const CFG = {
   ATTDEF_POW: 1.2,
   MATCH_NOISE: 0.15,
   LATE_EQUALISER: 0.10,
-  UNIT_POW: 0.6,                   // diminishing returns on unit size
+  UNIT_POW: 0.6,                   // diminishing returns on unit size (the rule up to 1.7.1; still used below the smallest formation unit, and whenever TACTICS.on is false)
+  // ---- Tactics (Milestone 1). A plan is four settings, each -1, 0 or +1, and every adjustment below is "times one" at 0,
+  // so a match between two all-Balanced 4-4-2 sides is drawn exactly as it was in 1.7.1. No setting draws a random number.
+  TACTICS: {
+    on: true,                      // false: the match rules of 1.7.1 exactly (no plans, the old formation scaling, nothing extra recorded)
+    computer: true,                // false: computer managers play all-Balanced
+    // the formations, rebalanced: what a unit of that many men is worth against the usual four defenders, four midfielders, two forwards
+    UNIT: { DEF: {3:0.822, 4:1, 5:1.204}, MID: {3:0.905, 4:1, 5:1.105}, FWD: {1:0.875, 2:1, 3:1.143} },
+    // mentality: attacking lifts the attack and opens the defence; defensive the reverse
+    ATT_UP: 0.10, DEF_DOWN: 0.09, ATT_DOWN: 0.09, DEF_UP: 0.10,
+    // passing: how much the share of the ball counts for a side's chances (short: more, direct: less), and how it meets the other side's pressing
+    PASS_POSS: 0.45, PASS_PRESS: 0.02,
+    // pressing: high wins more of the ball and leaves room behind, costs legs and bookings; low the reverse
+    // (a high press costs each player one more fitness point a match. A low press saves none: when it saved one it was worth nearly
+    // two points a season left on at a club with no physio, more than any setting is allowed to be worth. See TACTICS-SLICE-1.md.)
+    PRESS_MID: 0.04, PRESS_DEF_HI: 0.051, PRESS_DEF_LO: 0.051, PRESS_FIT_HI: 1, PRESS_FIT_LO: 0, PRESS_CARD: 0.2,
+    // shooting: on sight is more hit and miss, better against a side sitting deep, and gives midfielders more of the goals; working it in the reverse
+    SHOOT_SD: 0.4, SHOOT_BLOCK: 0.021, SHOOT_MID: 0.25, SHOOT_FWD: 0.10,
+    // a computer manager attacks at home when clearly the stronger and defends away when clearly the weaker (the two sides' strength as a ratio)
+    // and answers a different number of midfielders with his passing (AI_COUNT; planFor says why)
+    AI_ATTACK: 1.03, AI_DEFEND: 0.97, AI_NEUTRAL: 0.05, AI_COUNT: true,
+  },
   CAPACITY: {1:[45000,20000], 2:[30000,12000], 3:[16000,7000], 4:[10000,4000]},
   FILL: {0:0.7, 1:0.65, 2:0.52, 3:0.47, 4:0.43},
   DEMAND: {1:21000, 2:10800, 3:5600, 4:3000},   // typical home crowd for a mid-table club in each division
@@ -661,10 +682,16 @@ function autoSelect(state, club, formationName){
 function teamStrength(xi){
   const grp = s => xi.filter(x=>x.slot===s).map(x=>effSkill(x.p, s));
   const mean = a => a.length? a.reduce((s,v)=>s+v,0)/a.length : 15;
-  const unit = (arr, ref) => mean(arr)*Math.pow(Math.max(arr.length,0.5)/ref, CFG.UNIT_POW);
-  const gk = mean(grp('GK'));
-  const def = unit(grp('DEF'),4), mid = unit(grp('MID'),4), att = unit(grp('FWD'),2);
-  return { gk, def, mid, att, defEff: 0.7*def+0.3*gk };
+  // the worth of a unit by its size. Up to 1.7.1 a power of the size, under which 3-5-2 beat every other formation with equal
+  // players and a lone forward lost a third of the attack. From Milestone 1, a complete eleven in one of the six formations is
+  // valued by a table, set so that with equal players no formation has an edge over another. A side short of a man, or in any
+  // other shape, is valued by the old power exactly as before (so a 4-4-2 side is worth what it always was, eleven men or ten).
+  const T = CFG.TACTICS, G = grp('GK'), D = grp('DEF'), Mi = grp('MID'), F = grp('FWD');
+  const shaped = T.on && xi.length===11 && G.length===1 && T.UNIT.DEF[D.length]!==undefined && T.UNIT.MID[Mi.length]!==undefined && T.UNIT.FWD[F.length]!==undefined;
+  const unit = (arr, ref, tab) => mean(arr)*(shaped? tab[arr.length] : Math.pow(Math.max(arr.length,0.5)/ref, CFG.UNIT_POW));
+  const gk = mean(G);
+  const def = unit(D,4,T.UNIT.DEF), mid = unit(Mi,4,T.UNIT.MID), att = unit(F,2,T.UNIT.FWD);
+  return { gk, def, mid, att, defEff: 0.7*def+0.3*gk, nMid: shaped? Mi.length : 0 };   // nMid: midfielders in a complete eleven (for the computer managers' passing)
 }
 
 // ---------- Match ----------
@@ -686,33 +713,84 @@ function attendanceFor(state, home, away, leaguePos, mult=1){
   return clamp(Math.max(sold, Math.round(att/50)*50), 500, cap);
 }
 
+// ---------- Tactics ----------
+// A plan: m mentality (-1 defensive, +1 attacking), p passing (-1 short, +1 direct), r pressing (-1 low, +1 high),
+// s shooting (-1 work it in, +1 on sight). A human manager's plan is kept on his club (club.tactics; absent means
+// all-Balanced, which is what every save from before Milestone 1 has). A computer manager's is worked out, never stored.
+const PLAN_KEYS = ['m','p','r','s'];
+const BALANCED = Object.freeze({m:0, p:0, r:0, s:0});
+function cleanPlan(t){ if (!t) return BALANCED; const o = {}; for (const k of PLAN_KEYS) o[k] = t[k]===1||t[k]===-1? t[k] : 0; return o; }
+function planOf(club){ return cleanPlan(club && club.tactics); }
+function setTactics(state, key, value){ const c = state.clubs[state.userClub]; if (!c || !PLAN_KEYS.includes(key)) return; const t = Object.assign({}, cleanPlan(c.tactics)); t[key] = value===1||value===-1? value : 0; c.tactics = { m:t.m, p:t.p, r:t.r, s:t.s }; }
+// a computer club's own way of playing: its passing, pressing and shooting, fixed by its id for the life of a game
+// (half the clubs in the middle on each, a quarter either side). Arithmetic on the id: no random number.
+function clubStyle(club){
+  let h = Math.imul((club.id+1)|0, 0x9E3779B1); h ^= h>>>15; h = Math.imul(h, 0x85EBCA77); h ^= h>>>13; h >>>= 0;
+  const pick = n => [-1,0,0,1][n&3];
+  return { p: pick(h), r: pick(h>>>2), s: pick(h>>>4) };
+}
+// one number for an eleven, weighted as the match formula weighs midfield, attack and defence (two equal sides: 1 to 1)
+function sidePower(s){ return Math.pow(s.mid,0.4)*Math.pow(s.att,0.3)*Math.pow(s.defEff,0.3); }
+function planFor(state, club, sOwn, sOpp, where){
+  const T = CFG.TACTICS; if (!T.on) return BALANCED;
+  if (isHuman(state, club.id)) return planOf(club);
+  if (!T.computer) return BALANCED;
+  const st = clubStyle(club); const ratio = sidePower(sOwn)/sidePower(sOpp);
+  const m = where==='home'? (ratio>=T.AI_ATTACK? 1 : 0) : where==='away'? (ratio<=T.AI_DEFEND? -1 : 0) : (ratio>=1+T.AI_NEUTRAL? 1 : ratio<=1-T.AI_NEUTRAL? -1 : 0);
+  // Passing follows the fixture when the two sides line up with different numbers in midfield: keep the ball with more
+  // midfielders than they have, go long over the top with fewer. Otherwise the club's own style. (Every computer club lines up
+  // 4-4-2, so this only ever answers a human manager's formation; without it one formation and passing beat them all, all season.)
+  const p = !T.AI_COUNT || !sOwn.nMid || !sOpp.nMid || sOwn.nMid===sOpp.nMid? st.p : sOwn.nMid>sOpp.nMid? -1 : 1;
+  return { m, p, r: st.r, s: st.s };
+}
+// Everything a match is drawn from, with no random number used: the two elevens' strengths, the two plans, the home side's
+// share of the ball, and for each side the goals its play is worth before luck (mu) and how wide its luck is (sd).
+// playMatch draws from this; the balance bench (tools/tactics-balance.js) reads the same numbers.
+function matchModel(state, home, away, xiH, xiA, opts={}){
+  const T = CFG.TACTICS, sH = teamStrength(xiH), sA = teamStrength(xiA);
+  // the plans: each club's own, unless the caller gives them (the balance bench and the tests do, to set two sides against each other)
+  const tH = T.on && opts.tH? cleanPlan(opts.tH) : planFor(state, home, sH, sA, opts.neutral? 'neutral' : 'home');
+  const tA = T.on && opts.tA? cleanPlan(opts.tA) : planFor(state, away, sA, sH, opts.neutral? 'neutral' : 'away');
+  const side = (s, t) => ({ mid: s.mid*(1+T.PRESS_MID*t.r), att: s.att*(1+(t.m>0? T.ATT_UP : T.ATT_DOWN)*t.m),
+    defEff: s.defEff*(1-(t.m>0? T.DEF_DOWN : T.DEF_UP)*t.m)*(1-(t.r>0? T.PRESS_DEF_HI : T.PRESS_DEF_LO)*t.r) });
+  const eH = side(sH, tH), eA = side(sA, tA);
+  const k = CFG.MID_K;
+  const pH = Math.pow(eH.mid,k)/(Math.pow(eH.mid,k)+Math.pow(eA.mid,k));
+  const underdogHome = opts.knockout && !opts.neutral && home.div>away.div;
+  const hAdv = opts.neutral? 1 : (underdogHome? CFG.CUP_HOME_UNDERDOG : CFG.HOME_ADV), aAdv = opts.neutral? 1 : CFG.AWAY_ADV;
+  const meet = (t, o) => (1+T.PASS_PRESS*t.p*o.r)*(1+T.SHOOT_BLOCK*t.s*(-o.m));   // direct into a high press, short against a low one; shooting from range at a side sitting deep
+  const sd = t => CFG.MATCH_NOISE*(1+T.SHOOT_SD*t.s);
+  const level = v => Math.exp(-(v*v-CFG.MATCH_NOISE*CFG.MATCH_NOISE)/2);                      // wider luck must not also mean more goals on average
+  const sdH = sd(tH), sdA = sd(tA);
+  const muH = CFG.BASE_GOALS*hAdv*Math.pow(2*pH,CFG.POSS_POW*(1-T.PASS_POSS*tH.p))*Math.pow(eH.att/eA.defEff,CFG.ATTDEF_POW)*meet(tH,tA)*level(sdH);
+  const muA = CFG.BASE_GOALS*aAdv*Math.pow(2*(1-pH),CFG.POSS_POW*(1-T.PASS_POSS*tA.p))*Math.pow(eA.att/eH.defEff,CFG.ATTDEF_POW)*meet(tA,tH)*level(sdA);
+  return { sH, sA, tH, tA, pH, muH, muA, sdH, sdA };
+}
+
 function playMatch(state, home, away, opts={}){
   const xiH = opts.xiH || autoSelect(state, home);
   const xiA = opts.xiA || autoSelect(state, away);
-  const sH = teamStrength(xiH), sA = teamStrength(xiA);
-  const k = CFG.MID_K;
-  const pH = Math.pow(sH.mid,k)/(Math.pow(sH.mid,k)+Math.pow(sA.mid,k));
-  const underdogHome = opts.knockout && !opts.neutral && home.div>away.div;
-  const hAdv = opts.neutral? 1 : (underdogHome? CFG.CUP_HOME_UNDERDOG : CFG.HOME_ADV), aAdv = opts.neutral? 1 : CFG.AWAY_ADV;
-  const xgH = CFG.BASE_GOALS*hAdv*Math.pow(2*pH,CFG.POSS_POW)*Math.pow(sH.att/sA.defEff,CFG.ATTDEF_POW)*Math.exp(rNorm(0,CFG.MATCH_NOISE));
-  const xgA = CFG.BASE_GOALS*aAdv*Math.pow(2*(1-pH),CFG.POSS_POW)*Math.pow(sA.att/sH.defEff,CFG.ATTDEF_POW)*Math.exp(rNorm(0,CFG.MATCH_NOISE));
+  const T = CFG.TACTICS, M = matchModel(state, home, away, xiH, xiA, opts), tH = M.tH, tA = M.tA;
+  const xgH = M.muH*Math.exp(rNorm(0,M.sdH));
+  const xgA = M.muA*Math.exp(rNorm(0,M.sdA));
   let gH = poisson(xgH), gA = poisson(xgA);
   if (Math.abs(gH-gA)===1 && rand()<CFG.LATE_EQUALISER){ if (gH<gA) gH++; else gA++; }
   const scorers = [];
-  for (let i=0;i<gH;i++) scorers.push({side:'H', p: pickScorer(xiH), min: rInt(1,90)});
-  for (let i=0;i<gA;i++) scorers.push({side:'A', p: pickScorer(xiA), min: rInt(1,90)});
+  for (let i=0;i<gH;i++) scorers.push({side:'H', p: pickScorer(xiH, tH), min: rInt(1,90)});
+  for (let i=0;i<gA;i++) scorers.push({side:'A', p: pickScorer(xiA, tA), min: rInt(1,90)});
   let extra = null;
   if (opts.knockout && gH===gA){
     // extra time then penalties; extra-time goals are credited like any other
     const eH = poisson(xgH*0.3), eA = poisson(xgA*0.3);
-    if (eH!==eA){ gH+=eH; gA+=eA; extra='aet'; creditExtraTime(scorers, xiH, xiA, eH, eA); }
+    if (eH!==eA){ gH+=eH; gA+=eA; extra='aet'; creditExtraTime(scorers, xiH, xiA, eH, eA, tH, tA); }
     else { extra = rand()<0.5? 'pens-H':'pens-A'; }
   }
   scorers.sort((a,b)=>a.min-b.min);
   // fitness, apps, injuries, goals
   const injuries = [];
+  const nH = xiH.length; let nth = 0;
   for (const x of [...xiH,...xiA]){
-    x.p.apps++; x.p.fitness = clamp(x.p.fitness-7, 30, 100);
+    x.p.apps++; { const r = (nth++<nH? tH : tA).r; x.p.fitness = clamp(x.p.fitness-(7+(r>0? T.PRESS_FIT_HI : r<0? -T.PRESS_FIT_LO : 0)), 30, 100); }
     const physio = (state.clubs[x.p.club]||{staff:{physio:1}}).staff.physio;
     const chance = CFG.INJURY_BASE*(x.p.fitness<70?2:1)*CFG.PHYSIO_INJ_CHANCE[physio];
     if (rand()<chance){ x.p.injury = Math.max(1, Math.round((1+Math.floor(Math.pow(rand(),2)*9))*CFG.PHYSIO_INJ_LEN[physio])); injuries.push(x.p); }
@@ -722,7 +800,7 @@ function playMatch(state, home, away, opts={}){
   const cards = [], bans = [];
   const C = CFG.CARD;
   const book = (x, side) => {
-    const p = x.p; const chance = C.yellow[x.slot]||0.05;
+    const p = x.p; const chance = (C.yellow[x.slot]||0.05)*(1+T.PRESS_CARD*(side==='H'? tH : tA).r);
     if (rand()<C.straightRed){ cards.push({side, p, min: rInt(1,90), type:'R'}); p.reds = (p.reds||0)+1; const n = rInt(C.redBan[0], C.redBan[1]); p.ban = Math.max(p.ban||0, n); bans.push({p, n, why:'sent off'}); return; }
     if (rand()<chance){
       cards.push({side, p, min: rInt(1,90), type:'Y'}); p.yellows = (p.yellows||0)+1;
@@ -739,7 +817,9 @@ function playMatch(state, home, away, opts={}){
   for (const c of [home, away]){ c.matches = (c.matches||0)+1; for (const p of squadOf(state,c)) if (p.ban>0 && !onPitch.has(p.id)) p.ban--; }
   const leaguePos = home.leaguePos||8;
   const att = opts.neutral? opts.finalAtt : attendanceFor(state, home, away, leaguePos, opts.demandMult||1);
-  return { home, away, gH, gA, scorers, extra, att, injuries, cards, bans, xiH, xiA, xgH, xgA };
+  const rec = { home, away, gH, gA, scorers, extra, att, injuries, cards, bans, xiH, xiA, xgH, xgA };
+  if (T.on){ rec.tH = tH; rec.tA = tA; rec.poss = M.pH; }      // the two plans and the home side's share of the ball: what the result was drawn from
+  return rec;
 }
 
 // The record keeps time. Scorers' minutes and cards' minutes are drawn independently of each other, so a man could be
@@ -766,15 +846,17 @@ function reconcileRecord(scorers, cards){
   scorers.sort((a,b)=>a.min-b.min); cards.sort((a,b)=>a.min-b.min);
 }
 
-function pickScorer(xi){
-  const w = xi.map(x=>({x, w: effSkill(x.p,x.slot)*({FWD:5,MID:2.5,DEF:0.7,GK:0.02}[x.slot])}));
+function pickScorer(xi, plan){
+  const T = CFG.TACTICS, s = plan? plan.s : 0;
+  const W = {FWD:5*(1-T.SHOOT_FWD*s), MID:2.5*(1+T.SHOOT_MID*s), DEF:0.7, GK:0.02};      // shooting on sight shares the goals with the midfield; working it in keeps them for the forwards
+  const w = xi.map(x=>({x, w: effSkill(x.p,x.slot)*(W[x.slot])}));
   let t = rand()*w.reduce((s,v)=>s+v.w,0);
   for (const e of w){ t-=e.w; if (t<=0) return e.x.p; }
   return w[w.length-1].x.p;
 }
-function creditExtraTime(scorers, xiH, xiA, eH, eA){
-  for (let i=0;i<eH;i++){ const p = pickScorer(xiH); p.goals++; scorers.push({side:'H', p, min: rInt(91,120), et:true}); }
-  for (let i=0;i<eA;i++){ const p = pickScorer(xiA); p.goals++; scorers.push({side:'A', p, min: rInt(91,120), et:true}); }
+function creditExtraTime(scorers, xiH, xiA, eH, eA, tH, tA){
+  for (let i=0;i<eH;i++){ const p = pickScorer(xiH, tH); p.goals++; scorers.push({side:'H', p, min: rInt(91,120), et:true}); }
+  for (let i=0;i<eA;i++){ const p = pickScorer(xiA, tA); p.goals++; scorers.push({side:'A', p, min: rInt(91,120), et:true}); }
 }
 function recordGate(club, att){
   const cap = club.safety<CFG.SAFETY_RESTRICT_BELOW? Math.round(club.capacity*0.6) : club.capacity;
@@ -908,7 +990,7 @@ function playEuroWeek(state, results){
       else if (gA!==t.g1[1]) winner = gA>t.g1[1]? A : B;   // away goals: A scored gA away, B scored g1[1] away
       else {
         const eH = poisson(m.xgH*0.3), eA = poisson(m.xgA*0.3);
-        if (eH!==eA){ gH+=eH; gA+=eA; aggA+=eA; aggB+=eH; winner = aggA>aggB? A : B; m.extra='aet'; creditExtraTime(m.scorers, m.xiH, m.xiA, eH, eA); m.scorers.sort((a,b)=>a.min-b.min); reconcileRecord(m.scorers, m.cards); }
+        if (eH!==eA){ gH+=eH; gA+=eA; aggA+=eA; aggB+=eH; winner = aggA>aggB? A : B; m.extra='aet'; creditExtraTime(m.scorers, m.xiH, m.xiA, eH, eA, m.tH, m.tA); m.scorers.sort((a,b)=>a.min-b.min); reconcileRecord(m.scorers, m.cards); }
         else { const hp = rand()<0.5; winner = hp? home : away; m.extra = hp? 'pens-H':'pens-A'; }
       }
       m.gH = gH; m.gA = gA; m.agg = { a:aggA, b:aggB }; t.g2 = [gH, gA]; m.winner = winner.id; results.push(m);
@@ -1122,6 +1204,7 @@ function advanceWeek(state){
         for (const p of userMatch.injuries) if (p.club===u.id) news(st, `${p.name} injured, out for ${p.injury} week${p.injury>1?'s':''}.`, 'injury');
         const home = userMatch.home.id===u.id;
         st.userResults[st.week] = { opp: home? userMatch.away.id : userMatch.home.id, home, gF: home? userMatch.gH : userMatch.gA, gA: home? userMatch.gA : userMatch.gH, extra: userMatch.extra, cup: userMatch.cupKey||null, round: userMatch.cup, club: u.id };
+        if (CFG.TACTICS.on && userMatch.poss!==undefined){ const r = st.userResults[st.week]; r.poss = Math.round(100*(home? userMatch.poss : 1-userMatch.poss)); r.xg = [Math.round(100*(home? userMatch.xgH : userMatch.xgA))/100, Math.round(100*(home? userMatch.xgA : userMatch.xgH))/100]; r.plan = home? userMatch.tH : userMatch.tA; r.oppPlan = home? userMatch.tA : userMatch.tH; }
       }
       const euroMatch = results.find(m=>m.euro && (m.home.id===u.id||m.away.id===u.id));
       if (euroMatch){
@@ -2172,9 +2255,11 @@ const Engine = { CFG, CLUB_DATA, FORMATIONS, newGame, advanceWeek, endSeason, au
   takeSackOffer, resign, bottomClub, updatePositions,
   isHuman, managerOf, activeManagers, setCurrent, saveCurrent, withManager, retireManager, standings, humanListings, renameClub, renamePlayer, scoutSearch, topScorers, gateSummary, supportOf, demandTarget, turnover, ticketOf, setTicketPrice, ticketAdvice, renameAnyClub,
   euroSlot, euroTieFor, euroStatus, euroRoundName, EURO_POOL, SAVE_VERSION, migrate,
+  PLAN_KEYS, BALANCED, cleanPlan, planOf, setTactics, clubStyle, sidePower, planFor, matchModel, playMatch,
   contractAsk, offerContract, releasePlayer, freeAgentsList, signFreeAgent, playerStatus, moraleWord, moraleFactor, available, wantsYears, letGo,
   reservesOf, upgradeAcademy, promoteReserve, releaseReserve,
   clubRecords, topClubScorers, careerOf, careerScore, careerSummary, SCORE, MODES };
+if (typeof location!=='undefined' && location && /[?&]rules=1\.7(&|$)/.test(String(location.search||''))) CFG.TACTICS.on = false;   // a test switch for the comparison tools: the match rules of 1.7.1
 if (typeof module!=='undefined') module.exports = Engine;
 
 </script>
@@ -7789,7 +7874,7 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const money = n => (n<0?'-':'')+'£'+E.fmt(Math.abs(n));
 const SAVE_KEY = 'sm91-save';
-const APP_VERSION = '1.7.1';
+const APP_VERSION = '1.7.1-tactics1';   // a development build of the tactics milestone (slice 1), not a release: the release number is John's to name
 const CHANGELOG = [
   { v:'1.7.1', when:'November 2026', notes:[
     'A player\'s hair no longer changes colour as he moves.',

@@ -57,7 +57,7 @@ let asked = []; { const real = MD.isoSprites.get; MD.isoSprites.get = function(k
 
 // ---- scenario 9: extra time and penalties drawn to the last second; nothing invented for a shoot-out ----
 {
-  let frames = 0, threw = 0, thin = 0, late = 0, wrongScore = 0, noPhase = 0, noWinner = 0;
+  let frames = 0, threw = 0, thin = 0, late = 0, wrongScore = 0, noPhase = 0, noWinner = 0, twoLeg = 0;
   for (const p of aet.slice(0, 3).concat(pens.slice(0, 3))){
     const { sc } = sceneOf(p); const state = { anim: {} };
     for (let t = P.regulation.end - 30; t <= sc.duration; t += 2){ try { const fr = frameOf(p, t, 366, 411, 'follow', state); frames++; const s = sc.getSceneAt(t); if (s.live && drawn(fr).length < 1) thin++; } catch (e){ threw++; if (threw===1) console.log('   threw at '+t+' in '+p.matchId+': '+e.message); } }
@@ -69,12 +69,15 @@ let asked = []; { const real = MD.isoSprites.get; MD.isoSprites.get = function(k
     const pe = full.events.find(e => e.type===EV.PENALTIES), so = full.events.find(e => e.type===EV.SHOOTOUT_RESULT);
     if (!pe || sc.getSceneAt(pe.matchSecond + 0.5).phase!=='penalties' || sc.getSceneAt(pe.matchSecond + 0.5).phaseLabel!=='Penalties') noPhase++;
     if (!so || so.teamId!==p.official.penaltiesWinnerTeamId || !so.text || so.text.indexOf(p.teams[so.teamId===p.teams.home.id? 'home' : 'away'].name)===-1) noWinner++;
-    const end = sc.getSceneAt(sc.duration); if (end.score.home!==p.official.homeGoals || end.score.away!==p.official.awayGoals || p.official.homeGoals!==p.official.awayGoals) wrongScore++;
+    const end = sc.getSceneAt(sc.duration); // level on the day, or (the second leg of a European tie) level over the two legs with the day's score whatever it was. The first
+    // two seasons of seed 4242 had no such second leg until the tactics milestone changed which matches the seed gives; other seeds always had.
+    const agg = p.official.aggregate; const level = agg? agg.home===agg.away : p.official.homeGoals===p.official.awayGoals; if (agg) twoLeg++;
+    if (end.score.home!==p.official.homeGoals || end.score.away!==p.official.awayGoals || !level) wrongScore++;
   }
   for (const p of extra) done(p);
   ok(frames > 4000 && threw===0, 'scenario 9: extra time and penalties are drawn to the last second without an error ('+frames+' frames of six matches, '+threw+' errors)');
   ok(thin===0, 'scenario 9: there is always someone in the picture while play is live in extra time ('+thin+' empty frames)');
-  ok(late===0 && noPhase===0 && noWinner===0 && wrongScore===0, 'scenario 9: '+pens.length+' shoot-outs: the stage says Penalties, the result names the official winner, no kick is invented and the score stays level ('+late+', '+noPhase+', '+noWinner+', '+wrongScore+' faults)');
+  ok(late===0 && noPhase===0 && noWinner===0 && wrongScore===0, 'scenario 9: '+pens.length+' shoot-outs ('+twoLeg+' after a level two-legged tie): the stage says Penalties, the result names the official winner, no kick is invented and the score stays level ('+late+', '+noPhase+', '+noWinner+', '+wrongScore+' faults)');
 }
 
 // ---- B08 and scenario 7: dismissals as drawn (whole-pitch camera, so every player on the pitch is in the picture) ----

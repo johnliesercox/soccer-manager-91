@@ -101,7 +101,9 @@ for (const { p } of samples){
       ok(team.filter(x=>!x.sentOff).length===team.length-1, 'ten on the pitch after a red card '+id);
       ok(team.find(x=>x.id===red.playerId).sentOff && team.find(x=>x.id===red.playerId).y > 1, 'the dismissed player is off the pitch '+id);
       ok(team.filter(x=>!x.sentOff && x.role==='GK').length===1, 'the ten still have someone in goal '+id);
-      const after = sc.anchorSets[sc.anchorSets.length-1]; const isGK = p.players.find(x=>x.id===red.playerId).role==='GK'; ok(after.t===off.matchSecond && (isGK || after.anchors.formations[red.teamId]!==sc.anchorSets[0].anchors.formations[red.teamId]), 'the ten reshape ('+sc.anchorSets[0].anchors.formations[red.teamId]+' -> '+after.anchors.formations[red.teamId]+(isGK? ', keeper off' : '')+') '+id);
+      // the reshape made at this dismissal (a match can have more than one: the check used to take the last reshape of the match, which
+      // is this one only when nobody else is sent off later; the first match with a dismissal in this sample now has two, one a side)
+      const after = sc.anchorSets.find(a=>a.t===off.matchSecond) || { t: -1, anchors: { formations: {} } }; const isGK = p.players.find(x=>x.id===red.playerId).role==='GK'; ok(after.t===off.matchSecond && (isGK || after.anchors.formations[red.teamId]!==sc.anchorSets[0].anchors.formations[red.teamId]), 'the ten reshape ('+sc.anchorSets[0].anchors.formations[red.teamId]+' -> '+after.anchors.formations[red.teamId]+(isGK? ', keeper off' : '')+') '+id);
     }
   }
   // ---- 6. a 50ms walk: nothing drawn teleports (set pieces, hand-overs and turnovers included) ----
