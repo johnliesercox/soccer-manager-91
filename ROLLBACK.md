@@ -1,6 +1,6 @@
 # Rolling back
 
-(19 November 2026: release 1.7.1, the hair fix, is prepared on the branch `milestone-0-hair` and is not deployed. If it is published, the version to put back is 1.7.0, from `legacy/release-1.7.0/`, by the steps below with that folder and number; saves are format 4 in both, and `tools/save-compat.js` was run in both directions between them.)
+(19 November 2026: release 1.7.1, the hair fix, is approved on the branch `milestone-0-hair` and, by John's decision, not deployed; the tag `v1.7.0` now exists at `cde3c8f`, the live commit. If it is published, the version to put back is 1.7.0, from `legacy/release-1.7.0/`, by the steps below with that folder and number; saves are format 4 in both, and `tools/save-compat.js` was run in both directions between them.)
 
 (State on the evening of 18 November 2026: the live site is 1.7.0, `main` at `fe24d6c`. The tag `v1.6.0` exists at `97a0748`; the tag `v1.7.0` is John's to create once he has checked the live site. Nothing below has had to be used. The version to put back, if it ever has to be, is 1.6.0, exactly as described here.)
 

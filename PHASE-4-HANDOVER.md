@@ -5,9 +5,10 @@ Written 18 November 2026. Read `PHASE-3-FINAL-REPORT.md` first for where things 
 ## Where things stand
 
 * **Live:** 1.7.0 (the combined release with the Premium Dark interface), `main` at `fe24d6c`, published 18 November 2026. GitHub Pages serves the root of `main`. 1.6.0 is the tag `v1.6.0` at `97a0748`; the tag `v1.7.0` is John's to create.
-* **In hand (19 November 2026):** release 1.7.1, the hair fix (Milestone 0 of the roadmap), on the branch `milestone-0-hair`, built and tested, waiting for John's visual approval. Not merged, not deployed. `HAIR-FIX-1.7.1.md` is its checkpoint report.
+* **Done and parked (19 November 2026):** release 1.7.1, the hair fix (Milestone 0 of the roadmap), on the branch `milestone-0-hair`: built, tested and approved by John, and by his decision not deployed. It is not merged to `main`; the live site stays 1.7.0, which he tagged `v1.7.0` at `cde3c8f` the same day. `HAIR-FIX-1.7.1.md` is its checkpoint report. **Start new work from `milestone-0-hair`**, not from `main`, until 1.7.1 or a later release is published, or the fix is lost.
+* **The artwork-defect backlog** is `ARTWORK-BACKLOG.md`: heads facing the wrong way, hairstyle shape, heads cut off, and the keepers' one hairstyle. No repainting is authorised; it is there for a later decision.
 * **Known limitation, goalkeepers' hair:** the keepers' painted sheet has one hairstyle (the short one) where the outfield sheet has three. A goalkeeper whose look says cropped or long is drawn short all match, which nobody can notice; an outfield player who goes in goal after his keeper is sent off (`src/matchday/scene.js` gives a defender the keeper's role from that second) is drawn from the keepers' sheet from then on, so his hairstyle becomes the short one while his hair colour and skin stay his own. Curing it means painting the keepers' 58 poses in the two other hairstyles (928 cells a size).
-* **Start new work from `main`**, on a branch of its own. The branches `milestone-5` and `premium-dark` are wholly contained in it.
+* **Start new work from `milestone-0-hair`** (see above; it is `main` plus the hair fix), on a branch of its own. The branches `milestone-5` and `premium-dark` are wholly contained in it.
 * **Next:** nothing is in hand. The roadmap after this release is John's brief of 18 November (a fix for hairstyles changing during a match, then tactics, training, match information, matchday variety); none of it is started, and each milestone needs his approval of its scope before any code. `RELEASE-CANDIDATE-1.7.0.md` is the report on the released file, `PREMIUM-DARK.md` the record of the interface, and `node tools/ui-parity.js` (with `--compare`, `--layout`, `--keys` and `--stage`) is how any change to a screen's presentation is checked against the build before it.
 
 ## The rules that stand
@@ -64,11 +65,11 @@ Run suites one at a time; two UI suites at once share a temporary file.
 | Memory, forced failures, offline, hot-seat, measuring screen | `node tools/soak-audit.js . <out> all` | 12 minutes |
 | Phone pacing between real measurements | `node tools/phone-probe.js . 6 out.json` | 90 seconds |
 | The picture, pixel for pixel | `node tools/tile-reference.js`, `tools/sprite-reference.js`, `tools/frame-reference.js`, each with `. out.json tools/reference/<its file>` | 3 minutes in all |
-| Hair drawn as hair, and every player's look held through matches (from 1.7.1) | `node tools/hair-audit.js .` | 8 minutes (1 with `--matches 0`) |
+| Hair drawn as hair, and every player's look held through matches (from 1.7.1; part of the standard set by John's instruction of 19 November 2026: run it at every checkpoint and release, and after any change to the painted sheets, the converter, the palette or the recolouring) | `node tools/hair-audit.js .`, and `python3 tools/test_iso_paint_hair.py` for the converter | 8 minutes (1 with `--matches 0`) |
 
 The browser tools need Playwright (`NODE_PATH` to wherever it is installed). Do not rebuild while a browser audit is running.
 
-On a real phone: What's new > Measure the match frame rate, then watch a match at normal speed for a minute; the panel gives the figures. John's Galaxy S23 Ultra reads 59.6 frames a second on 1.7.0.
+On a real phone: What's new > Measure the match frame rate, then watch a match at normal speed for a minute; the panel gives the figures. John's Galaxy S23 Ultra reads 59.6 frames a second on 1.7.0 and 59.5 on the 1.7.1 preview (19 November 2026: slowest 5% of frames 16.7 ms, 2 of 3,572 longer than 34 ms).
 
 ## Traps that cost time in Phase 3
 
