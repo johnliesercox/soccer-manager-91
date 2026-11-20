@@ -81,8 +81,8 @@
   function nextMatch(){ const S = C.S; if (!S.md.queue.length) nextManager(); else C.go('matchpick'); }
 
   // ---------- viewer ----------
-  function openViewer(m){
-    const S = C.S, st = S.state;
+  function openViewer(m, stateOf){
+    const S = C.S, st = stateOf || S.state;   // stateOf: the copy of the game a preview friendly was played in (previewMatch below)
     let pres;
     try { pres = MD.withTimeline(MD.capture(st, m, st.lastWeekInfo)); }
     catch(err){ console.error('matchday capture failed', err); return null; }
@@ -318,7 +318,7 @@
           <div class="md-clock" id="md-clock">00:00  Kick-off</div>
           <div class="md-stage" id="md-stage"><div class="md-badge" id="md-badge" hidden aria-live="polite"></div></div>
           <div class="md-controls2"><button class="b quiet" data-a="md-camera" id="md-camera">Camera</button><button class="b quiet" data-a="md-view" id="md-view">View</button><button class="b quiet" data-a="md-sound" id="md-sound" aria-pressed="${sound}">Sound: ${sound? 'on' : 'off'}</button></div>
-          <div class="md-comm" id="md-comm" aria-live="polite" role="status">${esc(compLabel(S.md.queue[0].m, S.results.week))}${p.official.attendance? ' Attendance '+E.fmt(p.official.attendance)+'.' : ''}</div>
+          <div class="md-comm" id="md-comm" aria-live="polite" role="status">${S.md.preview? 'A friendly for the style preview. It does not count.' : esc(compLabel(S.md.queue[0].m, S.results.week))}${p.official.attendance? ' Attendance '+E.fmt(p.official.attendance)+'.' : ''}</div>
           <div class="md-log" id="md-log" aria-label="Match events"></div></div>`,
           action: `<div class="md-controls"><button class="b" data-a="md-play" id="md-play" aria-label="Play or pause">Pause</button><button class="b quiet on" data-a="md-speed" data-s="1" id="md-speed-1" aria-label="Normal speed">1x</button><button class="b quiet" data-a="md-speed" data-s="2" id="md-speed-2" aria-label="Double speed">2x</button><button class="b quiet" data-a="md-speed" data-s="4" id="md-speed-4" aria-label="Four times speed">4x</button><button class="b quiet" data-a="md-skip">Skip</button></div>` };
       },
@@ -352,7 +352,8 @@
       case 'md-instant': { S.md.current = S.md.queue.shift().m; if (C.Track) C.Track.send('match_instant', {}); C.go('matchresult'); break; }
       case 'md-measure': { MD.ui.measuring = true; C.toast('Measuring is on. Watch any match for a minute.'); break; }
       case 'md-measure-close': { const el = C.$('#md-meter'); if (el && el.parentNode) el.parentNode.removeChild(el); if (v && v.playback && !v.done) v.playback.play(); break; }
-      case 'md-fulltime': { closeViewer(); S.md.current = S.md.queue.shift().m; C.go('matchresult'); break; }
+      case 'md-fulltime': { if (S.md.preview){ closeViewer(); const pm = S.md.queue.shift().m; S.md = null; S.spLast = pm; C.go('stylepreview'); break; }   // a preview friendly: back to its screen, nothing kept
+        closeViewer(); S.md.current = S.md.queue.shift().m; C.go('matchresult'); break; }
       case 'md-continue': nextMatch(); break;
       case 'md-play': if (v && v.playback && !v.done) v.playback.toggle(); break;
       case 'md-speed': if (v && v.playback) v.playback.setSpeed(+d.s); break;
@@ -381,5 +382,8 @@
     root.document.addEventListener('keydown', onKey);
   }
 
-  MD.ui = { install, startWeek, afterPass, act, closeViewer, mountRenderer, getView, compLabel, matchesFor };
+  // A friendly for the style preview of development builds: one match, played in a copy of the game (stateOf), watched and then
+  // forgotten. It is not part of any week: no result, table, injury, card or fitness reaches the game being played.
+  function previewMatch(stateOf, m){ const S = C.S; if (S.md && S.md.viewer) closeViewer(); S.md = { round: [], ri: 0, queue: [{ m }], passing: false, viewer: null, current: null, preview: true }; return openViewer(m, stateOf); }
+  MD.ui = { install, startWeek, afterPass, act, closeViewer, mountRenderer, getView, compLabel, matchesFor, previewMatch };
 })(typeof window!=='undefined'? window : globalThis);

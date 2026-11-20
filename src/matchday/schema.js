@@ -105,7 +105,9 @@
   // Deterministic 32-bit hash of a string (FNV-1a), used for presentation seeds.
   function hashString(s){ let h = 0x811c9dc5; for (let i=0;i<s.length;i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); } return h>>>0; }
   // Small seeded generator for everything illustrative. Never the game's RNG.
-  function seededRandom(seed){ let a = seed>>>0; return function(){ a = (a + 0x6D2B79F5)|0; let t = Math.imul(a ^ (a>>>15), 1|a); t = (t + Math.imul(t ^ (t>>>7), 61|t)) ^ t; return ((t ^ (t>>>14))>>>0) / 4294967296; }; }
+  function seededRandom(seed){ let a = seed>>>0; const f = function(){ a = (a + 0x6D2B79F5)|0; let t = Math.imul(a ^ (a>>>15), 1|a); t = (t + Math.imul(t ^ (t>>>7), 61|t)) ^ t; return ((t ^ (t>>>14))>>>0) / 4294967296; };
+    f.state = () => a; f.restore = v => { a = v|0; };   // where it is in its sequence (the tactics lean of the timeline keeps a goal's finish on the numbers it always had)
+    return f; }
 
   // ---- team shape, shared by the timeline builder and the scene model ----
   // Anchors are in the ATTACKING frame: x 0 = own goal line, 1 = the goal being attacked.

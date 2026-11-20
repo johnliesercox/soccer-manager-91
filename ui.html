@@ -171,6 +171,7 @@ body.pd .plan .pro{color:var(--ok)}body.pd .plan .con{color:var(--warn)}body.pd 
 body.pd .plan .plan-n{font-size:13.5px;border-top:1px solid var(--line2);padding-top:9px}
 body.pd .plan .plan-n b{color:var(--tx)}
 body.pd .plan .b[data-a="planreset"]{margin:10px 0 0;text-align:center}body.pd .plan .b[data-a="planreset"] .ic{margin-right:8px}
+body.pd .spgo .b{text-align:center}body.pd .spgo .b+.b{margin-top:8px}body.pd .spgo .b .ic,body.pd .b[data-a="stylepreview"] .ic{margin-right:8px}
 body.pd .card.fx p .rep{color:var(--tx2)}
 body.pd .figs b,body.pd .figs2 b{color:var(--tx)}
 body.pd p.note.card{display:flex;gap:12px;align-items:center;font-style:italic;margin:0 0 12px!important;font-size:14.5px}
@@ -452,7 +453,7 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const money = n => (n<0?'-':'')+'£'+E.fmt(Math.abs(n));
 const SAVE_KEY = 'sm91-save';
-const APP_VERSION = '1.8.0-dev2';   // a development build on the way to 1.8.0 (the hair fix and the tactics milestone, slices 1 and 2 so far), not the release
+const APP_VERSION = '1.8.0-dev3';   // a development build on the way to 1.8.0 (the hair fix and the tactics milestone: slices 1 and 2, and stage A of slice 3), not the release
 const CHANGELOG = [
   { v:'1.7.1', when:'November 2026', notes:[
     'A player\'s hair no longer changes colour as he moves.',
@@ -806,6 +807,14 @@ const SCREENS = {
       <h2>Roll of honour</h2>${honours||'<p class="dim">No seasons finished yet.</p>'}`, {flow:true}),
       action: `<button class="b quiet" data-a="back">Back</button>` };
   },
+  stylepreview(){
+    const sp = S.sp || (S.sp = { h:{m:0,p:0,r:0,s:0}, a:{m:0,p:0,r:0,s:0} }); const u = user(), opp = previewOpponent(), m = S.spLast;
+    const side = (key, club, where) => `<section class="card plan"><p class="dim ttl">${where}: ${esc(club.name)}</p><p class="plansum"><b>${planWords(sp[key])}.</b></p>${PLAN.map(c=>`<p class="plab" id="sp-${key}-${c.k}">${c.name}</p><div class="grid3" role="group" aria-labelledby="sp-${key}-${c.k}">${c.opts.map((o,i)=>`<button class="b ${sp[key][c.k]===i-1?'on':''}" data-a="sp-set" data-side="${key}" data-k="${c.k}" data-v="${i-1}">${o}</button>`).join('')}</div>`).join('')}</section>`;
+    const last = m? `<section class="card"><p class="dim ttl">The last friendly</p><p><b>${esc(m.home.name)} ${m.gH} - ${m.gA} ${esc(m.away.name)}</b></p><p class="dim">${esc(m.home.short)}: ${planWords(m.tH)}. ${esc(m.away.short)}: ${planWords(m.tA)}.</p>${matchFigures(m)}</section>` : '';
+    return { main: `<section class="card"><h1>Preview: one style against another</h1><p class="dim">In this development build only. Choose how each side plays, then watch a friendly between them. It does not count: no result, injury, card or tired legs is kept, and nothing is saved. The players are the two clubs' own, so the better side will usually have more of the match whatever the plans.</p></section>${last}<div class="cols">${side('h', u, 'At home')}${side('a', opp, 'Away')}</div>
+      <section class="card spgo"><button class="b" data-a="sp-watch">${ic('ball')}Watch the friendly</button><button class="b" data-a="sp-swap">${ic('refresh')}Swap the two plans</button></section>`,
+      action: `<button class="b quiet" data-a="back">Back</button>` };
+  },
   help(){
     const st = S.state;
     return { main: cards(`<h1>How to play</h1>
@@ -902,6 +911,7 @@ const SCREENS = {
       ${st.jobOffer!==null? `<section class="card">${jobOfferPanel()}</section>` : ''}
       <div class="grid2 q4" style="grid-template-columns:repeat(4,1fr);margin-top:12px"><button class="b" data-a="fixtures" style="padding:12px 4px;text-align:center">${ic('cal')}Fixtures</button><button class="b" data-a="results" style="padding:12px 4px;text-align:center">${ic('bars')}Results</button><button class="b" data-a="saves" style="padding:12px 4px;text-align:center">${ic('save')}Saves</button><button class="b danger ${S.confirmResign?'on':''}" data-a="resign" style="padding:12px 4px;text-align:center">${ic('exit')}${S.confirmResign?'Really?':'Resign'}</button></div>
       </div><div>
+      ${devBuild() && tacticsOn() && !multi()? `<section class="card"><p class="dim ttl">Development build</p><p class="dim">Judge the match pictures one style against another.</p><button class="b" data-a="stylepreview">${ic('ball')}Preview: compare two styles</button></section>` : ''}
       <section class="card nw"><h2>News</h2>${news.length? `<ul class="news">${news.map(n=>`<li class="${n.kind==='warn'?'warn':''}"><span class="dim">Wk ${n.w}</span> ${esc(n.text)}</li>`).join('')}</ul>` : '<p class="dim">Nothing yet.</p>'}</section>
       <p class="dim mgr" style="margin-top:14px"><span class="who">${ic('user')}Manager: ${esc(st.managerName)}.</span> <button class="b small" data-a="help" style="display:inline;width:auto;margin-top:6px">${ic('help')}How to play</button> ${FEEDBACK_URL? `<a class="b small" data-track="feedback_opened" href="${esc(FEEDBACK_URL)}" target="_blank" rel="noopener" style="display:inline;width:auto;margin-top:6px;text-decoration:none">${ic('mail')}Send feedback</a> `:''}${multi()? `<button class="b small danger ${S.confirmRetire?'on':''}" data-a="retire" style="display:inline;width:auto;margin-top:6px">${ic('x')}${S.confirmRetire?'Really retire? Tap again':'Retire from the game'}</button>` : `<button class="b small danger ${S.confirmQuit?'on':''}" data-a="quit" style="display:inline;width:auto;margin-top:6px">${ic('x')}${S.confirmQuit?'Really abandon? Tap again':'Abandon this game'}</button>`}</p>
       </div></div>`,
@@ -1463,6 +1473,23 @@ function matchFigures(m){
   const ph = Math.round(100*m.poss), f = x => (Math.round(10*x)/10).toFixed(1);
   return `<p class="dim figs">Possession: ${esc(m.home.short)} <b>${ph}%</b>, ${esc(m.away.short)} <b>${100-ph}%</b>. Chances worth: ${esc(m.home.short)} <b>${f(m.xgH)}</b> goals, ${esc(m.away.short)} <b>${f(m.xgA)}</b>${m.extra? ' (in the 90 minutes)' : ''}. <span class="src">Estimates from the match simulation, not counted from individual passes and shots.</span></p>`;
 }
+// ---------- the style preview (development builds only) ----------
+// Two plans chosen freely, and a friendly between the manager's club and its next opponent played to them and watched. The
+// friendly is played in a copy of the game, so nothing of it (result, injuries, cards, fitness) reaches the game in hand.
+// It is there so that the match pictures can be judged style against style. Not shown in a release (no "-dev" in the version).
+// The friendly draws on the engine's random numbers like any match. An ordinary game takes those from the browser, so nothing later
+// depends on it; only a game started from a test address with a seed would play different later weeks for having previewed.
+const devBuild = () => /-dev/.test(APP_VERSION);
+function previewOpponent(){ const st = S.state, u = user(); const nf = E.nextFixture(st); if (nf.type!=='none' && nf.opp && nf.opp.div>=1) return nf.opp; return st.clubs.filter(c=>c.div===u.div && c.id!==u.id)[0]; }
+function playPreview(){
+  const st = S.state, sp = S.sp, u = user(), opp = previewOpponent();
+  const copy = E.restore(JSON.parse(JSON.stringify(st)));
+  const h = copy.clubs[u.id], a = copy.clubs[opp.id];
+  const xiH = E.autoSelect(copy, h, h.formation||'4-4-2'), xiA = E.autoSelect(copy, a, a.formation||'4-4-2');
+  const m = E.playMatch(copy, h, a, { xiH, xiA, tH: sp.h, tA: sp.a });
+  S.spN = (S.spN||0) + 1; copy.lastWeekInfo = { season: copy.season, week: copy.week, competition: 'preview-'+S.spN };   // each friendly is its own match to the pictures
+  if (!Matchday.ui.previewMatch(copy, m)){ S.spLast = m; toast('Could not build the match view. Showing the result.'); render(); }
+}
 function selectionSummary(){ const st=S.state,u=user(); const cnt = ids => (ids||[]).filter(id=>st.players[id]&&st.players[id].club===u.id&&st.players[id].injury===0).length; const lg = cnt(st.userSel); let s = lg>=11? `${u.formation}, XI set` : lg>0? `${lg} picked, rest auto` : `auto pick (${u.formation})`; if (inEurope(u)){ const eu = cnt(st.euroSel); s += `; Europe: ${eu>=11? 'XI set' : eu>0? eu+' picked' : 'same as league'}`; } return s; }
 
 // ---------- match animation ----------
@@ -1565,6 +1592,10 @@ async function act(a, d){
     case 'tactic': E.setTactics(st, d.k, +d.v); render(); break;
     case 'planreset': E.resetTactics(st); render(); toast('Match plan reset to the default.'); break;
     case 'planopen': S.planOpen = !planIsOpen(); render(); break;
+    case 'stylepreview': S.from = 'home'; go('stylepreview'); break;
+    case 'sp-set': S.sp[d.side][d.k] = +d.v; render(); break;
+    case 'sp-swap': { const t = S.sp.h; S.sp.h = S.sp.a; S.sp.a = t; render(); break; }
+    case 'sp-watch': playPreview(); break;
     case 'staff': E.setStaff(st, d.r, +d.t); await save(); render(); break;
     case 'ticket': { const err = E.setTicketPrice(st, parseFloat(d.p)); if (err) toast(err); else { await save(); render(); } break; }
     case 'safety': { const err = E.improveSafety(st, +d.p); if (err) toast(err); else { toast('Work done.'); await save(); render(); } break; }
@@ -1635,7 +1666,7 @@ document.addEventListener('keydown', e => { if (e.key==='Enter' && S.screen==='s
 document.addEventListener('keydown', e => { if (e.key==='Tab' || e.key==='Enter' || e.key===' ') KB = true; const r = e.target; if ((e.key==='Enter' || e.key===' ') && r && r.matches && r.matches('tr.tap')){ e.preventDefault(); r.click(); } }, true);
 document.addEventListener('pointerdown', () => { KB = false; }, true);
 
-window.__sm91 = { S, E, render, go };
+window.__sm91 = { S, E, render, go, version: APP_VERSION };
 if ('serviceWorker' in navigator && /^https?:/.test(location.protocol) && document.querySelector('link[rel="manifest"]')){
   navigator.serviceWorker.register('sw.js').then(reg => {
     const announce = () => { const bar = document.getElementById('updatebar'); if (bar) bar.style.display = 'block'; };

@@ -91,10 +91,14 @@ const server = http.createServer((req, res) => { let p = decodeURIComponent(req.
 const PLAN_STEPS = [['eval:planopen', 'squad-plan-open'], ['a:tactic[data-k="r"][data-v="1"]', 'squad-plan-high'], ['a:tactic[data-k="s"][data-v="-1"]', null], ['a:planreset', 'squad-plan-reset'],
   ['a:tactic[data-k="m"][data-v="1"]', null], ['a:tactic[data-k="p"][data-v="-1"]', null], ['a:tactic[data-k="r"][data-v="1"]', null], ['a:tactic[data-k="s"][data-v="1"]', 'squad-plan-all'], ['a:planopen', 'squad-plan-shut']];
 const SQUAD = [['nav:squad', 'squad'], ['a:formation[data-f="4-3-3"]', 'squad-433'], ['a:autopick', null], ['a:training[data-t="hard"]', 'squad-hard'], ['a:toggle', 'squad-dropped'], ['a:autopick', null], ...PLAN_STEPS];
+// the style preview of development builds (the tactics milestone, slice 3): opened from Home, a setting chosen for each side, the two
+// swapped, and Back. The friendly itself is not played here: it would draw on the journey's random numbers. On a build without the
+// preview (a release, 1.7.1, or with ?rules=1.7) every one of these steps is skipped.
+const PREVIEW_STEPS = [['a:stylepreview', 'stylepreview'], ['a:sp-set[data-side="h"][data-k="p"][data-v="1"]', null], ['a:sp-set[data-side="a"][data-k="r"][data-v="1"]', 'stylepreview-set'], ['a:sp-swap', null], ['a:back', null]];
 const JOURNEYS = {
   single: [
     ['', 'title'], ['a:help', 'help'], ['act', null], ['a:whatsnew', 'whatsnew'], ['act', null], ['a:hof', null], ['wait:700', 'hof-ladder'], ['a:board[data-b="fastest_title"]', 'hof-board'], ['a:hoftab[data-t="mine"]', 'hof-mine'], ['act', null],
-    ['a:setup', 'setup'], ['a:setupcount[data-n="3"]', 'setup-three'], ['a:setupcount[data-n="1"]', null], ['a:mode:nth', 'setup-mode'], ['a:mode[data-m="classic"]', null], ['fill:.mgrname=Parity', null], ['a:start', 'home-week1'],
+    ['a:setup', 'setup'], ['a:setupcount[data-n="3"]', 'setup-three'], ['a:setupcount[data-n="1"]', null], ['a:mode:nth', 'setup-mode'], ['a:mode[data-m="classic"]', null], ['fill:.mgrname=Parity', null], ['a:start', 'home-week1'], ...PREVIEW_STEPS,
     ['a:preseason', 'preseason'], ['a:sponsor', 'preseason-sponsor'], ['a:tickets', 'preseason-done'], ['act', null],
     ['a:fixtures', 'fixtures'], ['act', null], ['a:results', 'results-none'], ['act', null],
     ['a:saves', 'saves'], ['fill:#slotname=Parity save', null], ['a:saveslot', 'saves-one'], ['a:delslot', 'saves-really'], ['a:delslot', 'saves-deleted'], ['act', null],

@@ -7,6 +7,7 @@
 //   5. a phone-width screen: the card is one line until it is opened
 //   6. hot-seat: each manager sees and sets his own plan only
 //   7. an old save, and the 1.7.1 rules switch: nothing of tactics is shown and nothing is needed
+//   8. the style preview of development builds (slice 3, stage A): a friendly to two chosen plans that leaves the game in hand as it was
 // Run after python3 build.py:  node test-tactics-ui.js
 const { boot } = require('./harness.js');
 const Eold = require('./legacy/engine.v171.js');
@@ -123,6 +124,30 @@ const tac = (k, v) => `[data-a="tactic"][data-k="${k}"][data-v="${v}"]`;
     await H.playWeek('instant'); ok(!H.has('.figs') && st.week === 2, 'nor figures after the match');
     await H.click('[data-a="help"]'); ok(!/The match plan/.test(H.text()), 'nor a section in How to play'); ok(H.errors.length === 0, 'no errors: ' + H.errors.join(' | '));
     console.log('an old save opens on the default plan and plays on; with the 1.7.1 rules nothing of tactics is shown');
+  }
+  // ---- 8. the style preview (development builds only) ----
+  {
+    const H = boot(); await H.start(['John']); const st = await seeded(H, 19911119, 50); const A = H.app(), S = A.S, dev = /-dev/.test(A.version);
+    ok(H.has('[data-a="stylepreview"]') === dev, 'Home links to the style preview in a development build and not in a release (this build: ' + A.version + ')');
+    if (dev){
+      const before = JSON.stringify(st);
+      await H.click('[data-a="stylepreview"]'); ok(S.screen === 'stylepreview' && q(H, '[data-a="sp-set"]').length === 24 && q(H, '[data-a="sp-set"].on').length === 8 && /does not count/.test(H.text()), 'the preview has both sides\' four controls, on the default plan, and says the friendly does not count');
+      for (const [side, k, v] of [['h','p',1], ['h','r',-1], ['h','s',1], ['a','p',-1], ['a','r',1], ['a','s',-1]]) await H.click(`[data-a="sp-set"][data-side="${side}"][data-k="${k}"][data-v="${v}"]`);
+      ok(/Direct passing, Low press, Shoot on sight\./.test(H.text()) && /Short passing, High press, Work it in\./.test(H.text()), 'each side\'s plan is set and read back in words');
+      await H.click('[data-a="sp-swap"]'); ok(S.sp.h.p === -1 && S.sp.a.p === 1, 'the two plans swap'); await H.click('[data-a="sp-swap"]');
+      await H.click('[data-a="sp-watch"]', 10); const v = S.md && S.md.viewer;
+      await H.sleep(200);
+      ok(S.screen === 'matchview' && S.md.preview && v && v.pres.tactics && v.pres.tactics.home.p === 1 && v.pres.tactics.away.p === -1 && v.pres.tactics.away.r === 1, 'the friendly opens in the match view, drawn to the two chosen plans');
+      await H.sleep(300); if (H.has('[data-a="md-skip"]')) await H.click('[data-a="md-skip"]', 150); ok(H.has('[data-a="md-fulltime"]'), 'it runs to full time'); await H.click('[data-a="md-fulltime"]', 80);
+      ok(S.screen === 'stylepreview' && S.md === null && /The last friendly/.test(H.text()) && H.has('.figs'), 'full time returns to the preview, with the score and the two estimates');
+      ok(JSON.stringify(S.state) === before, 'the game in hand is exactly as it was: no result, table, injury, card, fitness or week has moved');
+      await H.click('[data-a="sp-watch"]', 200); const v2 = S.md && S.md.viewer; ok(v2 && v2.pres.matchId !== v.pres.matchId, 'a second friendly is a different match'); await H.sleep(200); if (H.has('[data-a="md-skip"]')) await H.click('[data-a="md-skip"]', 150); await H.click('[data-a="md-fulltime"]', 80);
+      await H.click('[data-a="back"]'); ok(S.screen === 'home', 'Back returns to Home');
+      await H.playWeek('instant'); ok(st.week === 2 && H.errors.length === 0, 'and the season plays on: ' + H.errors.join(' | '));
+    }
+    const H2 = boot({ url: 'http://localhost/?rules=1.7' }); await H2.start(['John']); await seeded(H2, 19911119, 50); ok(!H2.has('[data-a="stylepreview"]'), 'with the 1.7.1 rules there is no preview');
+    const H3 = boot(); await H3.start(['Ann', 'Bob']); ok(!H3.has('[data-a="stylepreview"]'), 'nor in a hot-seat game');
+    console.log('the style preview: a friendly to two chosen plans, watched and forgotten');
   }
   console.log(fails? `\n${fails} FAILURES of ${checks} checks` : `\nTACTICS SCREENS OK (${checks} checks)`); process.exit(fails? 1 : 0);
 })().catch(e => { console.error('TEST FAIL', e.stack || e.message); process.exit(1); });

@@ -45,7 +45,9 @@ const gap = (a, b) => Math.hypot(Math.max(a.x - (b.x + b.w), 0, b.x - (a.x + a.w
         if (got===it.pl || (gotIt && Math.hypot(body(gotIt.box).x - c.x, body(gotIt.box).y - c.y) <= 1)) own++;
         if (ps.some(o => o!==it && gap(o.box, it.box)===0)) overlaps++;
         // a figure with nobody near it: a fingertip just outside its box still selects it, a pointer does not, and neither does a tap well clear
-        if (!ps.some(o => o!==it && gap(o.box, it.box) < 3*T) && it.box.x - T - 3 >= 0){
+        // (nobody near it means nobody, including a figure half off the stage, which a tap can still land on: until the match pictures
+        // began to lean with the plans the sample's frames did not hold such a neighbour, and then one did)
+        if (!players(frame.items).some(o => o!==it && gap(o.box, it.box) < 3*T) && it.box.x - T - 3 >= 0){
           reach++; if (def.pick(frame.items, it.box.x - (T - 1), c.y, T)===it.pl) reachOk++;
           if (def.pick(frame.items, it.box.x - (T - 1), c.y, M)===null) pointerMiss++;
           beyond++; if (def.pick(frame.items, it.box.x - (T + 2), c.y, T)===null) beyondOk++;

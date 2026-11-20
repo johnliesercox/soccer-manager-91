@@ -86,6 +86,12 @@
         winnerTeamId: m.winner!==undefined? 'club-'+m.winner : null },
       events: null,   // filled by the timeline builder
     };
+    // The plans the match was played to and the home side's possession, from the engine's match record (the tactics
+    // milestone). The timeline leans its illustrative play on them and on nothing else; they decide no result.
+    // Absent on a record without plans (an older build, or the 1.7.1 rules), and then nothing leans.
+    { const plan = t => t? Object.freeze({ m: t.m|0, p: t.p|0, r: t.r|0, s: t.s|0 }) : null; const ov = MD.styleOverride || root.__sm91StyleOverride || null;   // for the tests' style sweep only (tools/style-preload.js): the pictures drawn to plans the match was not played to
+      const th = plan(ov? ov.home : m.tH), ta = plan(ov? ov.away : m.tA);
+      if (th && ta) p.tactics = Object.freeze({ home: th, away: ta, possession: (typeof m.poss==='number' && m.poss > 0 && m.poss < 1)? m.poss : 0.5 }); }
     // Kit clash. A striped, hooped or quartered shirt is two colours, a plain one is one: if any colour of the home shirt
     // is close to any colour of the away shirt, the away side changes. It wears its second colour as a plain shirt if that
     // clears the home shirt, and otherwise the first spare kit that does.

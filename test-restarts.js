@@ -20,7 +20,7 @@ function matches(){
   return out;
 }
 
-const T = { kickoffs: 0, goals: 0, corners: 0, flags: new Set(), cornerSides: 0, wrongSide: 0, cornerBallMax: 0, cornerDrift: 0, takerMax: 0, kickoffDrift: 0, celebLate: 0, offHalf: 0, inCircle: 0, wrongTaker: 0, noCut: 0, ballOff: 0, ballMoved: 0, quick: 0 };
+const T = { kickoffs: 0, goals: 0, corners: 0, flags: new Set(), cornerSides: 0, wrongSide: 0, cornerBallMax: 0, cornerDrift: 0, untaken: 0, takerMax: 0, kickoffDrift: 0, celebLate: 0, offHalf: 0, inCircle: 0, wrongTaker: 0, noCut: 0, ballOff: 0, ballMoved: 0, quick: 0 };
 for (const p of matches()){
   const scene = MD.createScene(p); const H = p.teams.home.id, A = p.teams.away.id; const other = id => id===H? A : H;
   const keys = scene.keyframes; const goals = p.events.filter(e=>e.type===EV.GOAL);
@@ -55,7 +55,12 @@ for (const p of matches()){
     if (!(k.kind==='restart' && k.corner)) continue;
     T.corners++;
     const flag = { x: k.x < 0.5? 0 : 1, y: k.y < 0.5? 0 : 1 }; T.flags.add(flag.x+','+flag.y);
-    const kick = keys[k.idx+1]; const kickT = kick && kick.kind==='launch'? kick.t : k.t + 2;
+    // A corner awarded in the last few seconds of a half is not always taken: the whistle goes first, and the next thing the ball
+    // does is the kick-off. (The builder has always done this, about one corner in four hundred; the sample here did not happen to
+    // hold one until the match pictures began to lean with the plans, when its matches were drawn differently.) Such a corner is
+    // held to the same laws up to the whistle, and is not asked for a kick it never has.
+    const next = keys[k.idx+1]; const whistle = !!(next && next.kind==='restart' && !next.corner); if (whistle) T.untaken++;
+    const kick = whistle? null : next; const kickT = kick && kick.kind==='launch'? kick.t : whistle? Math.min(k.t + 2, next.t - 0.1) : k.t + 2;
     // where it went out: the arrival before the restart that put it behind
     const outKey = keys[k.idx-1];
     if (outKey){ T.cornerSides++; if ((outKey.y < 0.5) !== (k.y < 0.5)) T.wrongSide++; }
@@ -88,4 +93,5 @@ ok(T.wrongSide===0, 'the corner is at the flag on the side the ball went out ('+
 ok(T.cornerBallMax <= 1.0, 'the ball lies inside the one-metre arc from the moment it is dead until the kick (furthest '+T.cornerBallMax.toFixed(2)+' m)');
 ok(T.cornerDrift===0, 'the ball is still at the flag until the kick ('+T.cornerDrift+' moved)');
 ok(T.takerMax <= 1.0, 'the taker is at the ball when he kicks it (furthest '+T.takerMax.toFixed(2)+' m)');
+ok(T.untaken <= Math.max(1, Math.round(T.corners*0.05)), 'a corner goes untaken only when the whistle for the end of a half comes first, and rarely ('+T.untaken+' of '+T.corners+')');
 console.log(checks+' checks, '+fails+' failures'); if (fails) process.exit(1); console.log('ALL RESTART TESTS PASSED');

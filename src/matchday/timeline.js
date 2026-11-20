@@ -63,13 +63,55 @@
     return 'Full time.';
   }
   // weighted pick: table is { key: weight }
+  // ---- the tactics lean (the tactics milestone, slice 3, stage A) ----
+  // How far the ILLUSTRATIVE play leans toward each side's plan. Nothing here touches an official moment, and with
+  // the default plan on both sides (or no plans on the record) none of it is used: the timeline is then built exactly
+  // as before, number for number. Every figure is one step of the setting (-1, 0, +1) from the middle.
+  const STYLE = {
+    on: true,
+    PASS_BASE: [3.3, 2.15, 1.3],       // passes a spell wants start from this (Short, Mixed, Direct) plus 0 to 3 (never more than PASS_MAX, and never more
+                                       // than the spell has time for at STEP[0] apart): as played about 3.8, 3 and 2.3
+    PASS_MAX: 6,
+    PASS_PRESS: 0.55,                  // the other side's press takes this many passes off a spell (High) or adds them (Low)
+    FWD: [[-0.04, 0.05], [-0.04, 0.14], [0.14, 0.46]],          // how far forward a pass looks (share of the pitch): Short, Mixed, Direct
+    FWD_CHANCE: [[0.07, 0.15], [0.08, 0.2], [0.12, 0.26]],     // the same in a spell that is heading for a chance
+    WIDTH: [0.08, 0.3, 0.4],            // how far across a pass looks
+    PRESS_FWD: [1.35, 1, 0.55],         // the other side's press: how much of that forward look survives (Low, Normal, High)
+    END: [[0.34, 0.62], [0.4, 0.75], [0.44, 0.85]],             // how a spell dies against a Low, Normal, High press: below the first an interception, below the second a tackle, else a clearance
+    LONG: [0.04, 0.5, 0.95],            // in front of goal and short of the area: shoot from range rather than thread it (Work it in, Balanced, On sight)
+    LONG_DEEP: [0, 0, 0.95],           // nearer in but still outside the area (short of AREA): shoot from there rather than work it. Inside the area nothing changes
+    AREA: 1 - 16.5/105,                // the edge of the penalty area, as a share of the pitch from the side's own line
+    LONG_WIDE: [0, 0, 0.5],            // out wide: cut in and shoot rather than cross
+    CROSS: [0.5, 0.7, 0.7],            // out wide: cross rather than cut back
+    WORK_TO: 0.865, WORK_REACH: 0.035,  // Work it in: a through ball for a runner short of the area is played up to this much beyond him, to this depth (share of the pitch)
+    SPELL: 18,                         // seconds an ordinary spell lasts at half the ball each; a side's spells last this times twice its possession
+    SPELL_K: [0.97, 1, 1.1],          // and this, by passing style, so that the time each side has the ball does not follow how many passes it makes
+    PACE: [1.12, 1, 0.95],             // and both sides' spells this much longer or shorter for each side's passing style (the same for both, so it moves nobody's share): patient football has fewer, longer spells
+    KEEP: 4.5,                         // before a goal's build-up: with more than this many seconds in hand the scoring side plays one more pass among themselves
+    STEP: [4, 9],                      // the shortest and longest time between passes. The shortest is what it is with no lean: at 2.8 a man was asked to
+                                       // receive before he could get there about three times as often (receives drawn over a metre from the ball: 92 in 55,900 against 34)
+  };
+  const plain = t => !t || (!t.m && !t.p && !t.r && !t.s);
+  const leans = p => !!(STYLE.on && p.tactics && p.tactics.home && p.tactics.away && !(plain(p.tactics.home) && plain(p.tactics.away)));
+
   function pickWeighted(rnd, table){
     let total = 0; for (const k in table) total += table[k];
     let r = rnd()*total; for (const k in table){ r -= table[k]; if (r <= 0) return k; }
     return Object.keys(table).pop();
   }
 
-  function build(p){
+  function build(p, inner){
+    // Two passes when the play leans. The first is the timeline exactly as it has always been built; from it comes each
+    // goal's passport: the kind of goal it is, the technique of its finish, the second its scripted build-up began and
+    // where the random sequence stood there. The second pass leans the illustrative play between the official moments
+    // and plays every goal to its passport, so a headed goal from a corner is a headed goal from a corner whatever the
+    // plans. With the default plan on both sides there is one pass, and it is the first.
+    const lean = !inner && leans(p);
+    const passports = lean? (() => { const log = {}; build(p, { log }); return log; })() : null;
+    const log = inner? inner.log : null;
+    const TAC = lean? p.tactics : null;
+    const planOf = team => team===p.teams.home.id? TAC.home : TAC.away;
+    const shareOf = team => team===p.teams.home.id? TAC.possession : 1 - TAC.possession;
     const rnd = MD.seededRandom(p.seed);
     const r = (a,b) => a + rnd()*(b-a);
     const headZ = () => r(2.0, 2.45)/3.0;   // the height a header is met at: above a standing head, so he jumps for it (the renderer's jump meets it)
@@ -400,6 +442,8 @@
     // ---- a chance: approach, finish, outcome ----
     // Called with the ball in the final third (team frame bAx, bY) and a carrier. `kind` picks the approach.
     // Returns the second open play resumes.
+    let chanceWork = false;   // set by the spell that calls: this side works the ball in (the tactics lean)
+    let chanceHere = false;   // set by the spell that calls: a shot from range is struck from where the ball is (the tactics lean)
     function chance(team, dir, second, until, kind){
       const gk = gkOf(other(team));
       const passTo = (target, s, dur, extra) => passFrom(team, dir, target, s, dur, extra);
@@ -473,12 +517,16 @@
           return shoot(team, dir, second, 'first-time', 0, pickWeighted(rnd, outcomeTable('first-time')), until, { close: true });
         }
         case 'long': {
-          bAx = clampAx(Math.min(bAx, 0.78));
+          // with no lean a shot from range is only ever chosen short of 0.76, so the line below moves nothing. Leaning, a side that
+          // shoots on sight also shoots from the edge of the area and from wide: from where the ball is (it must never jump back)
+          if (!chanceHere) bAx = clampAx(Math.min(bAx, 0.78));
           return shoot(team, dir, second, 'kick', 0, pickWeighted(rnd, outcomeTable('long')), until, {});
         }
         default: {   // 'through': a ball in behind for a runner, or a dribble and shot if already close
           if (bAx < 0.84){
             const run = receiver(r(0.86, 0.93), clampY(0.5 + r(-0.2, 0.2)));
+            // Work it in: the ball is slid a few metres beyond a runner who stands short of the area, so the shot is taken inside it
+            if (chanceWork && run.ax < STYLE.WORK_TO) run.ax = Math.min(STYLE.WORK_TO, run.ax + STYLE.WORK_REACH);
             const roll = rnd();
             if (roll < 0.14){
               // a defender steps in front of it
@@ -508,7 +556,8 @@
     // how a goal can be finished, by the time available before the official second
     const goalKinds = (scorer, room) => ({ through: 34, crossHeader: (scorer && room >= 9)? 12 : 0, crossVolley: (scorer && room >= 9)? 6 : 0, cornerHeader: (scorer && room >= 19)? 6 : 0, rebound: (scorer && room >= 10)? 12 : 0, solo: 10, long: 8 });
     const GOAL_RESERVE = { through: 8, crossHeader: 10, crossVolley: 10, cornerHeader: 20, rebound: 11, solo: 8, long: 8 };   // seconds the finish needs
-    function scoreGoal(team, dir, second, until, goal, kindWanted){
+    let lastGoalKind = null;
+    function scoreGoal(team, dir, second, until, goal, kindWanted, pass){
       const s = goal.s; const scorer = s.playerId? p.players.find(x=>x.id===s.playerId) : null;
       const gk = gkOf(other(team));
       const room = until - second;
@@ -524,7 +573,9 @@
       };
       let onBall = scorer && carrier && scorer.id===carrier.id;
       const kinds = goalKinds(scorer, room);
-      const kind = room < 6? 'solo' : (kindWanted && kinds[kindWanted])? kindWanted : pickWeighted(rnd, kinds);
+      const kindNatural = room < 6? 'solo' : (kindWanted && kinds[kindWanted])? kindWanted : pickWeighted(rnd, kinds);
+      const kind = pass && pass.kind? pass.kind : kindNatural;   // played to its passport
+      lastGoalKind = kind;
       // a scorer who already has the ball with time in hand lays it off and gets it back, rather than dribbling for ten seconds
       if (onBall && room >= 8 && (kind==='through' || kind==='solo' || kind==='long')){
         const mate = receiver(clampAx(bAx + r(-0.04, 0.06)), clampY(bY + r(-0.25, 0.25)), null);
@@ -574,7 +625,7 @@
           else second = carryTo(Math.max(bAx, r(0.8, 0.86)), bY, second, shotSec - 0.5);
           carrier = first || carrier;
           const rAx = r(0.88, 0.93), rY = clampY(0.5 + r(-0.12, 0.12));
-          const woodwork = rnd() < 0.4;
+          const woodworkDrawn = rnd() < 0.4; const woodwork = pass && pass.woodwork!==undefined? pass.woodwork : woodworkDrawn; if (log && log[s.eventId]) log[s.eventId].woodwork = woodwork;   // played to its passport
           const hit = woodwork? toAbs(dir, 0.999, 0.5 + (rnd()<0.5? -1 : 1)*POST_Y, r(0.1, 0.6)) : toAbs(dir, 0.985, 0.5 + r(-0.07, 0.07), r(0.1, 0.5));
           shotsSoFar++; if (woodwork) illus(EV.SHOT_POST, shotSec, { teamId: team, playerId: first? first.id : null, keeperId: gk.id, from: toAbs(dir, bAx, bY), to: hit, duration: 0.8, woodwork: 'post', technique: 'kick', say: (first? first.name : 'A shot')+' shoots!', text: 'Off the post!' });
           else illus(EV.SHOT_SAVED, shotSec, { teamId: team, playerId: first? first.id : null, keeperId: gk.id, from: toAbs(dir, bAx, bY), to: hit, duration: 0.8, save: 'parry', technique: 'kick', say: (first? first.name : 'A shot')+' shoots!', text: gk.name+' parries!' });
@@ -593,7 +644,7 @@
           return finish(bAx, bY, 0, 'kick', 1.0);
         }
         default: {   // through ball to the scorer, struck first time or after a touch
-          const firstTime = rnd() < 0.5; const finDur = 1.0;
+          const firstTimeDrawn = rnd() < 0.5; const firstTime = pass && pass.firstTime!==undefined? pass.firstTime : firstTimeDrawn; if (log && log[s.eventId]) log[s.eventId].firstTime = firstTime; const finDur = 1.0;
           if (scorer && !onBall && until - second > 4){
             const arr = Math.round((until - finDur - (firstTime? 0.2 : CONTROL_BEAT))*10)/10; const dur = Math.min(1.8, Math.max(1.0, arr - second));
             const tgt = receiver(r(0.85, 0.92), clampY(0.5 + r(-0.18, 0.18)), scorer); tgt.ax = Math.max(tgt.ax, 0.8);
@@ -607,16 +658,29 @@
     // one possession spell from `from`, finishing no later than `until`. If `goal` is given the
     // spell is scripted to end with that goal exactly at `until`. Returns the second it finished.
     function spell(from, until, goal){
+      // a goal played to its passport: its build-up and finish draw the numbers they drew in the first pass
+      const pass = goal && passports? passports[goal.s.eventId] : null;
+      const resume = pass? rnd.state() : null; if (pass) rnd.restore(pass.rng);
+      if (goal && log) log[goal.s.eventId] = { rng: rnd.state(), from };
       let second = from;
       if (second - lastKickOff < 1.5 && second >= lastKickOff && until - lastKickOff > 4) second = kickOffTap();   // the kick-off is tapped to the partner first
       const team = poss; const dir = attackDir(p, team, second);
       if (!carrier) carrier = nearest(team, bAx, bY, bAx, bY, null, true);
       const fromCorner = cornerPending; cornerPending = false;
       const scorer = goal && goal.s.playerId? p.players.find(x=>x.id===goal.s.playerId) : null;
-      const goalKind = goal? pickWeighted(rnd, goalKinds(scorer, until - from)) : null;
+      const goalDrawn = goal? pickWeighted(rnd, goalKinds(scorer, until - from)) : null;
+      const goalKind = pass && pass.pre? pass.pre : goalDrawn;
+      if (goal && log) log[goal.s.eventId].pre = goalKind;
+      // the lean: this side's plan with the ball, the other side's without it, and this side's possession (none in a goal's build-up)
+      const L = (TAC && !goal)? { own: planOf(team), opp: planOf(other(team)), share: shareOf(team) } : null;
       const passUntil = goal? until - GOAL_RESERVE[goalKind] : until;        // the build-up passes stop in time for the finish
-      const passes = fromCorner? 0 : goal? Math.max(1, Math.min(4, Math.floor((passUntil - from)/4))) : ri(2,4);
-      const step = goal? Math.max(3.5, (passUntil - from - 1)/passes) : r(4,8);
+      // leaning: the passes the side's style wants, and the time its possession gives the spell. A pass is never played sooner
+      // after the last than it is with no lean (STEP[0], four seconds: the men need that long to get to where the next ball
+      // goes), so a spell short of time plays fewer passes rather than quicker ones
+      const lean = (L && !fromCorner)? { want: Math.max(1, Math.min(STYLE.PASS_MAX, Math.floor(STYLE.PASS_BASE[L.own.p+1] - STYLE.PASS_PRESS*L.opp.r + rnd()*3))), time: r(4,8)/6*STYLE.SPELL*STYLE.SPELL_K[L.own.p+1]*STYLE.PACE[L.own.p+1]*STYLE.PACE[L.opp.p+1]*2*L.share } : null;
+      const passes = fromCorner? 0 : goal? Math.max(1, Math.min(4, Math.floor((passUntil - from)/4))) : lean? Math.max(1, Math.min(lean.want, Math.floor(lean.time/STYLE.STEP[0]))) : ri(2,4);
+      // a spell lasts as long as the side's possession says, however many passes its style makes of it
+      const step = goal? Math.max(3.5, (passUntil - from - 1)/passes) : lean? Math.max(STYLE.STEP[0], Math.min(STYLE.STEP[1], lean.time/passes)) : r(4,8);
       const dribble = small => { const k = small? 0.3 : 1; bAx = clampAx(bAx + r(0.01,0.05)*k); bY = clampY(bY + r(-0.06,0.06)*k); };
       const passTo = (target, s, dur) => passFrom(team, dir, target, s, dur);
       const receiver = (wantAx, wantY, mustBe) => receiverFor(team, wantAx, wantY, mustBe, !!goal);   // a scripted build-up goes forward
@@ -626,14 +690,18 @@
       const wantsChance = goal? true : fromCorner? true : rnd() < pShot;
       for (let i=0;i<passes && second+step<passUntil-(goal? 0.5 : 3);i++){
         dribble(i===0);
-        const wantAx = goal? Math.min(0.86, bAx + (0.86-bAx)/(passes-i)) : wantsChance? clampAx(bAx + r(0.08, 0.2)) : clampAx(bAx + r(-0.04, 0.14));
-        const wantY = clampY(bY + r(-0.3,0.3));
+        const fw = L? (wantsChance? STYLE.FWD_CHANCE : STYLE.FWD)[L.own.p+1] : null;
+        const wantAx = goal? Math.min(0.86, bAx + (0.86-bAx)/(passes-i)) : L? clampAx(bAx + r(fw[0], fw[1])*(wantsChance? 1 : STYLE.PRESS_FWD[L.opp.r+1])) : wantsChance? clampAx(bAx + r(0.08, 0.2)) : clampAx(bAx + r(-0.04, 0.14));
+        const wantY = L? clampY(bY + r(-STYLE.WIDTH[L.own.p+1], STYLE.WIDTH[L.own.p+1])) : clampY(bY + r(-0.3,0.3));
         const dur = Math.min(2.2, Math.max(0.8, step*0.4));
         const last = i===passes-1 || second+2*step>=passUntil-(goal? 0.5 : 3);
         passTo(receiver(wantAx, wantY, (goal && last && scorer && (!carrier || carrier.id!==scorer.id))? scorer : null), second, dur);
         second = Math.max(second + step, lastArrival + CONTROL_BEAT);   // a first touch before the next pass
       }
-      if (goal){ beginChance(); const s = scoreGoal(team, dir, second, until, goal, goalKind); endChance(); return s; }
+      if (goal){ beginChance(); const s = scoreGoal(team, dir, second, until, goal, goalKind, pass); endChance();
+        if (log){ const g = events.filter(e => e.type===EV.GOAL && e.eventRef===goal.s.eventId).pop(); log[goal.s.eventId].technique = g? g.technique : null; log[goal.s.eventId].kind = lastGoalKind; }
+        if (pass) rnd.restore(resume);
+        return s; }
       // a spell that began with a kick-off and has not yet played a pass cannot end at the centre spot the instant the
       // whistle goes: the kick-off is taken first, a short one
       if (second - lastKickOff < 1.5){ passTo(receiver(clampAx(bAx + r(0.02, 0.05)), clampY(bY + r(-0.1, 0.1))), second, 1.0); second = Math.max(second + 1.0, lastArrival) + CONTROL_BEAT; }
@@ -641,21 +709,25 @@
       const deep = bAx > 0.68;
       if ((wantsChance && deep && second + 9 <= until) || fromCorner){   // nine seconds: approach, shot and whatever comes back off the keeper
         beginChance();
-        const kind = fromCorner? 'corner' : Math.abs(bY - 0.5) > 0.26? (rnd() < 0.7? 'cross' : 'cutback') : bAx < 0.76? (rnd() < 0.5? 'long' : 'through') : 'through';
+        const si = L? L.own.s+1 : 1;
+        const kind = fromCorner? 'corner' : L? (Math.abs(bY - 0.5) > 0.26? ((bAx < 0.8 && rnd() < STYLE.LONG_WIDE[si])? 'long' : rnd() < STYLE.CROSS[si]? 'cross' : 'cutback') : bAx < 0.76? (rnd() < STYLE.LONG[si]? 'long' : 'through') : ((bAx < STYLE.AREA && rnd() < STYLE.LONG_DEEP[si])? 'long' : 'through'))
+          : Math.abs(bY - 0.5) > 0.26? (rnd() < 0.7? 'cross' : 'cutback') : bAx < 0.76? (rnd() < 0.5? 'long' : 'through') : 'through';
+        chanceWork = !!(L && L.own.s < 0); chanceHere = !!L;
         const s = chance(team, dir, second, until, kind);
-        endChance(); return s;
+        chanceWork = false; chanceHere = false; endChance(); return s;
       }
       // the spell dies in midfield: cut out, tackled, or hoofed clear
       const at = toAbs(dir, bAx, bY);
       const roll = rnd();
-      if (roll < 0.4 && second + 4 <= until){
+      const endAt = L? STYLE.END[L.opp.r+1] : null;   // how the spell dies leans on the press of the side without the ball
+      if (roll < (L? endAt[0] : 0.4) && second + 4 <= until){
         const tgt = receiver(clampAx(bAx + r(0.06, 0.16)), clampY(bY + r(-0.25, 0.25)));
         const def = defenderNear(other(team), tgt.ax, tgt.y, null);
         const dur = r(1.0, 1.5);
         illus(EV.INTERCEPTION, Math.ceil(second + dur), { teamId: team, playerId: carrier? carrier.id : null, toPlayerId: def? def.id : null, from: at, to: toAbs(dir, tgt.ax - 0.02, tgt.y), duration: dur, text: rnd() < 0.5 && def? def.name+' cuts it out.' : null });
         turnoverTo(tgt.ax - 0.02, tgt.y, def); return Math.ceil(second + dur) + CONTROL_BEAT;
       }
-      if (roll < 0.75){
+      if (roll < (L? endAt[1] : 0.75)){
         const opp = defenderNearAt(other(team), bAx, bY, at, Math.round(second));
         illus(EV.TACKLE, Math.round(second), { teamId: other(team), playerId: opp? opp.id : null, at, slide: rnd() < 0.25, text: opp && rnd() < 0.5? (opp.name+' wins it back.') : null });
         turnoverTo(bAx, bY, opp); return second + 3;
@@ -703,7 +775,9 @@
       const stop = nextStop(); if (!stop) break;
       hardStop = stop.second;
       if (stop.kind==='goal'){
-        const buildUp = Math.min(24, stop.second - t);
+        // leaning play stops a little earlier before a goal, so the goal's own build-up can begin on the second it always began
+        const pp = passports? passports[stop.a.s.eventId] : null;
+        const buildUp = pp? Math.min(stop.second - t, Math.max(24, stop.second - pp.from + 3)) : Math.min(24, stop.second - t);
         while (stop.second - t > buildUp + 8) t = spell(t, stop.second - buildUp, null);
         kickOffFirst();
         // the scoring side takes over for the scripted build-up: they win it back first
@@ -712,7 +786,10 @@
           t = winBack(stop.a.s.teamId, t);
         }
         if (!carrier || carrier.teamId!==poss) carrier = nearest(poss, bAx, bY, bAx, bY, null, false);
-        t = spell(Math.max(t, stop.second - buildUp), stop.second, stop.a);
+        // leaning: the build-up begins on the second it always began (its passport), which can be some seconds after the leaning
+        // play before it has finished. The scoring side keeps the ball until then, a pass at a time, rather than standing on it
+        if (pp && !cornerPending) while (pp.from - t > STYLE.KEEP){ const d0 = attackDir(p, poss, t); passFrom(poss, d0, receiverFor(poss, clampAx(bAx + r(-0.05, 0.04)), clampY(bY + r(-0.22, 0.22)), null), Math.round(t*10)/10, 1.8); t = lastArrival + CONTROL_BEAT; }
+        t = spell(pp? Math.max(t, pp.from) : Math.max(t, stop.second - buildUp), stop.second, stop.a);
         ai++;
         if (t + 12 < end && !breaks.some(b=>b.second>=t && b.second<t+12)){ t += 11; kickOff(t, poss, EV.KICK_OFF); }   // time to celebrate
       } else if (stop.kind==='card'){
@@ -773,13 +850,13 @@
 
   // Returns a new frozen presentation with events attached (the input is not modified).
   function withTimeline(p){
-    const events = build(p);
+    const events = build(p);   // one argument: the second is build's own, for its first pass
     const out = Object.assign({}, p, { events: Object.freeze(events) });
     const v = MD.validate(out);
     if (!v.ok) throw new Error('matchday timeline invalid: '+v.errors.join('; '));
     return Object.freeze(out);
   }
 
-  MD.buildTimeline = build; MD.withTimeline = withTimeline; MD.attackDir = attackDir; MD.teamName = teamName;
+  MD.buildTimeline = p => build(p); MD.STYLE = STYLE; MD.timelineLeans = leans; MD.withTimeline = withTimeline; MD.attackDir = attackDir; MD.teamName = teamName;
   MD.TIMELINE_GEOMETRY = { POST_Y, BAR_Z, HEAD_Z, VOLLEY_Z };
 })(typeof window!=='undefined'? window : globalThis);

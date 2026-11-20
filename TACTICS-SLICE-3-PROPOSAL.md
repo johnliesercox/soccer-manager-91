@@ -1,5 +1,7 @@
 # Tactics, slice 3: the match pictures. Findings and proposal
 
+**John's decision, 20 November 2026: Stage A approved, with conditions.** Possession is to be measured by the time each side controls the ball, not its share of the passes. Goals, scorers, timings, cards and results stay completely unchanged, and so does the kind of every goal and the established actions (headers, volleys, penalties, corners, rebounds, saves, clearances), with tests for it; so the "goals from outside the area" part of S4 is withdrawn. The targets below are the initial objectives and are not to be exceeded without asking him. The camera is option C2: measure before building, and stop with findings and options if the longer passes cannot be accommodated. Stage B is deferred until he has seen Stage A. A playable preview comparing opposing styles; no video. Stop after Stage A for his visual approval before Stage B, any camera change or the release candidate. The report on Stage A as built is `TACTICS-SLICE-3-STAGE-A.md`. What follows is the proposal as he read it.
+
 **For John's approval, 20 November 2026.** Nothing in the match pictures has been changed. This is the measurement of what the highlights show today, what I propose to change, the risks, and the tests the work would have to pass. The camera limit is section 7, on its own.
 
 ## 1. In short
