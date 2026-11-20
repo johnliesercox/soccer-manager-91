@@ -2,16 +2,20 @@
 
 **Checkpoint for John, 19 November 2026.** Milestone 1 of the roadmap (advanced tactics), slice 2 of three, as you approved it on 19 November after the slice 1 report (`TACTICS-SLICE-1.md`).
 
-**Status.** Built and tested on the branch `milestone-1-tactics`. Not merged to `main`, not deployed. The live site is still 1.7.0. I have stopped here for your review on a phone and a desktop; slice 3 (the match pictures) does not start until you say so.
+**Status.** Built and tested on the branch `milestone-1-tactics`. Not merged to `main`, not deployed. The live site is still 1.7.0.
+
+**Approved by John on 20 November 2026, with these decisions, all now applied.** The card stays one line with a Change button on a phone and open on a desktop. The explanations use more natural football language with the numbers kept ("Makes your attack approximately 10% stronger"), and the tests that hold them to the engine stay. The button reads "Reset to default plan" and the plan with nothing set is called the default plan, because its settings are not all named Balanced. The opponent's reputation is approved as option A (one known characteristic), leaving the rest for a future scouting module; no previous-match intelligence yet. After a match the line says "Possession", stays compact including in the hot-seat summary, and keeps the note that the figures are estimates from the simulation, not counted from individual passes and shots. **The next release is 1.8.0**: the hair fix and all three tactics slices together, with no separate 1.7.1; 1.7.0 stays the live baseline and nothing is merged or deployed until the whole milestone is complete, tested and approved. Development builds are labelled 1.8.0-dev and a number. Slice 3 begins with a measurement and a proposal: `TACTICS-SLICE-3-PROPOSAL.md`.
+
+The report below is as it was at the checkpoint, except that section 3 and the quoted lines show the wording as refined.
 
 ## 1. In short
 
 * **The Match plan card is on the Squad screen**, between the formation and training, in the Premium Dark system. Four controls, three settings each, one tap to change one.
 * **Every setting says what is for it, what is against it and what it suits**, in a line each. What the card says is checked against what the engine does: if a number in the engine changes, the test that reads the card fails until the words are put right.
-* **The easy default is kept.** A new game is all Balanced. On a phone the card is a single line ("All Balanced. Leave it there and the side plays as it always has.") with a Change button, so the squad list stays where it was. On a desktop there is room, so the card is open. "Back to all Balanced" is one tap.
+* **The easy default is kept.** A new game is all Balanced. On a phone the card is a single line ("Default plan. Leave it as it is and the side plays as it always has.") with a Change button, so the squad list stays where it was. On a desktop there is room, so the card is open. "Reset to default plan" is one tap.
 * **One plan for every match**, domestic and European, as you decided.
 * **The opponent: a reputation, not a plan.** Before a match you are told one true thing a club is known for ("Known for pressing high."), and only one. Never its mentality, never its whole plan, never how it will answer your formation. That is my proposal for your review (section 4), with the alternatives.
-* **After the match: one line.** "Share of the ball: Tottenham 44%, Leeds 56%. Chances worth: Tottenham 1.7 goals, Leeds 1.3." with a smaller line under it: "The match engine's own figures, not a count of passes or shots."
+* **After the match: one line.** "Possession: Tottenham 44%, Leeds 56%. Chances worth: Tottenham 1.7 goals, Leeds 1.3." with a smaller line under it: "Estimates from the match simulation, not counted from individual passes and shots."
 * **Nothing else moved.** With the 1.7.1 rules switch every screen is identical to 1.7.1. Saves work both ways, now tested with plans set, and stay at format 4. The balance bench is unchanged and still passes.
 * **Five things for you to decide** are in section 7.
 
@@ -21,14 +25,14 @@ Pictures are attached with this report: the Squad screen on a phone with the car
 
 **Squad screen.** Under the formation buttons, a card headed "Match plan".
 
-* Shut (the phone's default): the plan in words and a Change button. "All Balanced." for a manager who has set nothing; otherwise, for example, "Attacking, Short passing, High press."
+* Shut (the phone's default): the plan in words and a Change button. "Default plan." for a manager who has set nothing; otherwise, for example, "Attacking, Short passing, High press."
 * Open: four rows headed Mentality, Passing, Pressing and Shooting. Each row is three buttons, the chosen one in amber like the formation and training buttons. Under each row, the chosen setting's three lines: For (green), Against (red), Suits (blue). The colours are an extra; the words For, Against and Suits carry the meaning. The middle setting has one line saying it changes nothing.
-* At the foot of the open card: "Back to all Balanced" (only when something is set), and the next fixture with what the opponent is known for, so the hint is beside the decision.
+* At the foot of the open card: "Reset to default plan" (only when something is set), and the next fixture with what the opponent is known for, so the hint is beside the decision.
 * It works with the keyboard and a screen reader like every other control: each row is announced by its name and the chosen setting says it is chosen.
 
 **Home.** Under the next fixture: what the opponent is known for. Among the rows (League, Board, cups, Selected): "Match plan" with the plan in words, so you can see what you are about to play without opening Squad.
 
-**After the match.** Under the scorers, the line of figures above. In a hot-seat game the week's summary gives each manager's figures in short ("Ball 55% to 45%. Chances worth 2.9 goals to 1.0.") with one note below saying home side first and where the figures come from.
+**After the match.** Under the scorers, the line of figures above. In a hot-seat game the week's summary gives each manager's figures in short ("Possession 55% to 45%. Chances worth 2.9 goals to 1.0.") with one note below saying home side first and where the figures come from.
 
 **How to play** has a short section on the match plan.
 
@@ -38,18 +42,18 @@ These are the words on the card. They are yours to change; each is held to the e
 
 | Control | Setting | For | Against | Suits |
 |---|---|---|---|---|
-| Mentality | Defensive | Your defence counts for about a tenth more: fewer goals against. | Your attack counts for about a tenth less. | The weaker side, and playing away. |
+| Mentality | Defensive | Makes your defence approximately 10% stronger, so you concede fewer. | Makes your attack approximately 10% weaker. | The weaker side, and playing away. |
 | | Balanced | No lean either way. | | |
-| | Attacking | Your attack counts for about a tenth more. | Your defence counts for about a tenth less: more goals at both ends. | The stronger side, and playing at home. |
-| Passing | Short | Having more of the ball counts for more. | Having less of it hurts more, and a side that presses high wins it back. | The stronger midfield. Good against a low press. |
-| | Mixed | A bit of both. Your share of the ball counts as usual. | | |
-| | Direct | You need less of the ball to make chances, and the long ball gets behind a high press. | A midfield that is on top is wasted, and a side sitting deep deals with it. | The weaker midfield. Good against a high press. |
-| Pressing | Low | A firmer defence, and about a fifth fewer bookings. | About two points less of the ball. | Good against direct passing, poor against short. |
+| | Attacking | Makes your attack approximately 10% stronger. | Makes your defence approximately 10% weaker: more goals at both ends. | The stronger side, and playing at home. |
+| Passing | Short | Makes possession count: the more of the ball you have, the more chances you create. | With less of the ball you create less, and a high press wins it back from you. | A stronger midfield. Good against a low press. |
+| | Mixed | A mix of short and long. Possession matters as usual. | | |
+| | Direct | You create chances without needing much possession, and long balls get in behind a high press. | Wastes a midfield that is on top, and a deep defence deals with long balls comfortably. | A weaker midfield. Good against a high press. |
+| Pressing | Low | Makes your defence approximately 5% stronger, with around 20% fewer bookings. | Around 2% less possession. | Good against direct passing, poor against short. |
 | | Normal | No extra running, no extra risk. | | |
-| | High | About two points more of the ball. | More room behind your defence, tired legs (each player loses 8 fitness in the match, not 7) and about a fifth more bookings. | Good against short passing, poor against direct. Needs a fit squad. |
-| Shooting | Work it in | Steadier: fewer blank days. Forwards score more of your goals. | Fewer days when everything goes in, and a side sitting deep is harder to open up. | Good against an Attacking side. |
-| | Balanced | Shoot when it is on. Goals shared between forwards and midfield as usual. | | |
-| | On sight | More days when everything goes in. Midfielders score more of your goals. | More blank days, and an Attacking side makes you pay for the wasted ball. | Good against a Defensive side. |
+| | High | Around 2% more possession. | Leaves space behind (your defence is approximately 5% weaker), tires your players (each loses 8 fitness per match instead of 7) and brings around 20% more bookings. | Good against short passing, poor against direct. Needs a fit squad. |
+| Shooting | Work it in | More consistent in front of goal: fewer off days. Your forwards score a bigger share of the goals. | Fewer days when everything goes in, and a deep defence is harder to break down. | Good against an Attacking side. |
+| | Balanced | Shoot when the chance is on. Goals shared between forwards and midfielders as usual. | | |
+| | On sight | More days when everything flies in. Your midfielders score a bigger share of the goals. | More off days too, and an Attacking side punishes the wasted possession. | Good against a Defensive side. |
 
 High pressing is the example you gave: it says the gain in possession beside the tired legs, the bookings and the room left behind.
 
@@ -107,6 +111,8 @@ Everything below was run on the build of this checkpoint (`index.html`, labelled
 | Soak | 44 checks, all pass. |
 | The hair audit and the converter's test | Both pass. |
 | The phone stand-in (processor slowed six times) | Passes: 5.1 and 5.0 ms of the page's code a frame in two runs, 5.3 for 1.7.1. `test-phase25.js`, whose stopwatch is touchy on a busy machine, passes on its own at 367 ms against 400. |
+
+**After the wording refinements of 20 November (the build labelled 1.8.0-dev2):** all 23 suites pass again, with `test-tactics-ui.js` now checking the new words against the engine ("approximately 10%" for mentality, "approximately 5%" for the defence when pressing, "around 2%" possession, "around 20%" bookings, "8 fitness per match instead of 7"); the screens with `?rules=1.7` show no differences from 1.7.1 in 340 stops; the layout check finds nothing wider than the screen, cut short or too small at any of the five sizes with the longer lines; the keyboard check reaches all 3,153 and 3,237 controls; saves pass both ways against 1.7.1 and 1.7.0 with plans set; the 198 reference frames are pixel for pixel; the hair audit passes. Nothing in the engine changed, so the balance bench was not affected.
 
 **Not tested, and why you are the test:** how the card feels under a thumb. The tools prove it fits, works and says true things at every size; whether one line with a Change button is the right default on your phone is for you to judge (decision 1).
 

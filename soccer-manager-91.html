@@ -7907,7 +7907,7 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const money = n => (n<0?'-':'')+'£'+E.fmt(Math.abs(n));
 const SAVE_KEY = 'sm91-save';
-const APP_VERSION = '1.7.1-tactics2';   // a development build of the tactics milestone (slice 2), not a release: the release number is John's to name
+const APP_VERSION = '1.8.0-dev2';   // a development build on the way to 1.8.0 (the hair fix and the tactics milestone, slices 1 and 2 so far), not the release
 const CHANGELOG = [
   { v:'1.7.1', when:'November 2026', notes:[
     'A player\'s hair no longer changes colour as he moves.',
@@ -8266,8 +8266,8 @@ const SCREENS = {
     return { main: cards(`<h1>How to play</h1>
       <p>You've been handed a Division 4 club and a modest bank balance. Get promoted, win cups, get to Europe, don't go bust. Each week you pick a team, do your business, then play the match.</p>
       <h2>The week</h2><p>Home shows this week's fixture, the board's mood and the news. Squad is where you pick the XI, set a formation and choose how hard to train. Play the match from Home. On cup weeks you might have no game, which is a good week for hard training.</p>${tacticsOn()? `
-      <h2>The match plan</h2><p>Under the formation on the Squad screen is the match plan: mentality, passing, pressing and shooting, three settings each. Every setting has something for it and something against it, and the card says what. All Balanced is the side as it has always played, and you can leave it there for good. The plan is used in every match until you change it.</p>
-      <p>Other managers have plans too. The fixture on Home says what a club is known for, which is one thing about it and not its whole plan. A side with more men in midfield than yours will try to keep the ball; one with fewer will go long. After a match you see each side's share of the ball and what its chances were worth. Those are the match engine's own figures, not a count of passes or shots.</p>` : ''}
+      <h2>The match plan</h2><p>Under the formation on the Squad screen is the match plan: mentality, passing, pressing and shooting, three settings each. Every setting has something for it and something against it, and the card says what. The default plan is the side as it has always played, and you can leave it there for good. The plan is used in every match until you change it.</p>
+      <p>Other managers have plans too. The fixture on Home says what a club is known for, which is one thing about it and not its whole plan. A side with more men in midfield than yours will try to keep the ball; one with fewer will go long. After a match you see each side's possession and what its chances were worth. Those are estimates from the match simulation, not counted from individual passes and shots.</p>` : ''}
       <h2>Money</h2><p>Gates, sponsorship and television money in; wages, staff and ground upkeep out. Summer wages land in one lump at the season review. The overdraft limit is half your turnover; eight weeks past it and the bank has you sacked. Loans are separate and cheaper than the overdraft. Cash in the bank earns interest.</p>
       <h2>Pre-season</h2><p>Each season starts with a sponsor to choose (safe money, per-win money, or a bigger cheque with a relegation clause) and a season ticket price. Cheap season tickets bring cash now but most of those fans would have paid on the gate anyway.</p>
       <h2>Players</h2><p>Skill is what he is now; the ▲ is how far he could go, and you only see that with a scout. Players improve in training until about 30 (faster with a better coach), then decline. Fitness under 70 doubles the injury risk.</p>
@@ -8311,7 +8311,7 @@ const SCREENS = {
       const euroLine = er? `<div class="kv"><span class="wrap"><span class="dim">${euroComp(er.euro.comp).short}</span> ${esc(er.home.short)} v ${esc(er.away.short)}</span><span>${er.gH}-${er.gA}${er.extra?'*':''}${er.agg? ` <span class="dim">(agg)</span>`:''}</span></div>` : '';
       return `<div class="kv"><span class="wrap"><span class="hot">${esc(m.managerName)}</span> ${esc(r.home.short)} v ${esc(r.away.short)}</span><span class="${won?'hot':''}">${r.gH}-${r.gA}${r.extra?'*':''} ${won?'W':drew?'D':'L'}</span></div>${matchFiguresShort(r)}${euroLine}`; }).join('');
     const label = R.type==='cup'? E.CFG.CUPS[R.cup].name : 'League';
-    return { main: cards(`<h1>Week ${R.week}: ${label}</h1>${lines}${tacticsOn() && R.results.some(x=>x.poss!==undefined)? '<p class="dim figs"><span class="src">Ball and chances: home side first. The match engine\'s own figures, not a count of passes or shots.</span></p>' : ''}${sleighBogey(st)}`, {lead:'kvl'}) + `<button class="b" data-a="results" style="margin-top:12px">All results</button><button class="b" data-a="standings">Managers' table</button>`,
+    return { main: cards(`<h1>Week ${R.week}: ${label}</h1>${lines}${tacticsOn() && R.results.some(x=>x.poss!==undefined)? '<p class="dim figs"><span class="src">Possession and chances: home side first. Estimates from the match simulation, not counted from individual passes and shots.</span></p>' : ''}${sleighBogey(st)}`, {lead:'kvl'}) + `<button class="b" data-a="results" style="margin-top:12px">All results</button><button class="b" data-a="standings">Managers' table</button>`,
       action: `<button class="b" data-a="nextround">${S.pendingReview? 'Season over. Standings' : 'Next week'}</button>` };
   },
   standings(){
@@ -8869,24 +8869,24 @@ function cupSummary(k){ const st=S.state, u=user(); const cup = st.cups[k]; cons
 // setting (engine.js, CFG.TACTICS; test-tactics.js checks the figures quoted here against it). One plan covers every match.
 const PLAN = [
   { k:'m', name:'Mentality', opts:['Defensive','Balanced','Attacking'], word:['Defensive','','Attacking'], say:[
-    { pro:'Your defence counts for about a tenth more: fewer goals against.', con:'Your attack counts for about a tenth less.', suits:'The weaker side, and playing away.' },
+    { pro:'Makes your defence approximately 10% stronger, so you concede fewer.', con:'Makes your attack approximately 10% weaker.', suits:'The weaker side, and playing away.' },
     { mid:'No lean either way.' },
-    { pro:'Your attack counts for about a tenth more.', con:'Your defence counts for about a tenth less: more goals at both ends.', suits:'The stronger side, and playing at home.' } ] },
+    { pro:'Makes your attack approximately 10% stronger.', con:'Makes your defence approximately 10% weaker: more goals at both ends.', suits:'The stronger side, and playing at home.' } ] },
   { k:'p', name:'Passing', opts:['Short','Mixed','Direct'], word:['Short passing','','Direct passing'], say:[
-    { pro:'Having more of the ball counts for more.', con:'Having less of it hurts more, and a side that presses high wins it back.', suits:'The stronger midfield. Good against a low press.' },
-    { mid:'A bit of both. Your share of the ball counts as usual.' },
-    { pro:'You need less of the ball to make chances, and the long ball gets behind a high press.', con:'A midfield that is on top is wasted, and a side sitting deep deals with it.', suits:'The weaker midfield. Good against a high press.' } ] },
+    { pro:'Makes possession count: the more of the ball you have, the more chances you create.', con:'With less of the ball you create less, and a high press wins it back from you.', suits:'A stronger midfield. Good against a low press.' },
+    { mid:'A mix of short and long. Possession matters as usual.' },
+    { pro:'You create chances without needing much possession, and long balls get in behind a high press.', con:'Wastes a midfield that is on top, and a deep defence deals with long balls comfortably.', suits:'A weaker midfield. Good against a high press.' } ] },
   { k:'r', name:'Pressing', opts:['Low','Normal','High'], word:['Low press','','High press'], say:[
-    { pro:'A firmer defence, and about a fifth fewer bookings.', con:'About two points less of the ball.', suits:'Good against direct passing, poor against short.' },
+    { pro:'Makes your defence approximately 5% stronger, with around 20% fewer bookings.', con:'Around 2% less possession.', suits:'Good against direct passing, poor against short.' },
     { mid:'No extra running, no extra risk.' },
-    { pro:'About two points more of the ball.', con:'More room behind your defence, tired legs (each player loses 8 fitness in the match, not 7) and about a fifth more bookings.', suits:'Good against short passing, poor against direct. Needs a fit squad.' } ] },
+    { pro:'Around 2% more possession.', con:'Leaves space behind (your defence is approximately 5% weaker), tires your players (each loses 8 fitness per match instead of 7) and brings around 20% more bookings.', suits:'Good against short passing, poor against direct. Needs a fit squad.' } ] },
   { k:'s', name:'Shooting', opts:['Work it in','Balanced','On sight'], word:['Work it in','','Shoot on sight'], say:[
-    { pro:'Steadier: fewer blank days. Forwards score more of your goals.', con:'Fewer days when everything goes in, and a side sitting deep is harder to open up.', suits:'Good against an Attacking side.' },
-    { mid:'Shoot when it is on. Goals shared between forwards and midfield as usual.' },
-    { pro:'More days when everything goes in. Midfielders score more of your goals.', con:'More blank days, and an Attacking side makes you pay for the wasted ball.', suits:'Good against a Defensive side.' } ] },
+    { pro:'More consistent in front of goal: fewer off days. Your forwards score a bigger share of the goals.', con:'Fewer days when everything goes in, and a deep defence is harder to break down.', suits:'Good against an Attacking side.' },
+    { mid:'Shoot when the chance is on. Goals shared between forwards and midfielders as usual.' },
+    { pro:'More days when everything flies in. Your midfielders score a bigger share of the goals.', con:'More off days too, and an Attacking side punishes the wasted possession.', suits:'Good against a Defensive side.' } ] },
 ];
 const tacticsOn = () => !!(E.CFG.TACTICS && E.CFG.TACTICS.on);
-function planWords(t){ const w = PLAN.map(c=>c.word[t[c.k]+1]).filter(Boolean); return w.length? w.join(', ') : 'All Balanced'; }
+function planWords(t){ const w = PLAN.map(c=>c.word[t[c.k]+1]).filter(Boolean); return w.length? w.join(', ') : 'Default plan'; }
 function planIsOpen(){ return S.planOpen===undefined? (typeof window!=='undefined' && window.innerWidth>=900) : !!S.planOpen; }
 // what a club is known for: one thing, never its whole plan (Engine.styleHint). Scouting, in a later milestone, is for the rest.
 const REPUTE = { p:['keeping the ball','','playing it long'], r:['sitting deep','','pressing high'], s:['patience in front of goal','','shooting on sight'] };
@@ -8903,20 +8903,20 @@ function planCard(){
     return `<p class="plab" id="plab-${c.k}">${c.name}</p><div class="grid3" role="group" aria-labelledby="plab-${c.k}">${c.opts.map((o,i)=>`<button class="b ${v===i-1?'on':''}" data-a="tactic" data-k="${c.k}" data-v="${i-1}">${o}</button>`).join('')}</div>
       <p class="dim plan-d">${d.mid? d.mid : `<span class="pro">For</span> ${d.pro}<br><span class="con">Against</span> ${d.con}<br><span class="sut">Suits</span> ${d.suits}`}</p>`; }).join('');
   return `<section class="card plan"><div class="planhd"><p class="dim ttl">Match plan</p><button class="b small" data-a="planopen" aria-expanded="${open}">${open? 'Close' : 'Change'}</button></div>
-      <p class="plansum"><b>${planWords(t)}.</b> <span class="dim">${plain? 'Leave it there and the side plays as it always has.' : 'Used in every match until you change it.'}</span></p>${rows}
-      ${open && !plain? `<button class="b" data-a="planreset">${ic('refresh')}Back to all Balanced</button>` : ''}${open? next : ''}</section>`;
+      <p class="plansum"><b>${planWords(t)}.</b> <span class="dim">${plain? 'Leave it as it is and the side plays as it always has.' : 'Used in every match until you change it.'}</span></p>${rows}
+      ${open && !plain? `<button class="b" data-a="planreset">${ic('refresh')}Reset to default plan</button>` : ''}${open? next : ''}</section>`;
 }
-// The line of figures after a match. Both come from the match engine: the share of the ball it gave each side and what it made each
+// The line of figures after a match. Both come from the match engine: the possession it gave each side and what it made each
 // side's chances worth before the goals were drawn. Nothing is counted from the pictures, and no pass or shot is recorded.
 function matchFiguresShort(m){
   if (!tacticsOn() || !m || m.poss===undefined) return '';
   const ph = Math.round(100*m.poss), f = x => (Math.round(10*x)/10).toFixed(1);
-  return `<p class="dim figs2">Ball ${ph}% to ${100-ph}%. Chances worth ${f(m.xgH)} goals to ${f(m.xgA)}.</p>`;
+  return `<p class="dim figs2">Possession ${ph}% to ${100-ph}%. Chances worth ${f(m.xgH)} goals to ${f(m.xgA)}.</p>`;
 }
 function matchFigures(m){
   if (!tacticsOn() || !m || m.poss===undefined) return '';
   const ph = Math.round(100*m.poss), f = x => (Math.round(10*x)/10).toFixed(1);
-  return `<p class="dim figs">Share of the ball: ${esc(m.home.short)} <b>${ph}%</b>, ${esc(m.away.short)} <b>${100-ph}%</b>. Chances worth: ${esc(m.home.short)} <b>${f(m.xgH)}</b> goals, ${esc(m.away.short)} <b>${f(m.xgA)}</b>${m.extra? ' (in the 90 minutes)' : ''}. <span class="src">The match engine's own figures, not a count of passes or shots.</span></p>`;
+  return `<p class="dim figs">Possession: ${esc(m.home.short)} <b>${ph}%</b>, ${esc(m.away.short)} <b>${100-ph}%</b>. Chances worth: ${esc(m.home.short)} <b>${f(m.xgH)}</b> goals, ${esc(m.away.short)} <b>${f(m.xgA)}</b>${m.extra? ' (in the 90 minutes)' : ''}. <span class="src">Estimates from the match simulation, not counted from individual passes and shots.</span></p>`;
 }
 function selectionSummary(){ const st=S.state,u=user(); const cnt = ids => (ids||[]).filter(id=>st.players[id]&&st.players[id].club===u.id&&st.players[id].injury===0).length; const lg = cnt(st.userSel); let s = lg>=11? `${u.formation}, XI set` : lg>0? `${lg} picked, rest auto` : `auto pick (${u.formation})`; if (inEurope(u)){ const eu = cnt(st.euroSel); s += `; Europe: ${eu>=11? 'XI set' : eu>0? eu+' picked' : 'same as league'}`; } return s; }
 
@@ -9018,7 +9018,7 @@ async function act(a, d){
     case 'repay': { const err = E.repayLoan(st); if (err) toast(err); else { toast('Loan cleared.'); await save(); render(); } break; }
     case 'training': E.setTraining(st, d.t); render(); break;
     case 'tactic': E.setTactics(st, d.k, +d.v); render(); break;
-    case 'planreset': E.resetTactics(st); render(); toast('Back to all Balanced.'); break;
+    case 'planreset': E.resetTactics(st); render(); toast('Match plan reset to the default.'); break;
     case 'planopen': S.planOpen = !planIsOpen(); render(); break;
     case 'staff': E.setStaff(st, d.r, +d.t); await save(); render(); break;
     case 'ticket': { const err = E.setTicketPrice(st, parseFloat(d.p)); if (err) toast(err); else { await save(); render(); } break; }
