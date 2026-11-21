@@ -2,6 +2,8 @@
 
 20 November 2026. Branch `milestone-1-tactics`, build `1.8.0-dev3`. Live site untouched (1.7.0). Nothing merged, nothing deployed.
 
+**John's decisions, 21 November 2026, after watching the preview.** 1. Stage A looks good: approved. 2. The two near misses (7.8 m against 8; 19 points against 20) are accepted for now. 3. Stage B next. 4. The camera is left as it is for now. 5. The three old blemishes go on the backlog for now (`MATCHDAY-BACKLOG.md`). What follows is the report as he read it.
+
 ## The outcome
 
 **Stage A is built, tested and stops here for your eyes.** The play between the official moments of a match now leans the way each side's plan points: a Direct side plays fewer, longer passes, a High press wins the ball further up the pitch, a side told to shoot on sight shoots from further out, and the time each side has the ball follows the possession the engine gave it.
