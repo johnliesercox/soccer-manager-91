@@ -67,7 +67,7 @@ Six samples of twelve matches, both sides on the setting, on the 360 px phone. "
 | Low press | 1.15 (Stage A 1.17) | 95.4% (Stage A 95.4%) |
 | High against Low | 1.04 (Stage A 1.16) | 94.8% (Stage A 94.8%) |
 
-No worse on any figure. On the 390 px phone it is the same story (empty pitch 0.41, 0.67 and 0.62; posts 96.9%, 97.0% and 97.0%). The ball is in view in 100.0% of frames on both phones. The camera's standing with you is as you left it on 21 November: left for now.
+No worse on any figure. On the 390 px phone it is the same story (empty pitch 0.41, 0.67 and 0.62; posts 96.9%, 97.0% and 97.0%). The ball is in view in 100.0% of frames on both phones. Your decision of this morning stands: the camera is left as it is for now.
 
 ## 5. Ball contacts, movement and speed
 
@@ -126,7 +126,7 @@ All on the final build (`1.8.0-dev4`), 21 November 2026.
 | Check | Result |
 |---|---|
 | All 25 test suites, as the game plays | all pass |
-| `test-shape.js` (new, the 25th): the Stage A fingerprint, the standing rule, the agreed differences, the offside look | 15 checks pass |
+| `test-shape.js` (new, the 25th): the Stage A fingerprint, the standing rule, the agreed differences, the offside look | 15 checks pass (run again on its own after I corrected a slip in the test file itself; the game was not touched in between) |
 | `test-style.js` (Stage A's tests, untouched) | 89 checks pass |
 | The engine file | byte for byte the slice 2 file |
 | Match pictures with `?rules=1.7` against 1.7.1 | all 198 reference frames identical pixel for pixel |
