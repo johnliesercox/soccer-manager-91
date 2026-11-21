@@ -1,5 +1,7 @@
 # Tactics milestone, slice 3, Stage B: scope for approval
 
+**John's decision, 21 November 2026: go ahead as proposed, with the shift at 4.7 m each way and all three parts.** The report on Stage B as built is `TACTICS-SLICE-3-STAGE-B.md`. What follows is the scope as he read it.
+
 **For John's go-ahead, 21 November 2026.** Nothing in the game has been changed. I measured where the side without the ball stands today, tried the change in a scratch copy outside the repository, and ran the audits on that copy. This is what I propose to build, with the numbers from the trial.
 
 ## 1. In short

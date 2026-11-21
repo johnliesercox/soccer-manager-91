@@ -1,0 +1,226 @@
+{
+ "normal": [
+  {
+   "match": "s1-w1-6-9-league",
+   "events": 1031,
+   "timeline": "435e7685e8d23669d41313b1",
+   "positions": "b9dde76dc93133889f3b7ef0"
+  },
+  {
+   "match": "s1-w1-11-5-league",
+   "events": 1052,
+   "timeline": "16566aa0bca02eb5cfe5b847",
+   "positions": "fe15dc78862a8fd029037eee"
+  },
+  {
+   "match": "s1-w1-31-29-league",
+   "events": 1079,
+   "timeline": "d148c1a08242741d4c46a71a",
+   "positions": "d6621704b69768b77cc89f11"
+  },
+  {
+   "match": "s1-w1-16-24-league",
+   "events": 1053,
+   "timeline": "60c5deecf36dc3dba2f5533a",
+   "positions": "b35f4410d0d2ed79eb130267"
+  },
+  {
+   "match": "s1-w1-46-38-league",
+   "events": 1043,
+   "timeline": "cbeb1832cba134d09e83c87c",
+   "positions": "ce953dc4c64c3d7237c06a26"
+  },
+  {
+   "match": "s1-w1-63-57-league",
+   "events": 1055,
+   "timeline": "2cbca9107faf25166d366886",
+   "positions": "30ea1d2d6b107cb1903f2e04"
+  },
+  {
+   "match": "s1-w1-52-62-league",
+   "events": 1032,
+   "timeline": "5b12afb2b3a4f23d9a2545f4",
+   "positions": "46172e0bb7d2d8d75544ac15"
+  },
+  {
+   "match": "s1-w2-4-6-league",
+   "events": 1070,
+   "timeline": "ed2b090935e11b679ef3b105",
+   "positions": "6da6aa120769e422bf533c4e"
+  },
+  {
+   "match": "s1-w2-10-15-league",
+   "events": 1080,
+   "timeline": "5f6fcd335a1678ceb0cdc732",
+   "positions": "823eba94dd6f5cd7624c9fd8"
+  },
+  {
+   "match": "s1-w2-17-28-league",
+   "events": 1038,
+   "timeline": "8dbe8c3597d57fd6471a2ce4",
+   "positions": "b6a1bbaf554711e5c4d4ad35"
+  },
+  {
+   "match": "s1-w2-16-25-league",
+   "events": 1061,
+   "timeline": "3fc69040bda6aae926af4e4f",
+   "positions": "00f418f2e0bc739585d916d9"
+  },
+  {
+   "match": "s1-w2-44-35-league",
+   "events": 1051,
+   "timeline": "da23b7215eb9383684343680",
+   "positions": "f4b7987faa96a1ee815c8e60"
+  }
+ ],
+ "default": [
+  {
+   "match": "s1-w1-1-5-league",
+   "events": 1041,
+   "timeline": "d9c7515f26f6d50af8a12d8d",
+   "positions": "729b3796479ceb73f86ec2e2"
+  },
+  {
+   "match": "s1-w1-4-2-league",
+   "events": 1022,
+   "timeline": "1c421b0a5b0d55d41c75af6b",
+   "positions": "f3f95f27c7b57023e07d52ad"
+  },
+  {
+   "match": "s1-w1-30-26-league",
+   "events": 1064,
+   "timeline": "202b98bf9e4147d6b22da110",
+   "positions": "72e6d563e7efb2c65aecc1a9"
+  },
+  {
+   "match": "s1-w1-24-29-league",
+   "events": 1046,
+   "timeline": "4d9b6a6e1effc008c534eed4",
+   "positions": "8ec98c608b004597cf614585"
+  },
+  {
+   "match": "s1-w1-41-38-league",
+   "events": 1047,
+   "timeline": "dc0b1703e688b48341fe0e01",
+   "positions": "89324a2dc540747ea73bb573"
+  },
+  {
+   "match": "s1-w1-51-56-league",
+   "events": 1036,
+   "timeline": "a7eab3c8b5d5e3a63c1f88da",
+   "positions": "4d1d4c715179cf85e17e3595"
+  }
+ ],
+ "pressing as the game plays": [
+  {
+   "match": "s1-w1-4-9-league",
+   "events": 1060,
+   "timeline": "794bf99af8b002b072a12353",
+   "positions": "16a8f77a843d786482a06212"
+  },
+  {
+   "match": "s1-w1-12-10-league",
+   "events": 1102,
+   "timeline": "9c1e7c479521e7a37e53dd11",
+   "positions": "28b41d51bde3e414ba4ea5cf"
+  },
+  {
+   "match": "s1-w1-25-21-league",
+   "events": 1101,
+   "timeline": "69f0292636aa4b7a9ced2672",
+   "positions": "35a3aa520156a5446af21775"
+  },
+  {
+   "match": "s1-w1-31-19-league",
+   "events": 1037,
+   "timeline": "a8a9fe195c0cf60498311ff8",
+   "positions": "40afd10750480e9b753e3f51"
+  },
+  {
+   "match": "s1-w1-32-39-league",
+   "events": 1025,
+   "timeline": "8d660649faa046a949c258bd",
+   "positions": "f7c086bb91137a2618144c70"
+  },
+  {
+   "match": "s1-w1-53-61-league",
+   "events": 972,
+   "timeline": "f6957da59d667d19e46b8ea0",
+   "positions": "2ceaccd2895962ff53355cd3"
+  },
+  {
+   "match": "s1-w1-56-52-league",
+   "events": 1050,
+   "timeline": "71b21a4db2f60e1b125de928",
+   "positions": "797113f5b9b27362aeae2d7f"
+  },
+  {
+   "match": "s1-w2-1-4-league",
+   "events": 1070,
+   "timeline": "40ef92b950963c30a58e5623",
+   "positions": "3f08bde995dfe6902540d220"
+  },
+  {
+   "match": "s1-w2-15-11-league",
+   "events": 1061,
+   "timeline": "7f5fee71eae3d663ee4dfba6",
+   "positions": "6504dea4d3119d31aa6d18d4"
+  },
+  {
+   "match": "s1-w2-28-27-league",
+   "events": 1013,
+   "timeline": "e04eb4d82f0cf436bc50c0a8",
+   "positions": "e056b754e97eeb66a38b4f8d"
+  },
+  {
+   "match": "s1-w2-31-29-league",
+   "events": 1025,
+   "timeline": "28c3faea1d2573b2889e7165",
+   "positions": "d25badd7f12da7b66404e683"
+  },
+  {
+   "match": "s1-w2-34-40-league",
+   "events": 1137,
+   "timeline": "bd3d58366c873964f8317b03",
+   "positions": "c72433e78b15d9465827c095"
+  }
+ ],
+ "pressing High against Low": [
+  {
+   "match": "s1-w1-2-6-league",
+   "events": 1090,
+   "timeline": "aa2e8337b6232dc1c46705b3",
+   "positions": "60e6d5e3b8da2c5a22a534fd"
+  },
+  {
+   "match": "s1-w1-4-15-league",
+   "events": 1060,
+   "timeline": "1709b1f4d1a4fc568224bae0",
+   "positions": "e62fd491fd4d1143f464d22f"
+  },
+  {
+   "match": "s1-w1-21-22-league",
+   "events": 1085,
+   "timeline": "89f72bd84050a6c5c24fd65b",
+   "positions": "5d48c5cd6a4395050f9db686"
+  },
+  {
+   "match": "s1-w1-17-16-league",
+   "events": 1051,
+   "timeline": "8addaa3d04b8572a152a9c55",
+   "positions": "5d1b5de288b953f693516582"
+  },
+  {
+   "match": "s1-w1-35-40-league",
+   "events": 1040,
+   "timeline": "55d352f0ad4aea163fce3f69",
+   "positions": "dd3f027a64c5efb0f2034a0b"
+  },
+  {
+   "match": "s1-w1-56-59-league",
+   "events": 1058,
+   "timeline": "2b5bdc8e9887d14d7870950a",
+   "positions": "5ccc8e3c12dccfbd907c3ae1"
+  }
+ ]
+}

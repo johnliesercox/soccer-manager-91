@@ -87,6 +87,13 @@
     SPELL: 18,                         // seconds an ordinary spell lasts at half the ball each; a side's spells last this times twice its possession
     SPELL_K: [0.97, 1, 1.1],          // and this, by passing style, so that the time each side has the ball does not follow how many passes it makes
     PACE: [1.12, 1, 0.95],             // and both sides' spells this much longer or shorter for each side's passing style (the same for both, so it moves nobody's share): patient football has fewer, longer spells
+    // ---- stage B: where the side WITHOUT the ball stands (read by behaviour.js; the timeline does not use these) ----
+    shape: true,                       // false: the players stand as they did at stage A whatever the pressing
+    LINE: [-0.045, 0, 0.045],          // its outfield players stand this much deeper or higher (Low, Normal, High): 4.7 m of a 105 m pitch.
+                                       // The shift comes in as the side's shape turns from attacking to defending (2.5 s, as always)
+    LINE_FROM: 0.2, LINE_OVER: 0.25,   // and fades out near its own goal: none with the ball inside 0.2 of the pitch from its line, all of it beyond 0.45
+    STAND_OFF: 0.62,                   // a Low press does not send a man to the ball beyond this (the far 38% of the pitch): it keeps its shape
+    CLOSE_HI: 5,                       // a High press: the nearest man goes to the ball at a run from this many metres (others: only beyond 14, a jog inside)
     KEEP: 4.5,                         // before a goal's build-up: with more than this many seconds in hand the scoring side plays one more pass among themselves
     STEP: [4, 9],                      // the shortest and longest time between passes. The shortest is what it is with no lean: at 2.8 a man was asked to
                                        // receive before he could get there about three times as often (receives drawn over a metre from the ball: 92 in 55,900 against 34)

@@ -38,13 +38,20 @@
     const win = ctx.windowAt(t);
     const attackH = ctx.attackAt(H, t), attackA = ctx.attackAt(A, t);
     const dirH = ctx.dirAt(H, t), dirA = ctx.dirAt(A, t);
+    // The tactics lean, stage B: the side without the ball holds its lines higher or deeper by its pressing, a High press closes
+    // down at a run and a Low press does not chase in the other side's part of the pitch. Only where a side presses High or
+    // Low: with Normal pressing (r 0), no plans, or the lean off, every line below takes the path it always took.
+    const ST = MD.STYLE, tac = (ST && ST.on && ST.shape && MD.timelineLeans && MD.timelineLeans(ctx.p))? ctx.p.tactics : null;
+    const rH = tac? tac.home.r : 0, rA = tac? tac.away.r : 0;
+    const pushOf = (r, attack, ballAx) => r? ST.LINE[r+1]*(1 - attack)*clamp((ballAx - ST.LINE_FROM)/ST.LINE_OVER, 0, 1) : 0;
+    const pushH = pushOf(rH, attackH, dirH===1? shapeBall.x : 1-shapeBall.x), pushA = pushOf(rA, attackA, dirA===1? shapeBall.x : 1-shapeBall.x);
     if (!out){ out = new Array(n); for (let i=0;i<n;i++) out[i] = { x:0, y:0, band:0, role:'shape' }; out.ref = { x:0.5, y:0.6, band:BAND.RUN, role:'ref' }; }
 
     // the shape position of player i (writes into sx/sy)
     let sx = 0, sy = 0;
     const shapeFor = i => {
       const pl = players[i]; const dir = pl.teamId===H? dirH : dirA;
-      const sp = MD.shapePos(anchors[pl.id], ctx.roleAt(i, t), dir===1? shapeBall.x : 1-shapeBall.x, shapeBall.y, pl.teamId===H? attackH : attackA);
+      const sp = MD.shapePos(anchors[pl.id], ctx.roleAt(i, t), dir===1? shapeBall.x : 1-shapeBall.x, shapeBall.y, pl.teamId===H? attackH : attackA, pl.teamId===H? pushH : pushA);
       sx = dir===1? sp.x : 1-sp.x; sy = sp.y;
     };
     const ownGoalX = i => ((players[i].teamId===H? dirH : dirA)===1? 0 : 1);
@@ -116,7 +123,9 @@
           tx = gx + (dir===1? off : -off); ty = clamp(gy, 0.43, 0.57); band = BAND.JOG; role = 'keeper';
           if (next && (next.save || next.kind==='goal') && ball.inFlight){ tx = pos[i].x; ty = pos[i].y; band = BAND.STILL; role = 'set'; }
         } else if (pl.teamId===D){
-          if (i===press && possAge > 0.4){ const d = distBall(i); const u = d>1e-6? 2.1/d : 0;   /* outside the separation radius, so he is never nudged off the carrier */ tx = ball.x + (pos[i].x-ball.x)*u; ty = ball.y + (pos[i].y-ball.y)*u; band = d > 14? BAND.RUN : BAND.JOG; role = 'press'; }
+          const rD = D===H? rH : rA;
+          if (i===press && possAge > 0.4 && rD < 0 && ((D===H? dirH : dirA)===1? ball.x : 1-ball.x) > ST.STAND_OFF){ shapeFor(i); tx = sx; ty = sy; band = BAND.JOG; role = pl.role==='DEF'? 'line' : 'zone'; }   // a Low press stands off: the ball is far up the pitch, and he keeps his place
+          else if (i===press && possAge > 0.4){ const d = distBall(i); const u = d>1e-6? 2.1/d : 0;   /* outside the separation radius, so he is never nudged off the carrier */ tx = ball.x + (pos[i].x-ball.x)*u; ty = ball.y + (pos[i].y-ball.y)*u; band = d > (rD > 0? ST.CLOSE_HI : 14)? BAND.RUN : BAND.JOG; role = 'press'; }
           else if (i===cover && possAge > 0.4){ const gx = ownGoalX(i); const d = dm(ball.x, ball.y, gx, 0.5); const u = d>1e-6? Math.min(1, 8/d) : 0; tx = ball.x + (gx-ball.x)*u; ty = ball.y + (0.5-ball.y)*u; band = BAND.JOG; role = 'cover'; }
           else { shapeFor(i); tx = sx; ty = sy; band = BAND.JOG; role = pl.role==='DEF'? 'line' : 'zone'; }
         } else {

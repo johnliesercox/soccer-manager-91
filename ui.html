@@ -453,7 +453,7 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const money = n => (n<0?'-':'')+'£'+E.fmt(Math.abs(n));
 const SAVE_KEY = 'sm91-save';
-const APP_VERSION = '1.8.0-dev3';   // a development build on the way to 1.8.0 (the hair fix and the tactics milestone: slices 1 and 2, and stage A of slice 3), not the release
+const APP_VERSION = '1.8.0-dev4';   // a development build on the way to 1.8.0 (the hair fix and the tactics milestone: slices 1 and 2, and stages A and B of slice 3), not the release
 const CHANGELOG = [
   { v:'1.7.1', when:'November 2026', notes:[
     'A player\'s hair no longer changes colour as he moves.',

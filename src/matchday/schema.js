@@ -147,12 +147,14 @@
     return out;
   }
   // attack: 0 = this team is defending (deeper, narrower), 1 = attacking (higher, wider); 0.5 = neutral
-  function shapePos(anchor, role, ballAx, ballY, attack){
+  // push (the tactics lean, stage B): the outfield players stand this much further up the pitch (a share of its length; negative is
+  // deeper). Nothing passes it unless a side without the ball is pressing High or Low, so with none it is the rule it always was.
+  function shapePos(anchor, role, ballAx, ballY, attack, push){
     attack = attack===undefined? 0.5 : attack;
     const slide = role==='GK'? 0.04 : 0.32, sway = role==='GK'? 0.25 : 0.3;
     const c = v => Math.max(0.02, Math.min(0.98, v));
     const depth = role==='GK'? 0 : (-0.06 + 0.1*attack), width = role==='GK'? 1 : (0.84 + 0.26*attack);
-    let x = anchor.x + depth + (ballAx-0.5)*slide;
+    let x = anchor.x + depth + (ballAx-0.5)*slide + ((push && role!=='GK')? push : 0);
     // a line never collapses onto its own goal: it holds its depth unless the ball is even deeper
     const floor = role==='DEF'? 0.1 : role==='MID'? 0.2 : role==='FWD'? 0.3 : 0;
     if (floor) x = Math.max(x, Math.min(floor, ballAx - 0.02));
