@@ -36,7 +36,7 @@ What the pictures do not do. These are limits of what was built, not faults:
 * **The side with the ball does not change shape for the other side's pressing.** A team facing a High press does not, for instance, drop a midfielder to help.
 * **Mentality does not lean in the pictures.** Passing, pressing and shooting do. Mentality acts in the result only.
 
-What the fixed test samples object to when every match is forced to one pressing pair. The 25 suites pass as the game plays; these appear only when a suite's own sample matches are forced to High or Low pressing on both sides, which the game does not do:
+What the fixed test samples object to when every match is forced to one pressing pair. The 25 suites pass as the game plays; these appear only when a suite's own sample matches are forced to High or Low pressing on both sides, which the game does not do. The last row is the exception: it is a check of the soak audit, and it can object as the game plays:
 
 | Objection | Forced to | What it is |
 |---|---|---|
