@@ -108,6 +108,9 @@ const stageLook = () => { const c = document.querySelector('#md-stage canvas'); 
         if (await b.has('[data-a="md-watch"]')) await b.click('[data-a="md-watch"]', 400);
         await sleep(9000);   // past the six seconds the match waits for the art
         rec.screen = await b.page.evaluate(() => window.__sm91.S.screen); rec.stage = await b.page.evaluate(stageLook); const t1 = rec.stage.second; await sleep(1500); rec.later = await b.page.evaluate(stageLook);
+        // a look can land on the darkest instant of the fade that follows a jump to the next highlight, when every point is black (it did once on the 1.8.0
+        // candidate: MATCHDAY-BACKLOG.md). A blank stage stays blank; a fade is over in well under a second. So a look that sees too few colours looks again.
+        for (let again = 0; again < 3 && rec.later && !rec.later.painted; again++){ await sleep(700); rec.looks = again + 2; rec.later = await b.page.evaluate(stageLook); }
         rec.clockMoving = rec.later.second !== null && t1 !== null && rec.later.second > t1; rec.toast = await b.page.evaluate(() => { const t = document.querySelector('.toast'); return t? t.textContent : null; });
         await b.shot('fallback-' + F.name.replace(/ /g, '-'));
         await b.finish(); await sleep(300); rec.after = await b.page.evaluate(() => ({ screen: window.__sm91.S.screen, week: window.__sm91.S.state.week }));

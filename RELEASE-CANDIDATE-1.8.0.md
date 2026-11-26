@@ -2,6 +2,19 @@
 
 26 November 2026. **For John's approval. Nothing is merged and nothing is deployed.** The live site is 1.7.0 (`main` at `cde3c8f`, tagged `v1.7.0`) and has not been touched. This candidate is on the branch `milestone-1-tactics`.
 
+**John's decisions, 26 November 2026 (afternoon). This note is on the training branch only; the candidate itself is frozen and does not carry it.**
+
+1. **1.8.0 RC1 is accepted as the completed development baseline. It is not approved for deployment.** Nothing is to be merged to `main` or published. Live 1.7.0 stays untouched. He will do his own final review on his Galaxy before approving any public release.
+2. **The exact candidate is preserved.** It is the commit `6baa8d0`. Two branches point at it and neither is to move: `milestone-1-tactics`, and `release-1.8.0-rc1`, made on 26 November for no other purpose than to mark it. The files: `index.html` md5 `1d935315ec7b561e4d976f2ed8da71d5`, `soccer-manager-91.html` md5 `17ce37bc3a47f5210c06881b8f5ebee3`, `sw.js` md5 `bde83a6b4dcf171657da4fbf44f06367`. A copy of the playable file was sent to him as `soccer-manager-91-1.8.0-rc1.html`.
+3. **The What's new wording is approved as it stands.**
+4. **The style preview's code stays in the file,** completely disabled and unreachable in the public game, and the automated checks that keep it so are to be retained (`test-tactics-ui.js`, part 8).
+5. **`?rules=1.7` stays,** for regression testing. It must remain undocumented in the player's interface and impossible to trigger by accident. Checked on the candidate: no screen, link, manifest entry or offline rule mentions it; it is read only from an address typed by hand; an installed copy has no address bar. A test now holds that (`test-tactics-ui.js`, on the training branch).
+6. **The league-figure correction is accepted,** and the soak check that failed once is accepted as a limitation of the test and not a release blocker. The test is to be improved when convenient, without changing the approved game to satisfy it. Done on the training branch: the check looks again when it lands on a fade (`tools/soak-audit.js`).
+7. **The nine art archives are to be preserved permanently, apart from the repository.** The plan is in `ART-PIPELINE-ARCHIVES.md`. Nothing is uploaded now.
+8. **Training (milestone 2) proceeds on its own branch, `milestone-2-training`, started from this candidate. It must not be part of the eventual 1.8.0 release.**
+
+When he approves publication, the steps of "What happens after approval" below apply to the frozen commit, not to the training branch.
+
 ## The outcome
 
 **The candidate is built and it passes the complete release regression.** It is the hair fix and all three slices of the tactics milestone, with the development-only style preview taken out of reach.

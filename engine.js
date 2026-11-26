@@ -108,6 +108,21 @@ const CFG = {
   SCOUT_LIST: [6, 8, 10, 12],
   TRAIN_BASE: 0.03,
   TRAIN: { light:{gain:0.5, fit:3, inj:0}, normal:{gain:1, fit:0, inj:0}, hard:{gain:1.7, fit:-2, inj:0.01} },
+  // Training focus and the priority player (milestone 2, slice 1). The coach has a fixed amount of attention each week. A focus
+  // gives each man of the chosen group FOCUS times the chance he would have had, and the priority player PRIORITY times his; the
+  // rest of the squad then share what is left, equally, so that the squad's total chance of improving is exactly what it would
+  // have been with no choice made (less COST when a focus is set). If that would leave the rest with less than FLOOR of their
+  // usual chance, they get FLOOR and the favoured men are scaled down instead. So a choice moves training from one man to
+  // another and never adds to it. A club with no focus and no priority player takes the old line of code untouched, which is
+  // how "identical to 1.8.0" is kept. on:false plays the 1.8.0 rules outright.
+  TRAINING: { on: true,
+    FOCUS: { GK: 2, DEF: 1.5, MID: 1.5, FWD: 1.5 },   // a goalkeeper's share is doubled: there are only two of them
+    COST: 0.05,          // a focus costs this much of the squad's total: the price of specialising
+    PRIORITY: 2,         // the priority player's share
+    PRIORITY_FIT: 1,     // extra sessions tire him: fitness he fails to recover in a week of them
+    FIT_MIN: 70,         // under this he is rested: no extra coaching that week, and no cost
+    FLOOR: 0.4,          // nobody's chance falls below this much of what it would have been
+    CAP: 0.20 },         // no man's chance in a week is above this (the most today is 0.1224: Hard with the best coach)
   SEAT_COST: 120,
   BUILD_WEEKS: 10,
   SAFETY_COST_PER_SEAT: 0.4,
@@ -767,9 +782,11 @@ function advanceWeek(state){
   for (const c of state.clubs){
     c.xi = null;
     const rec = 5 + CFG.PHYSIO_RECOVERY[c.staff.physio] + (isHuman(state, c.id)? CFG.TRAIN[c.training].fit : 0);
+    const pri = c.priority!=null && isHuman(state, c.id)? priorityOf(state, c) : null;   // the priority player's extra sessions cost him fitness
     for (const p of squadOf(state,c)){
       if (p.injury>0 && !fresh.has(p.id)) p.injury--;
-      p.fitness = clamp(p.fitness+rec, 30, 100);
+      if (pri && p.id===pri.id && !(p.injury>0) && p.fitness>=CFG.TRAINING.FIT_MIN) p.fitness = clamp(p.fitness+rec-CFG.TRAINING.PRIORITY_FIT, 30, 100);
+      else p.fitness = clamp(p.fitness+rec, 30, 100);
     }
     weeklyFinance(state, c);
   }
@@ -1109,6 +1126,8 @@ function expireContracts(state){
 function trainingWeek(state, club){
   academyWeek(state, club);
   const t = CFG.TRAIN[club.training]; const coach = CFG.COACH_MULT[club.staff.coach];
+  if (CFG.TRAINING.on && club.priority!=null && !priorityOf(state, club)) delete club.priority;   // he has been sold, released, retired or sent to the reserves
+  const share = trainingShare(state, club);   // null unless a focus or a priority player is set
   for (const p of reservesOf(state, club)){
     if (p.skill>=p.pot) continue;
     if (rand() < CFG.TRAIN_BASE*CFG.YOUTH_DEV[club.staff.youth||0]*0.8){ p.skill++; p.value = valueFor(p); }
@@ -1117,7 +1136,7 @@ function trainingWeek(state, club){
     if (p.injury>0) continue;
     if (t.inj>0 && rand()<t.inj){ p.injury = Math.max(1, Math.round(rInt(1,4)*CFG.PHYSIO_INJ_LEN[club.staff.physio])); news(state, `${p.name} picked up a knock in training, out ${p.injury} week${p.injury>1?'s':''}.`, 'injury'); continue; }
     if (p.age>=30 || p.skill>=p.pot) continue;
-    if (rand() < CFG.TRAIN_BASE*coach*t.gain){ p.skill++; p.value = valueFor(p); if (rand()<0.35) news(state, `${p.name} is coming on in training. Skill now ${p.skill}.`, 'info'); }
+    if (rand() < (share? share(p) : CFG.TRAIN_BASE*coach*t.gain)){ p.skill++; p.value = valueFor(p); if (rand()<0.35) news(state, `${p.name} is coming on in training. Skill now ${p.skill}.`, 'info'); }
   }
 }
 function groundWeek(state, club, results){
@@ -1141,6 +1160,24 @@ function groundWeek(state, club, results){
 }
 function setStaff(state, role, tier){ const u = state.clubs[state.userClub]; if (['coach','physio','scout','youth'].includes(role) && tier>=0 && tier<=3) u.staff[role] = tier; }
 function setTraining(state, level){ if (CFG.TRAIN[level]) state.clubs[state.userClub].training = level; }
+// ---- training focus and the priority player. Both are optional fields on the club; a club without them trains as it always has.
+const FOCUS_KEYS = ['GK', 'DEF', 'MID', 'FWD'];
+function focusOf(club){ return CFG.TRAINING.on && club && FOCUS_KEYS.includes(club.focus)? club.focus : null; }
+function priorityOf(state, club){ if (!CFG.TRAINING.on || !club || club.priority==null) return null; const p = state.players[club.priority]; return p && p.club===club.id && !p.reserve && club.players.includes(p.id)? p : null; }
+function setFocus(state, group){ const c = state.clubs[state.userClub]; if (!c) return; if (FOCUS_KEYS.includes(group)) c.focus = group; else delete c.focus; }
+function setPriority(state, playerId){ const c = state.clubs[state.userClub]; if (!c) return; const p = playerId==null? null : state.players[playerId]; if (p && p.club===c.id && !p.reserve && c.players.includes(p.id)) c.priority = p.id; else delete c.priority; }
+function canImprove(p){ return !(p.injury>0) && p.age<30 && p.skill<p.pot; }   // who weekly training can do anything for
+// each man's chance of a point this week when a focus or a priority player is set; null when neither is, and the old line applies
+function trainingShare(state, club){
+  const T = CFG.TRAINING, focus = focusOf(club), pri = priorityOf(state, club); if (!focus && !pri) return null;
+  const base = CFG.TRAIN_BASE*CFG.COACH_MULT[club.staff.coach]*CFG.TRAIN[club.training].gain;
+  const m = p => (focus && p.pos===focus? T.FOCUS[focus] : 1)*(pri && p.id===pri.id && p.fitness>=T.FIT_MIN? T.PRIORITY : 1);   // the multiple a favoured man is meant to have
+  let n = 0, fav = 0, sum = 0; for (const p of squadOf(state, club)) if (canImprove(p)){ n++; const x = m(p); if (x>1){ fav++; sum += x; } }
+  const total = n*(focus? 1-T.COST : 1), rest = n-fav;   // the squad's whole attention this week, in men's worth, and how many must share what the favoured leave
+  let other = rest>0? (total-sum)/rest : 0, scale = 1;
+  if (fav>0 && (rest===0 || other<T.FLOOR)){ other = rest>0? T.FLOOR : 0; scale = (total-other*rest)/sum; }
+  return p => { const x = m(p); return Math.min(T.CAP, base*(x>1? x*scale : other)); }; }
+function trainingChance(state, club, p){ if (!canImprove(p)) return 0; const share = trainingShare(state, club); return share? share(p) : CFG.TRAIN_BASE*CFG.COACH_MULT[club.staff.coach]*CFG.TRAIN[club.training].gain; }
 function buildCost(seats){ return seats*CFG.SEAT_COST; }
 function startBuild(state, seats){
   const u = state.clubs[state.userClub]; const cost = buildCost(seats);
@@ -1351,7 +1388,7 @@ function moveManager(state, clubId){
   old.xi = null; for (const p of squadOf(state,old)) p.listed = null;
   if (old.players.length<16 && !state.managers.some(m=>!m.retired && m!==state.managers[state.cur] && m.userClub===old.id)) youthFill(state, old, 16);
   const c = state.clubs[clubId];
-  state.userClub = c.id; c.confidence = CFG.CONF_START; c.overdraftWeeks = 0; c.ledger = []; c.xi = null; c.training = 'normal';
+  state.userClub = c.id; c.confidence = CFG.CONF_START; c.overdraftWeeks = 0; c.ledger = []; c.xi = null; c.training = 'normal'; delete c.focus; delete c.priority;
   state.offers = []; state.loan = null; state.jobOffer = null; state.sackOffer = null; state.gameOver = null;
   if (state.preseason && state.preseason.pending){ state.preseason.offers = sponsorOffers(state, c); state.sponsor = null; state.seasonTicket = null; }
   else { state.sponsor = null; state.seasonTicket = null; }
@@ -1841,7 +1878,7 @@ function restore(state){ let m=0; for (const id in state.players) m=Math.max(m, 
 const Engine = { CFG, CLUB_DATA, FORMATIONS, newGame, advanceWeek, endSeason, autoSelect, tableFor, squadOf, divClubs, expectedPos,
   buyFromList, bidForPlayer, acceptOffer, acceptJob, teamStrength, effSkill, fmt, seedRng, CUP_ROUND_NAMES, refreshValues, wageFor, valueFor,
   nextFixture, buildXI, listPlayer, unlistPlayer, rejectOffer, declineJob, boardMood, restore, prizeFor, overdraftLimit,
-  setStaff, setTraining, startBuild, buildCost, improveSafety, safetyCost, canSeePot, staffWages,
+  setStaff, setTraining, FOCUS_KEYS, focusOf, priorityOf, setFocus, setPriority, canImprove, trainingShare, trainingChance, startBuild, buildCost, improveSafety, safetyCost, canSeePot, staffWages,
   chooseSponsor, setSeasonTickets, seasonTicketForecast, takeLoan, repayLoan, loanMax, sponsorBase,
   takeSackOffer, resign, bottomClub, updatePositions,
   isHuman, managerOf, activeManagers, setCurrent, saveCurrent, withManager, retireManager, standings, humanListings, renameClub, renamePlayer, scoutSearch, topScorers, gateSummary, supportOf, demandTarget, turnover, ticketOf, setTicketPrice, ticketAdvice, renameAnyClub,
@@ -1850,6 +1887,7 @@ const Engine = { CFG, CLUB_DATA, FORMATIONS, newGame, advanceWeek, endSeason, au
   contractAsk, offerContract, releasePlayer, freeAgentsList, signFreeAgent, playerStatus, moraleWord, moraleFactor, available, wantsYears, letGo,
   reservesOf, upgradeAcademy, promoteReserve, releaseReserve,
   clubRecords, topClubScorers, careerOf, careerScore, careerSummary, SCORE, MODES };
-if (typeof location!=='undefined' && location && /[?&]rules=1\.7(&|$)/.test(String(location.search||''))) CFG.TACTICS.on = false;   // a test switch for the comparison tools: the match rules of 1.7.1
+if (typeof location!=='undefined' && location && /[?&]rules=1\.7(&|$)/.test(String(location.search||''))){ CFG.TACTICS.on = false; CFG.TRAINING.on = false; }   // a test switch for the comparison tools: the rules of 1.7.1
+if (typeof location!=='undefined' && location && /[?&]rules=1\.8(&|$)/.test(String(location.search||''))) CFG.TRAINING.on = false;   // the same for the rules of 1.8.0: tactics as they are, training as it was
 if (typeof module!=='undefined') module.exports = Engine;
 

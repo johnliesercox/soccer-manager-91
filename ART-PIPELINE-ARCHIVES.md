@@ -90,3 +90,18 @@ It also follows that the animation library, which John has said is final and is 
 | Let them go, and rely on re-rendering | nothing to store | loses the exact record and the raw paintings; a repaint starts from step 1 |
 
 My suggestion is the second: a release asset on the combined release, with the raw paintings added to the same place if John still has the zips he downloaded from Floyo. It is his call, and nothing needs deciding until then.
+
+## John's decision, 26 November 2026, and the storage plan
+
+**Decision.** All nine archives are to be preserved permanently. They are to be kept separate from the main repository, with GitHub Release assets as the likely home when something is eventually published. Nothing is to be uploaded or published now.
+
+**Exactly what has to be kept.** The nine archives in the table above, 93,324,464 bytes between them, 933 files. The simplest thing to keep is the one file they travel in: `upload-2-tools.zip`, 93,905,413 bytes, SHA-256 `d94aebd9bd38e59e17a6c9e47a18cdc684327910d5803da6b7614bae4fbc93dd`. It also holds the README that says what each archive restores, which is not in the repository. Keeping that one file unaltered keeps everything, and its checksum proves it.
+
+**The plan recommended.**
+
+1. **Now, and without publishing anything: a second copy.** Today the only copy that counts is John's own file. One copy is the real risk. A second copy somewhere else that is his (a cloud drive, a second disk) removes it, and needs no decision about GitHub.
+2. **When a release is published: a GitHub Release of its own for the art source,** not the game's release. The archives belong to the art made for 1.6.0 and 1.7.0 and do not change with game versions, so a separate release (for example the tag `art-source-1`, marked as a pre-release so that it is never shown as the latest version of the game) keeps them apart from `v1.8.0` and from every later version. Attach `upload-2-tools.zip` as it is, plus a small text file with the checksums from this note. A release asset may be up to 2 GB, and it adds nothing to a clone of the repository. Creating a release on the GitHub page creates its tag at the same time; tags cannot be created from a working session.
+3. **Then check it:** download the asset once and compare its SHA-256 with the figure above. Record the release's address here.
+4. **One thing to know before step 2:** if the repository is public, a release asset is public too. The archives are original Blender renders made for this game from its own figures and ground, and I know of nothing in them that should not be seen; I have not re-opened them for this note, and it is his choice.
+
+**Not among the nine: the raw paintings as they came out of Floyo.** They are in his Floyo Personal Team's output folder for as long as Floyo keeps them, and in the zips he downloaded during the art work if he still has those. If they are to be preserved as well, they would be a tenth item in the same release. The finished art the game draws does not depend on them or on the nine archives: it is all in the repository.

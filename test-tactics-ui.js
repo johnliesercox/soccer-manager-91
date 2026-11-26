@@ -153,8 +153,12 @@ const tac = (k, v) => `[data-a="tactic"][data-k="${k}"][data-v="${v}"]`;
       ok(!/Preview: compare two styles/.test(H.text()), 'and Home does not mention it');
     }
     { const Hw = boot(); await Hw.sleep(100); const ver = Hw.app().version; await Hw.click('[data-a="whatsnew"]', 60); const t = Hw.text();
-      ok(t.indexOf(ver.replace(/-dev.*/, '')) >= 0 && /\(this one\)/.test(t) && (/-dev/.test(ver) || t.indexOf(ver + ' ') < t.indexOf('1.7.0')), 'What\'s new leads with this version (' + ver + ')');
+      ok(t.indexOf(ver.replace(/-.*/, '')) >= 0 && /\(this one\)/.test(t) && (/-dev/.test(ver) || t.indexOf(ver + ' ') < t.indexOf('1.7.0')), 'What\'s new leads with this version (' + ver + ')');
       if (!/-dev/.test(ver)) ok(/Tactics\./.test(t) && /Match plan/.test(t) && /Mentality \(Defensive, Balanced, Attacking\)/.test(t) && /Passing \(Short, Mixed, Direct\)/.test(t) && /Pressing \(Low, Normal, High\)/.test(t) && /Shooting \(Work it in, Balanced, Shoot on sight\)/.test(t) && /hair no longer changes colour/.test(t) && !/1\.7\.1/.test(t), 'and it names the four choices in the screens\' own words, keeps the hair line and has no heading for the unreleased 1.7.1'); }
+    { // the old-rules switches are for the tests: nothing a player can see or tap mentions them, and nothing in the game builds such an address
+      const fs = require('fs'), ui = fs.readFileSync(require('path').join(__dirname, 'ui.html'), 'utf8'), eng = fs.readFileSync(require('path').join(__dirname, 'engine.js'), 'utf8'), man = fs.readFileSync(require('path').join(__dirname, 'manifest.webmanifest'), 'utf8'), sw = fs.readFileSync(require('path').join(__dirname, 'sw.js'), 'utf8');
+      ok(!/rules\s*=|[?&]rules\b/.test(ui) && !/rules=/.test(man) && !/rules=/.test(sw), 'no screen, link, manifest or offline rule mentions the rules switch');
+      ok((eng.match(/rules=/g) || []).length === 2 && (eng.match(/location\.search/g) || []).length === 2, 'the engine reads it from the typed address in two lines and nowhere else'); }
     const H2 = boot({ url: 'http://localhost/?rules=1.7' }); await H2.start(['John']); await seeded(H2, 19911119, 50); ok(!H2.has('[data-a="stylepreview"]'), 'with the 1.7.1 rules there is no preview');
     const H3 = boot(); await H3.start(['Ann', 'Bob']); ok(!H3.has('[data-a="stylepreview"]'), 'nor in a hot-seat game');
     console.log(dev? 'the style preview: a friendly to two chosen plans, watched and forgotten' : 'a release build: no style preview, by button or otherwise, and What\'s new leads with this version');
