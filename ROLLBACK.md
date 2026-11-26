@@ -1,5 +1,7 @@
 # Rolling back
 
+(26 November 2026: **the 1.8.0 release candidate is prepared on the branch `milestone-1-tactics` and is not published.** It is the hair fix and the whole tactics milestone. The live site is still 1.7.0, `main` at `cde3c8f`, tagged `v1.7.0`. If 1.8.0 is published and ever has to be withdrawn, the version to put back is 1.7.0, from `legacy/release-1.7.0/`: the section "To put 1.7.0 back after 1.8.0" below. Nothing below has had to be used.)
+
 (19 November 2026: release 1.7.1, the hair fix, is approved on the branch `milestone-0-hair` and, by John's decision, not deployed; the tag `v1.7.0` now exists at `cde3c8f`, the live commit. If it is published, the version to put back is 1.7.0, from `legacy/release-1.7.0/`, by the steps below with that folder and number; saves are format 4 in both, and `tools/save-compat.js` was run in both directions between them.)
 
 (State on the evening of 18 November 2026: the live site is 1.7.0, `main` at `fe24d6c`. The tag `v1.6.0` exists at `97a0748`; the tag `v1.7.0` is John's to create once he has checked the live site. Nothing below has had to be used. The version to put back, if it ever has to be, is 1.6.0, exactly as described here.)
@@ -33,10 +35,28 @@ For the last three releases there is also a copy inside the repository, so no ta
    them within a minute or two.
 4. Open the site, pull to refresh once, and check the title screen says "Version 1.6.0".
 
-Saved games: 1.5.0, 1.6.0 and 1.7.0 all use save format 4 and the game never clears or rewrites storage on a version
+Saved games: 1.5.0, 1.6.0, 1.7.0 and 1.8.0 all use save format 4 and the game never clears or rewrites storage on a version
 change, so a game saved under a newer one opens in an older one and vice versa (`tools/save-compat.js` checks the forward
 direction before each release; the reverse was checked for 1.6.0 to 1.5.0 by hand and for 1.7.0 to 1.6.0 by running the
 tool with its two folders swapped). The What's new flag will show once; that is all.
+
+## To put 1.7.0 back after 1.8.0
+
+The tag `v1.7.0` already exists at `cde3c8f`, the commit that is live today, so the step "tag what is live" is done for this release.
+
+1. Take `legacy/release-1.7.0/index.html` and `legacy/release-1.7.0/sw.js`.
+2. In that `sw.js`, change the one line `const VERSION = 'sm91-v1.7.0';` to a name no phone has seen before, for example `const VERSION = 'sm91-v1.7.0-r1';`. (An installed phone refreshes its offline copy only when `sw.js` changes. 1.8.0's cache is called `sm91-v1.8.0`; going back to the plain `sm91-v1.7.0` would also work for a phone that has moved on, but a new name is right for every phone.)
+3. Upload both over the root `index.html` and `sw.js` (**Add file > Upload files**, drag, commit). GitHub Pages serves them within a minute or two.
+4. Open the site, pull to refresh once, and check the title screen says "Version 1.7.0".
+
+The manifest and the icons are the same files in 1.7.0 and 1.8.0, so there is nothing else to put back.
+
+**What happens to saved games.** Both versions use save format 4, and neither clears or rewrites storage on a version change. `tools/save-compat.js` was run in both directions between the 1.8.0 candidate and 1.7.0, 1.7.1 and 1.6.0 on 26 November 2026 (`RELEASE-CANDIDATE-1.8.0.md`).
+
+* A game saved under 1.8.0 opens in 1.7.0 and plays on. 1.7.0 knows nothing of match plans, so every side plays the default plan there, the formations have their 1.7.0 strengths, and the Match plan card, "Known for" and the possession and chances figures are not shown.
+* The manager's plan is not lost. 1.7.0 carries the parts of a save it does not understand along with the rest, so if 1.8.0 is published again the plan is as he left it.
+* Matches played under 1.7.0 have no possession or chances figures. 1.8.0 shows such a result without them.
+* The What's new flag shows once after each change of version. That is all a player sees.
 
 ## To go back to any other tagged release
 
@@ -46,7 +66,7 @@ in `sw.js` as above, upload both over the root files, commit.
 ## What a rollback does not touch
 
 `worker/` (the ladder's Cloudflare worker) is deployed separately and has not changed since 1.1.1. The icons are the
-same in every release so far. The manifest changed once, in 1.7.0, and only in its two colours (the splash screen and bar
+same in every release so far. The manifest changed once, in 1.7.0 (1.8.0's is the same file as 1.7.0's), and only in its two colours (the splash screen and bar
 of an installed copy went from blue to navy); to put those back as well, upload `legacy/release-1.6.0/manifest.webmanifest`
 over the root one. It is cosmetic and nothing depends on it. Nothing in a rollback can delete or alter a player's saves: they live in the
 browser's storage on their own phone, keyed by name, and only the player can delete them.

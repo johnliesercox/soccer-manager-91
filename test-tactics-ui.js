@@ -145,9 +145,19 @@ const tac = (k, v) => `[data-a="tactic"][data-k="${k}"][data-v="${v}"]`;
       await H.click('[data-a="back"]'); ok(S.screen === 'home', 'Back returns to Home');
       await H.playWeek('instant'); ok(st.week === 2 && H.errors.length === 0, 'and the season plays on: ' + H.errors.join(' | '));
     }
+    if (!dev){   // a release: the preview has no button, and its actions do nothing even if something asks for them
+      const before = JSON.stringify(st), fire = async (a, extra) => { const b = H.d.createElement('button'); b.setAttribute('data-a', a); for (const k in (extra || {})) b.setAttribute('data-' + k, extra[k]); (H.d.querySelector('main') || H.d.body).appendChild(b); b.click(); await H.sleep(60); b.remove(); };
+      const was = S.screen; await fire('stylepreview'); ok(S.screen === was && S.screen !== 'stylepreview', 'in a release, asking for the preview screen goes nowhere');
+      await fire('sp-set', { side: 'h', k: 'p', v: '1' }); await fire('sp-swap'); await fire('sp-watch'); await H.sleep(200);
+      ok(S.screen === was && !S.sp && !S.md && JSON.stringify(st) === before && H.errors.length === 0, 'nor do its controls: no friendly starts, nothing is set and the game in hand is untouched: ' + H.errors.join(' | '));
+      ok(!/Preview: compare two styles/.test(H.text()), 'and Home does not mention it');
+    }
+    { const Hw = boot(); await Hw.sleep(100); const ver = Hw.app().version; await Hw.click('[data-a="whatsnew"]', 60); const t = Hw.text();
+      ok(t.indexOf(ver.replace(/-dev.*/, '')) >= 0 && /\(this one\)/.test(t) && (/-dev/.test(ver) || t.indexOf(ver + ' ') < t.indexOf('1.7.0')), 'What\'s new leads with this version (' + ver + ')');
+      if (!/-dev/.test(ver)) ok(/Tactics\./.test(t) && /Match plan/.test(t) && /Mentality \(Defensive, Balanced, Attacking\)/.test(t) && /Passing \(Short, Mixed, Direct\)/.test(t) && /Pressing \(Low, Normal, High\)/.test(t) && /Shooting \(Work it in, Balanced, Shoot on sight\)/.test(t) && /hair no longer changes colour/.test(t) && !/1\.7\.1/.test(t), 'and it names the four choices in the screens\' own words, keeps the hair line and has no heading for the unreleased 1.7.1'); }
     const H2 = boot({ url: 'http://localhost/?rules=1.7' }); await H2.start(['John']); await seeded(H2, 19911119, 50); ok(!H2.has('[data-a="stylepreview"]'), 'with the 1.7.1 rules there is no preview');
     const H3 = boot(); await H3.start(['Ann', 'Bob']); ok(!H3.has('[data-a="stylepreview"]'), 'nor in a hot-seat game');
-    console.log('the style preview: a friendly to two chosen plans, watched and forgotten');
+    console.log(dev? 'the style preview: a friendly to two chosen plans, watched and forgotten' : 'a release build: no style preview, by button or otherwise, and What\'s new leads with this version');
   }
   console.log(fails? `\n${fails} FAILURES of ${checks} checks` : `\nTACTICS SCREENS OK (${checks} checks)`); process.exit(fails? 1 : 0);
 })().catch(e => { console.error('TEST FAIL', e.stack || e.message); process.exit(1); });

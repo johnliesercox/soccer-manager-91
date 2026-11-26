@@ -177,11 +177,11 @@ if (PLAY){
 // ---- 5. the league's shape: the rules of 1.7.1 against the rules now ----
 function leagueShape(on, seeds, seasons){
   const keep = { on: T.on }; T.on = on; let n = 0, hw = 0, d = 0, goals = 0, yel = 0, red = 0, inj = 0; const plans = { m: [0, 0, 0], p: [0, 0, 0], r: [0, 0, 0], s: [0, 0, 0] }; const rank = []; const fitness = [];
-  for (const seed of seeds){ const st = E.newGame({ seed, userClub: 20 }); for (let s = 0; s < seasons; s++){ const pres = {}; for (const c of st.clubs) if (c.div >= 1) pres[c.id] = c.prestige;
+  for (const seed of seeds){ const st = E.newGame({ seed, userClub: 20 }); for (let s = 0; s < seasons; s++){ const pres = {}, div0 = {}; for (const c of st.clubs) if (c.div >= 1){ pres[c.id] = c.prestige; div0[c.id] = c.div; }
       for (let w = 0; w < E.CFG.WEEKS; w++) for (const m of E.advanceWeek(st)){ if (st.gameOver){ st.gameOver = null; st.sackOffer = null; } if (m.cup !== undefined || m.euro) continue; n++; goals += m.gH + m.gA; if (m.gH > m.gA) hw++; else if (m.gH === m.gA) d++; yel += m.cards.filter(c => c.type === 'Y').length; red += m.cards.filter(c => c.type === 'R').length; inj += m.injuries.length; if (m.tH) for (const t of [m.tH, m.tA]) for (const k of E.PLAN_KEYS) plans[k][t[k] + 1]++; }
-      // does quality still tell: how well the final table follows the clubs' standing at the start (rank correlation, by division)
-      for (const dv of [1, 2, 3, 4]){ const cl = st.clubs.filter(c => c.div === dv); const a = cl.slice().sort((x, y) => pres[y.id] - pres[x.id]).map(c => c.id), b = cl.slice().sort((x, y) => (x.leaguePos || 99) - (y.leaguePos || 99)).map(c => c.id); let s2 = 0; for (let i = 0; i < a.length; i++){ const dd = i - b.indexOf(a[i]); s2 += dd*dd; } rank.push(1 - 6*s2/(a.length*(a.length*a.length - 1))); }
-      E.endSeason(st); if (st.gameOver){ st.gameOver = null; st.sackOffer = null; } } }
+      // does quality still tell: how well the final table follows the clubs' standing at the start (rank correlation, by the division each club began the season in; the final place is the one the game wrote into the club's own record when it closed the season)
+      for (const dv of [1, 2, 3, 4]){ const cl = st.clubs.filter(c => div0[c.id] === dv); const fin = c => { const h = c.history[c.history.length - 1]; return h? h.pos : 99; }; const a = cl.slice().sort((x, y) => pres[y.id] - pres[x.id]).map(c => c.id), b = cl.slice().sort((x, y) => fin(x) - fin(y)).map(c => c.id); let s2 = 0; for (let i = 0; i < a.length; i++){ const dd = i - b.indexOf(a[i]); s2 += dd*dd; } rank.push(1 - 6*s2/(a.length*(a.length*a.length - 1))); }
+      } }   // the 42nd advanceWeek has closed the season itself. (Until 26 November 2026 this line closed it a second time by hand, and the lines above read the table after the close: see the correction in TACTICS-SLICE-1.md.)
   T.on = keep.on; const r = { n, home: hw/n, draw: d/n, away: 1 - hw/n - d/n, goals: goals/n, yellows: yel/n, reds: red/n, injuries: inj/n, follows: rank.reduce((s, v) => s + v, 0)/rank.length, plans };
   return r;
 }

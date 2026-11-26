@@ -2,6 +2,15 @@
 
 21 November 2026. Branch `milestone-1-tactics`, build `1.8.0-dev4`. Live site untouched (1.7.0). Nothing merged, nothing deployed.
 
+**Approved by John on 26 November 2026, and with it the tactics milestone as complete.** His decisions:
+
+1. Stage B is approved after he watched the preview. The difference between High, Normal and Low pressing is recognisable. The implementation is kept as it is, including the 4.7 m and the agreed pressing behaviours; no further change is to be made simply to improve a measured figure.
+2. The remaining limitations (section 6 here, the corner, woodwork, camera and movement items, and the objections of section 5 that appear only under forced pressing) stay documented in `MATCHDAY-BACKLOG.md`, for targeted work in a future maintenance milestone. The matchday development is not reopened now.
+3. The 1.8.0 release candidate is to be prepared and brought to him for approval: `RELEASE-CANDIDATE-1.8.0.md`. It is not to be merged to `main` or published until he says so, and live 1.7.0 stays untouched.
+4. The next milestone to be scoped is training and player development. A proposal only, reviewed separately; no implementation until its scope is approved.
+
+The report below is as it was written on 21 November.
+
 ## The outcome
 
 **Stage B is built as you approved it, tested, and stops here for your eyes.** The side without the ball now stands differently by its pressing: a High press holds its lines 4.7 m further up and closes the man on the ball down at a run; a Low press holds them 4.7 m deeper and does not chase in the far part of the pitch.

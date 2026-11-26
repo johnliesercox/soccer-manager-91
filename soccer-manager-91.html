@@ -8015,9 +8015,16 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const money = n => (n<0?'-':'')+'£'+E.fmt(Math.abs(n));
 const SAVE_KEY = 'sm91-save';
-const APP_VERSION = '1.8.0-dev4';   // a development build on the way to 1.8.0 (the hair fix and the tactics milestone: slices 1 and 2, and stages A and B of slice 3), not the release
+const APP_VERSION = '1.8.0';   // the hair fix (built as 1.7.1, never released on its own) and the whole tactics milestone. A development build carries "-dev" in this label, and only such a build shows the style preview
 const CHANGELOG = [
-  { v:'1.7.1', when:'November 2026', notes:[
+  { v:'1.8.0', when:'November 2026', notes:[
+    'Tactics. You now decide how your team plays as well as its formation. On the Squad screen, under Match plan, there are four choices: Mentality (Defensive, Balanced, Attacking), Passing (Short, Mixed, Direct), Pressing (Low, Normal, High) and Shooting (Work it in, Balanced, Shoot on sight). Each one tells you what it gains you, what it costs and whom it suits.',
+    'Every choice has a price. Attack more and you concede more. Press high and you see more of the ball, but your players tire faster and collect more bookings. Short passing rewards a midfield that is on top; direct passing does without one. No plan is best against everybody, and the right one depends on your squad and on whom you are playing.',
+    'Leave it alone if you like. The default plan leans no way: it gains nothing and costs nothing, and Reset to default plan puts it back at any time. Your saved games carry on, on the default plan until you change it.',
+    'The other managers have plans too. Every club has a way of playing, and the fixture on Home tells you one thing your next opponent is known for. It is one thing, not the whole plan.',
+    'You can see it in the match. A direct side hits longer passes and a short-passing side keeps the ball moving. A high press wins the ball further up the pitch, holds its defence higher and runs at the man in possession; a low press sits deep and waits. A side told to shoot on sight shoots from further out.',
+    'Possession and chances after every match. The result now shows how much of the ball each side had and what its chances were worth. They are estimates from the match simulation, not counts of individual passes and shots.',
+    'Formations are better balanced. With plans in the game the six formations were weighed again, so that with equal players no shape has an edge on its own.',
     'A player\'s hair no longer changes colour as he moves.',
   ]},
   { v:'1.7.0', when:'November 2026', notes:[
@@ -9154,10 +9161,11 @@ async function act(a, d){
     case 'tactic': E.setTactics(st, d.k, +d.v); render(); break;
     case 'planreset': E.resetTactics(st); render(); toast('Match plan reset to the default.'); break;
     case 'planopen': S.planOpen = !planIsOpen(); render(); break;
-    case 'stylepreview': S.from = 'home'; go('stylepreview'); break;
-    case 'sp-set': S.sp[d.side][d.k] = +d.v; render(); break;
-    case 'sp-swap': { const t = S.sp.h; S.sp.h = S.sp.a; S.sp.a = t; render(); break; }
-    case 'sp-watch': playPreview(); break;
+    // the style preview: a development build only. A release has no button for it, and these do nothing there
+    case 'stylepreview': if (devBuild()){ S.from = 'home'; go('stylepreview'); } break;
+    case 'sp-set': if (devBuild() && S.sp){ S.sp[d.side][d.k] = +d.v; render(); } break;
+    case 'sp-swap': if (devBuild() && S.sp){ const t = S.sp.h; S.sp.h = S.sp.a; S.sp.a = t; render(); } break;
+    case 'sp-watch': if (devBuild() && S.sp) playPreview(); break;
     case 'staff': E.setStaff(st, d.r, +d.t); await save(); render(); break;
     case 'ticket': { const err = E.setTicketPrice(st, parseFloat(d.p)); if (err) toast(err); else { await save(); render(); } break; }
     case 'safety': { const err = E.improveSafety(st, +d.p); if (err) toast(err); else { toast('Work done.'); await save(); render(); } break; }

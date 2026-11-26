@@ -31,6 +31,7 @@ const last = r => (r.stdout || '').trim().split('\n').pop();
   const on = run('scene-reference.js', ['--check', ref]); ok(on.status === 0, 'against the Stage A fingerprint: Normal pressing and the default plan are identical in every position, and no event has moved anywhere: ' + last(on) + (on.status? '\n' + on.stdout : ''));
   ok(/pressing High against Low: 6 of 6 matches as they should be: 0 identical/.test(on.stdout || ''), 'and where a side presses High or Low the players do stand differently');
   const off = run('scene-reference.js', ['--check', ref, '--stage-a']); ok(off.status === 0, 'with stage B switched off every match is Stage A again, position for position: ' + last(off));
+  const rel = run('scene-reference.js', ['--check', path.join(__dirname, 'tools', 'reference', 'scene-1.8.0.json'), '--exact']); ok(rel.status === 0, 'the match pictures are the ones approved for 1.8.0, event for event and position for position, in all 36 matches: ' + last(rel) + (rel.status? '\n' + rel.stdout : ''));
   console.log('nothing else moves: ' + last(on)); }
 
 // ---- 2. the standing rule ----

@@ -6,6 +6,9 @@
 //   node tools/scene-reference.js --write tools/reference/scene-stage-a.json    record
 //   node tools/scene-reference.js --check tools/reference/scene-stage-a.json    compare (exit 1 on a difference)
 //   node tools/scene-reference.js --check tools/reference/scene-stage-a.json --stage-a    the same with stage B switched off
+//   node tools/scene-reference.js --check tools/reference/scene-1.8.0.json --exact         every match identical in every event and
+//                                                                                         every position (the pictures John approved for 1.8.0
+//                                                                                         on 26 November 2026, recorded from the release candidate)
 //
 // Recorded at Stage A of tactics slice 3 (commit b718679), before Stage B moved the side without the ball. Three sets:
 //   normal    twelve matches forced to plans that differ in passing and shooting but have NORMAL pressing on both sides.
@@ -19,7 +22,7 @@ const path = require('path'), fs = require('fs'), crypto = require('crypto');
 const ROOT = path.resolve(__dirname, '..'); const E = require(path.join(ROOT, 'engine.js')); globalThis.Engine = E;
 for (const f of ['schema', 'capture', 'timeline', 'behaviour', 'trajectories', 'interactions', 'scene']) require(path.join(ROOT, 'src', 'matchday', f + '.js'));
 const MD = globalThis.Matchday; const plan = (m, p, r, s) => ({ m, p, r, s });
-const mode = process.argv[2], file = process.argv[3], STAGE_A = process.argv.includes('--stage-a'); if (STAGE_A && MD.STYLE) MD.STYLE.shape = false; if ((mode !== '--write' && mode !== '--check') || !file){ console.error('usage: scene-reference.js --write|--check file.json'); process.exit(2); }
+const mode = process.argv[2], file = process.argv[3], STAGE_A = process.argv.includes('--stage-a'), EXACT = process.argv.includes('--exact'); if (STAGE_A && MD.STYLE) MD.STYLE.shape = false; if ((mode !== '--write' && mode !== '--check') || !file){ console.error('usage: scene-reference.js --write|--check file.json'); process.exit(2); }
 const sha = s => crypto.createHash('sha256').update(s).digest('hex').slice(0, 24);
 const SETS = [
   { name: 'normal', force: { home: plan(0, 1, 0, 1), away: plan(0, -1, 0, -1) }, seed: 5101, n: 12 },
@@ -38,8 +41,8 @@ globalThis.__sm91StyleOverride = null;
 if (mode === '--write'){ fs.writeFileSync(file, JSON.stringify(out, null, 1)); console.log('recorded', Object.keys(out).map(k => k + ': ' + out[k].length + ' matches').join('; ')); process.exit(0); }
 const ref = JSON.parse(fs.readFileSync(file, 'utf8')); let bad = 0, n = 0;
 for (const S of SETS){ const k = S.name, a = ref[k], b = out[k] || []; let same = 0, movedN = 0;
-  for (let i = 0; i < a.length; i++){ n++; const tl = b[i] && a[i].match === b[i].match && a[i].timeline === b[i].timeline; const pos = tl && a[i].positions === b[i].positions; const moved = !!(S.moves && !STAGE_A && b[i] && (b[i].pressing[0] || b[i].pressing[1])); if (moved) movedN++;   // stage B moves the players where a side presses High or Low, and nowhere else
+  for (let i = 0; i < a.length; i++){ n++; const tl = b[i] && a[i].match === b[i].match && a[i].timeline === b[i].timeline; const pos = tl && a[i].positions === b[i].positions; const moved = !!(S.moves && !STAGE_A && !EXACT && b[i] && (b[i].pressing[0] || b[i].pressing[1])); if (moved) movedN++;   // stage B moves the players where a side presses High or Low, and nowhere else
     const ok = tl && (moved? !pos : pos);
     if (ok) same++; else { bad++; console.log('  WRONG', k, a[i].match, !b[i]? 'missing' : !tl? 'the timeline differs' : moved? 'the players have not moved' : 'the positions differ'); } }
   console.log(`${same === a.length? 'ok  ' : 'FAIL'} ${k}: ${same} of ${a.length} matches as they should be: ${a.length - movedN} identical in the timeline and every position${movedN? ', ' + movedN + ' (a side pressing High or Low) with the same timeline and the players standing differently' : ''}`); }
-console.log(bad? `\n${bad} of ${n} matches are not as they should be against the reference` : `\nall ${n} matches are as they should be against the reference${STAGE_A? ' (stage B switched off)' : ''}`); process.exit(bad? 1 : 0);
+console.log(bad? `\n${bad} of ${n} matches are not as they should be against the reference` : `\nall ${n} matches are as they should be against the reference${STAGE_A? ' (stage B switched off)' : EXACT? ' (every event and every position)' : ''}`); process.exit(bad? 1 : 0);
