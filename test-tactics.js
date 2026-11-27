@@ -21,7 +21,7 @@ const unsack = s => { if (s.gameOver){ s.gameOver = null; s.sackOffer = null; } 
 
 // ---- 1. rules off: the 1.7.1 engine exactly ----
 {
-  const E = fresh('./engine.js'); E.CFG.TACTICS.on = false; let matches = 0, differ = 0, states = 0;
+  const E = fresh('./engine.js'); E.CFG.TACTICS.on = false; E.CFG.TRAINING.on = false;   /* nor the record of training gains (the training milestone), which test-training.js covers */ let matches = 0, differ = 0, states = 0;
   for (const seed of [11, 22, 33]){
     const a = E.newGame({ seed, userClub: 20 }), b = Eold.newGame({ seed, userClub: 20 }); a.clubs[20].formation = b.clubs[20].formation = '3-5-2';     // a formation the new table would value differently
     for (let w = 0; w < 84; w++){ const ra = E.advanceWeek(a), rb = Eold.advanceWeek(b); unsack(a); unsack(b); for (let i = 0; i < Math.max(ra.length, rb.length); i++){ matches++; if (!ra[i] || !rb[i] || sig(ra[i]) !== sig(rb[i])) differ++; } }
@@ -33,7 +33,7 @@ const unsack = s => { if (s.gameOver){ s.gameOver = null; s.sackOffer = null; } 
 
 // ---- 2. rules on, everyone all-Balanced and in 4-4-2: still drawn exactly as in 1.7.1 ----
 {
-  const E = fresh('./engine.js'); E.CFG.TACTICS.computer = false; let matches = 0, differ = 0, states = 0, kept = 0;
+  const E = fresh('./engine.js'); E.CFG.TACTICS.computer = false; E.CFG.TRAINING.on = false;   /* the record of training gains is test-training.js's business */ let matches = 0, differ = 0, states = 0, kept = 0;
   for (const seed of [11, 22, 33, 1991]){
     const a = E.newGame({ seed, userClub: 20 }), b = Eold.newGame({ seed, userClub: 20 });
     for (let w = 0; w < 84; w++){ const wk = a.week, ra = E.advanceWeek(a), rb = Eold.advanceWeek(b); unsack(a); unsack(b); for (let i = 0; i < Math.max(ra.length, rb.length); i++){ matches++; if (!ra[i] || !rb[i] || sig(ra[i]) !== sig(rb[i])) differ++; else { ok(ra[i].poss > 0 && ra[i].poss < 1 && ra[i].tH && ra[i].tA && E.PLAN_KEYS.every(k => ra[i].tH[k] === 0 && ra[i].tA[k] === 0), 'an all-Balanced match records its plans and its possession'); } }

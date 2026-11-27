@@ -6,7 +6,7 @@ const Enew = require('./engine.js'); const Eold = require('./legacy/engine.v112.
 // The tactics milestone adds match plans and rebalanced formations. They are a change to the match rules that the owner approved, so this
 // comparison with older engines runs with them switched off (test-tactics.js proves that off is the 1.7.1 engine exactly,
 // and that all-Balanced 4-4-2 with them on is too).
-Enew.CFG.TACTICS.on = false;
+Enew.CFG.TACTICS.on = false; Enew.CFG.TRAINING.on = false;   /* nor the record of training gains (the training milestone), which test-training.js covers */
 let fails = 0; const ok = (c,m) => { if (!c){ fails++; console.log('FAIL', m); } };
 const slim = st => JSON.stringify(st.lastSlim) + '|' + JSON.stringify(st.clubs.map(c=>[c.balance, c.pts, c.leaguePos, c.players.length]));
 let totalWeeks = 0, divergedAt = [];
@@ -33,7 +33,7 @@ console.log(`identical weeks: ${totalWeeks}`);
   const src = fs.readFileSync(path.join(__dirname, 'engine.js'), 'utf8').replace(/function creditExtraTime\(scorers, xiH, xiA, eH, eA, tH, tA\)\{[\s\S]*?\n\}/, 'function creditExtraTime(){}');
   if (!/function creditExtraTime\(\)\{\}/.test(src)){ ok(false, 'could not switch extra-time crediting off (the function has changed shape)'); }
   const tmp = path.join(process.env.SCRATCH || '/tmp', 'engine-noet.js'); fs.writeFileSync(tmp, src);
-  const Enoet = require(tmp); Enoet.CFG.TACTICS.on = false;
+  const Enoet = require(tmp); Enoet.CFG.TACTICS.on = false; Enoet.CFG.TRAINING.on = false;   /* nor the record of training gains (the training milestone), which test-training.js covers */
   let same = 0;
   for (const seed of [11, 22, 33]){
     const a = Enoet.newGame({ seed, userClub: 20 }), b = Eold.newGame({ seed, userClub: 20 });

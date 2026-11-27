@@ -25,7 +25,7 @@ const tac = (k, v) => `[data-a="tactic"][data-k="${k}"][data-v="${v}"]`;
     const order = q(H, 'main section.card').map(e => e.className + '|' + (e.textContent.match(/Squad and tactics|Match plan|Training this week/) || [''])[0]);
     ok(order.findIndex(x => /Squad and tactics/.test(x)) < order.findIndex(x => /plan\|Match plan/.test(x)) && order.findIndex(x => /plan\|Match plan/.test(x)) < order.findIndex(x => /Training this week/.test(x)), 'the card sits between the formation and training');
     ok(q(H, '[data-a="tactic"].on').length === 4 && q(H, '[data-a="tactic"].on').every(b => b.dataset.v === '0') && /Default plan\./.test(H.text()) && !H.has('[data-a="planreset"]') && u.tactics === undefined, 'a new game is on the default plan, with nothing to reset and nothing saved on the club');
-    ok(q(H, '[data-a="tactic"].on').every(b => b.getAttribute('aria-pressed') === 'true') && q(H, '.plan [role="group"]').length === 4 && q(H, '.plan [role="group"]').every(g => H.d.getElementById(g.getAttribute('aria-labelledby'))), 'the chosen settings say so to a screen reader and each control has its name');
+    ok(q(H, '[data-a="tactic"].on').every(b => b.getAttribute('aria-pressed') === 'true') && q(H, '.plan:not(.tplan) [role="group"]').length === 4 && q(H, '.plan:not(.tplan) [role="group"]').every(g => H.d.getElementById(g.getAttribute('aria-labelledby'))), 'the chosen settings say so to a screen reader and each control has its name');
     // every setting of every control: it is stored, shown as chosen, and says what is for it and what is against it
     let said = 0;
     for (const k of E.PLAN_KEYS) for (const v of [-1, 1, 0]){ await H.click(tac(k, v)); const on = H.d.querySelector(tac(k, v)); const d = on.closest('.grid3').nextElementSibling;

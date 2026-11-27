@@ -2,6 +2,10 @@
 
 **Checkpoint for John, 26 November 2026.** Milestone 2 of the roadmap (training and player development), slice 1, as you approved it on 26 November: team focus and one priority player, the mechanics and the balance only, no screens. The approved proposal is `claude/sm91-milestone-2-training-proposal.md` in the project.
 
+**Approved by John on 27 November 2026, with these decisions.** Training should shape the squad, not strengthen it; he is content that the choices are not worth league points across an unchanged squad. The focus stays at one and a half times for an outfield group and twice for goalkeepers. No hard limit on a season's gain: the 20% weekly ceiling and potential stay as the limits, with no extra saved data. The priority player stays at twice, and the small miss on the value target (17% against 15%) is accepted, because his potential is unchanged. The 5% charge for a focus stays. The computer clubs' development is not to change in this milestone; the manager's accumulating advantage (section 5) goes on the gameplay-balancing backlog as an item for investigation (`BALANCE-BACKLOG.md`). Slice 2, the screens, is approved to start and is reported in `TRAINING-SLICE-2.md`. Position retraining and any other optional training feature need a separate approval. Nothing is to go to production: live 1.7.0 untouched, 1.8.0 RC1 frozen at `6baa8d0`, development on `milestone-2-training` only.
+
+The report below is as it was written on 26 November.
+
 **Status.** Built and tested on a new branch, `milestone-2-training`, started from the frozen 1.8.0 candidate. The candidate (`6baa8d0`) has not moved, `main` has not moved, and the live site is still 1.7.0. Nothing is merged and nothing is deployed. **This stops here for your review of the measured results. No training screen has been started.**
 
 ## 1. In short

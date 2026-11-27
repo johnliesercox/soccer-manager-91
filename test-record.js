@@ -4,7 +4,7 @@
 // money are identical to the 1.5.0 engine for the same seed, week after week. Only the minutes of the affected goals
 // and cards differ, and no random number is consumed by the correction, so saves made on 1.5.0 play on identically.
 const E = require('./engine.js'); const E150 = require('./legacy/engine.v150.js');
-E.CFG.TACTICS.on = false;   // the comparison with 1.5.0 is of everything but the match plans (the tactics milestone), which test-tactics.js covers
+E.CFG.TACTICS.on = false; E.CFG.TRAINING.on = false;   /* nor the record of training gains (the training milestone), which test-training.js covers */   // the comparison with 1.5.0 is of everything but the match plans (the tactics milestone), which test-tactics.js covers
 let fails = 0, checks = 0; const ok = (c, m) => { checks++; if (!c){ fails++; console.log('FAIL', m); } };
 const SEEDS = [1991, 7, 42, 2026];
 let matches = 0, goals = 0, afterRed = 0, secondYellows = 0, outOfOrder = 0, movedGoals = 0, movedCards = 0, oddMinutes = 0;

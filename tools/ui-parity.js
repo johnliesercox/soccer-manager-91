@@ -90,7 +90,10 @@ const server = http.createServer((req, res) => { let p = decodeURIComponent(req.
 // On a build without the card (or with ?rules=1.7) every one of these steps is skipped and the stops show the Squad screen as it was.
 const PLAN_STEPS = [['eval:planopen', 'squad-plan-open'], ['a:tactic[data-k="r"][data-v="1"]', 'squad-plan-high'], ['a:tactic[data-k="s"][data-v="-1"]', null], ['a:planreset', 'squad-plan-reset'],
   ['a:tactic[data-k="m"][data-v="1"]', null], ['a:tactic[data-k="p"][data-v="-1"]', null], ['a:tactic[data-k="r"][data-v="1"]', null], ['a:tactic[data-k="s"][data-v="1"]', 'squad-plan-all'], ['a:planopen', 'squad-plan-shut']];
-const SQUAD = [['nav:squad', 'squad'], ['a:formation[data-f="4-3-3"]', 'squad-433'], ['a:autopick', null], ['a:training[data-t="hard"]', 'squad-hard'], ['a:toggle', 'squad-dropped'], ['a:autopick', null], ...PLAN_STEPS];
+// the training focus and the priority player (milestone 2, slice 2): opened, a focus chosen, a player picked from the list, both put
+// back. No week passes, so the game in hand is left as it was. On a build without them every step is skipped and the journey is the old one.
+const TRAIN_STEPS = [['eval:trainopen', 'squad-train-open'], ['a:focus[data-g="GK"]', 'squad-train-focus'], ['a:trainpick', 'train-pick'], ['a:priority', 'squad-train-priority'], ['a:trainpick', 'train-pick-chosen'], ['a:nopriority', 'squad-train-none'], ['a:focus[data-g=""]', null], ['a:trainopen', 'squad-train-shut']];
+const SQUAD = [['nav:squad', 'squad'], ['a:formation[data-f="4-3-3"]', 'squad-433'], ['a:autopick', null], ['a:training[data-t="hard"]', 'squad-hard'], ['a:toggle', 'squad-dropped'], ['a:autopick', null], ...PLAN_STEPS, ...TRAIN_STEPS];
 // the style preview of development builds (the tactics milestone, slice 3): opened from Home, a setting chosen for each side, the two
 // swapped, and Back. The friendly itself is not played here: it would draw on the journey's random numbers. On a build without the
 // preview (a release, 1.7.1, or with ?rules=1.7) every one of these steps is skipped.
@@ -147,6 +150,7 @@ const JOURNEYS = {
 };
 // States that need luck, set by hand in the page, the same way in whatever build is being recorded, and put back.
 const EVALS = {
+  trainopen: () => { if (!document.querySelector('[data-a="focus"]')){ const b = document.querySelector('[data-a="trainopen"]'); if (b) b.click(); } },   // open the focus and priority player part if it is shut; nothing on a build without one
   planopen: () => { if (!document.querySelector('[data-a="tactic"]')){ const b = document.querySelector('[data-a="planopen"]'); if (b) b.click(); } },   // open the match plan card if it is shut; nothing on a build without one
   job: () => { const { S, render } = window.__sm91, st = S.state; S.__k = Object.assign(S.__k || {}, { job: st.jobOffer, exp: st.jobOfferExpires }); st.jobOffer = st.clubs.filter(c => c.div >= 1 && c.id !== st.userClub).sort((a, b) => a.id - b.id)[5].id; st.jobOfferExpires = st.week + 2; render(); },
   nojob: () => { const { S, render } = window.__sm91, st = S.state; st.jobOffer = S.__k.job; st.jobOfferExpires = S.__k.exp; render(); },

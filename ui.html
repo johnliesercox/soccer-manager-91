@@ -45,6 +45,15 @@ p{margin:0 0 10px}
 .plan .plan-d .pro,.plan .plan-d .con,.plan .plan-d .sut{font-weight:700;margin-right:3px;color:var(--white)}
 body:not(.pd) .plan .plan-d .pro::after,body:not(.pd) .plan .plan-d .con::after,body:not(.pd) .plan .plan-d .sut::after{content:':'}
 .plan .plan-n{margin:10px 0 0}
+.tplan{margin-top:14px;padding-top:12px;border-top:1px solid var(--deep)}
+.tplan .b{margin-top:6px}
+.tplan .planhd .b{margin-top:0}
+.tplan .tgain{margin:0 0 4px}
+.tplan .src{font-size:12.5px}
+.trn{color:var(--white);white-space:nowrap}
+body.pd .tplan{border-top-color:var(--line)}
+body.pd .trn{color:var(--tx)}
+body.pd .pill.pri{color:var(--sky);border-color:var(--sky)}
 .figs{margin-top:4px}.figs .src{display:block;font-size:12.5px;opacity:.85}
 .figs2{margin:2px 0 6px;font-size:13px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
@@ -453,7 +462,7 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const money = n => (n<0?'-':'')+'£'+E.fmt(Math.abs(n));
 const SAVE_KEY = 'sm91-save';
-const APP_VERSION = '1.8.0-training1';   // a development build on the way to the training milestone (milestone 2, slice 1: the rules for a training focus and a priority player, no screens yet). Not a release: 1.8.0 is frozen on the branch release-1.8.0-rc1. Only a label carrying "-dev" shows the style preview
+const APP_VERSION = '1.8.0-training2';   // a development build on the way to the training milestone (milestone 2, slice 2: the screens for a training focus and a priority player). Not a release: 1.8.0 is frozen on the branch release-1.8.0-rc1. Only a label carrying "-dev" shows the style preview
 const CHANGELOG = [
   { v:'1.8.0', when:'November 2026', notes:[
     'Tactics. You now decide how your team plays as well as its formation. On the Squad screen, under Match plan, there are four choices: Mentality (Defensive, Balanced, Attacking), Passing (Short, Mixed, Direct), Pressing (Low, Normal, High) and Shooting (Work it in, Balanced, Shoot on sight). Each one tells you what it gains you, what it costs and whom it suits.',
@@ -831,7 +840,9 @@ const SCREENS = {
       <p>Other managers have plans too. The fixture on Home says what a club is known for, which is one thing about it and not its whole plan. A side with more men in midfield than yours will try to keep the ball; one with fewer will go long. After a match you see each side's possession and what its chances were worth. Those are estimates from the match simulation, not counted from individual passes and shots.</p>` : ''}
       <h2>Money</h2><p>Gates, sponsorship and television money in; wages, staff and ground upkeep out. Summer wages land in one lump at the season review. The overdraft limit is half your turnover; eight weeks past it and the bank has you sacked. Loans are separate and cheaper than the overdraft. Cash in the bank earns interest.</p>
       <h2>Pre-season</h2><p>Each season starts with a sponsor to choose (safe money, per-win money, or a bigger cheque with a relegation clause) and a season ticket price. Cheap season tickets bring cash now but most of those fans would have paid on the gate anyway.</p>
-      <h2>Players</h2><p>Skill is what he is now; the ▲ is how far he could go, and you only see that with a scout. Players improve in training up to the age of 27 (faster with a better coach), then decline. Fitness under 70 doubles the injury risk.</p>
+      <h2>Players</h2><p>Skill is what he is now; the ▲ is how far he could go, and you only see that with a scout. Players improve in training up to the age of 27 (faster with a better coach), then decline. Fitness under 70 doubles the injury risk.</p>${trainingOn()? `
+      <h2>Training focus and the priority player</h2><p>Under Light, Normal and Hard on the Squad screen you can point the coach at one group (goalkeepers, defenders, midfielders or attackers) and at one priority player. Neither adds any training: the chosen players improve faster and the rest of the squad a little more slowly, and a focus costs the squad a little as a whole. So they decide who improves, not how much. The priority player also recovers a point of fitness less each week, and is rested when he falls under 70.</p>
+      <p>Extra coaching does nothing for a player of 28 or over, or one who has reached his potential, and the game tells you when you pick one. The card keeps a count of the skill your players have really gained in training this season, by group and by player. Balanced with no priority player is the default, and you can leave it there for good.</p>` : ''}
       <h2>Contracts</h2><p>Every player is on a deal of one to four years at a fixed wage. Renew early and you lock a cheap wage before he improves; leave it late and he asks for what he is worth now. Players in their last year start to worry from week 20. If you do nothing, your assistant re-signs them at about 10% over the odds, provided they are happy to stay; the ones who are not leave for nothing. Out-of-contract players from every club appear under Free in the market each summer. You can release a player at any time by paying off half his remaining contract.</p>
       <h2>Mood</h2><p>Playing, winning and a fair wage keep a player happy; sitting on the bench, losing, being listed for sale, or a bigger club sniffing around do the opposite. Unhappy players play a little worse and eventually ask for a transfer, and a player who has asked to leave will not talk about a new deal until he cheers up.</p>
       <h2>Bookings</h2><p>Five yellow cards in a season is a one-match ban, ten is two, a red card is one to three. Bans apply to the next game in any competition and the squad screen shows who is one booking away.</p>
@@ -951,8 +962,8 @@ const SCREENS = {
       const on = ids.includes(p.id) && p.injury===0;
       const inXI = slotOf[p.id];
       const oop = inXI && inXI!==p.pos? `<span class="mark">@${inXI}</span>` : '';
-      const tags = [`${p.years<=1? '<span class="mark">expires</span>' : p.years+'y'}`, moodTag(p), p.yellows>=4? `<span class="mark">${p.yellows}Y</span>` : p.yellows? p.yellows+'Y' : ''].filter(Boolean).join(' · ');
-      return `<tr class="tap ${on?'sel':''}" data-a="toggle" data-id="${p.id}"><td class="tk"><span class="tick ${on?'on':''}">${on?'<span class="mark">■</span>':'□'}</span></td><td class="ps">${p.pos}</td><td class="wrap">${esc(p.name)} ${oop}${p.listed!==null?'<span class="pill">sale</span>':''}${p.requested?'<span class="pill">wants out</span>':''}<br><span class="dim" style="font-size:12px">${tags}</span></td><td class="n"><span class="sk">${p.skill}${potTag(p)}</span></td><td class="n">${p.age}</td><td class="n">${p.ban>0? `<span class="mark">ban ${p.ban}</span>` : p.injury>0?`<span class="mark">inj ${p.injury}</span>`:p.fitness}</td><td><button class="b small" data-a="player" data-id="${p.id}">›</button></td></tr>`;
+      const tags = [`${p.years<=1? '<span class="mark">expires</span>' : p.years+'y'}`, moodTag(p), p.yellows>=4? `<span class="mark">${p.yellows}Y</span>` : p.yellows? p.yellows+'Y' : '', trainedTag(p)].filter(Boolean).join(' · ');
+      return `<tr class="tap ${on?'sel':''}" data-a="toggle" data-id="${p.id}"><td class="tk"><span class="tick ${on?'on':''}">${on?'<span class="mark">■</span>':'□'}</span></td><td class="ps">${p.pos}</td><td class="wrap">${esc(p.name)} ${oop}${p.listed!==null?'<span class="pill">sale</span>':''}${p.requested?'<span class="pill">wants out</span>':''}${isPriority(p)?'<span class="pill pri">priority</span>':''}<br><span class="dim" style="font-size:12px">${tags}</span></td><td class="n"><span class="sk">${p.skill}${potTag(p)}</span></td><td class="n">${p.age}</td><td class="n">${p.ban>0? `<span class="mark">ban ${p.ban}</span>` : p.injury>0?`<span class="mark">inj ${p.injury}</span>`:p.fitness}</td><td><button class="b small" data-a="player" data-id="${p.id}">›</button></td></tr>`;
     }).join('');
     const modeBar = inEurope(u)? `<div class="grid2"><button class="b ${!euroMode?'on':''}" data-a="ximode" data-m="league">League XI</button><button class="b ${euroMode?'on':''}" data-a="ximode" data-m="euro">European XI</button></div><p class="dim">${euroMode? 'This side plays your '+euroComp(u.euro.comp).name+' ties. Leave it empty and the league XI is used.' : 'This side plays league and domestic cup games.'}</p>` : '';
     return { main: `<div class="cols wide2"><div>
@@ -962,12 +973,22 @@ const SCREENS = {
       ${planCard()}
       <section class="card"><p class="dim ttl" style="margin:12px 0 6px">Training this week</p>
       <div class="grid3">${['light','normal','hard'].map(k=>`<button class="b ${u.training===k?'on':''}" data-a="training" data-t="${k}">${{light:'Light',normal:'Normal',hard:'Hard'}[k]}</button>`).join('')}</div>
-      <p class="dim">${{light:'Rest and recover. Fitness comes back faster, nobody improves much.',normal:'A normal week. Younger players edge forward if the coach is any good.',hard:'Push them. Faster improvement, tired legs and the odd training knock.'}[u.training]} ${u.staff.scout>=1?'':'Hire a scout to see who has room to improve.'}</p></section>
+      <p class="dim">${{light:'Rest and recover. Fitness comes back faster, nobody improves much.',normal:'A normal week. Younger players edge forward if the coach is any good.',hard:'Push them. Faster improvement, tired legs and the odd training knock.'}[u.training]} ${u.staff.scout>=1?'':'Hire a scout to see who has room to improve.'}</p>${trainingPanel()}</section>
       <p class="dim team card">${ic('pitch')}<span>Team: defence <b class="num">${Math.round(str.defEff)}</b>, midfield <b class="num">${Math.round(str.mid)}</b>, attack <b class="num">${Math.round(str.att)}</b>. ${xi.length}/11 picked${ids.length>11?', extras sit out':''}.</span></p>
       </div><div>
       <section class="card tb"><table><tr><th></th><th>Pos</th><th>Player</th><th class="n">Sk</th><th class="n">Age</th><th class="n">Fit</th><th></th></tr>${rows}</table></section>
-      <p class="dim note" style="margin-top:10px">Tap a row to pick or drop. ■ picked, @ playing out of position. Fitness under 70 doubles the injury risk. Five bookings is a one-match ban, ten is two. Contract years and mood under each name.</p>
+      <p class="dim note" style="margin-top:10px">Tap a row to pick or drop. ■ picked, @ playing out of position. Fitness under 70 doubles the injury risk. Five bookings is a one-match ban, ten is two. Contract years and mood under each name${trainingOn()? ', and any skill gained in training this season' : ''}.</p>
       </div></div>` };
+  },
+  trainpick(){
+    const st = S.state, u = user(); if (!trainingOn()) return SCREENS.squad();
+    const pri = E.priorityOf(st, u), sq = E.squadOf(st,u).slice().sort((a,b)=>posOrder(a.pos)-posOrder(b.pos)||b.skill-a.skill);
+    const rows = sq.map(p=>{ const on = pri && pri.id===p.id, why = COACH_SHORT[E.coachingNote(p)], g = trainedTag(p);
+      return `<tr class="${on?'sel':''}"><td class="ps">${p.pos}</td><td class="wrap">${esc(p.name)}${on?'<span class="pill pri">priority</span>':''}<br><span class="dim" style="font-size:12px">${[why? `<span class="mark">${why}</span>` : '', g].filter(Boolean).join(' · ')}</span></td><td class="n"><span class="sk">${p.skill}${potTag(p)}</span></td><td class="n">${p.age}</td><td class="n">${p.injury>0?`<span class="mark">inj ${p.injury}</span>`:p.fitness}</td><td><button class="b small" data-a="priority" data-id="${p.id}" aria-label="${on? esc(p.name)+' is the priority player' : 'Make '+esc(p.name)+' the priority player'}" ${on?'aria-pressed="true"':''}>${on?'Chosen':'Choose'}</button></td></tr>`; }).join('');
+    return { main: `<section class="card"><h1>Priority player</h1><p class="dim">One player can have extra coaching. He improves twice as fast in training. The rest of the squad pay for it by improving a little more slowly, and the extra sessions cost him a point of fitness each week. Under 70 fitness he is rested until he recovers. He stays your priority player until you change it.</p></section>
+      <section class="card tb"><table><tr><th>Pos</th><th>Player</th><th class="n">Sk</th><th class="n">Age</th><th class="n">Fit</th><th></th></tr>${rows}</table></section>
+      <p class="dim note" style="margin-top:10px">Training raises a player's skill up to the age of 27 and no further than his potential. Extra coaching does nothing for a player past either.</p>`,
+      action: `${pri? `<button class="b" data-a="nopriority">No priority player</button>` : ''}<button class="b quiet" data-a="back">Back</button>` };
   },
   player(){
     const st = S.state, u = user(), p = st.players[S.pid];
@@ -987,6 +1008,7 @@ const SCREENS = {
         <button class="b" data-a="setamt" data-amt="${Math.round(p.value*1.3/500)*500}">Dear<br><span class="dim">${money(Math.round(p.value*1.3/500)*500)}</span></button></div>
         <input id="amt" inputmode="numeric" value="${p.value}" autocomplete="off"><button class="b" data-a="list" data-id="${p.id}">List him at this price</button>`;
       else actions += `<p>Listed at ${money(p.listed)}. Offers arrive over the coming weeks.</p><button class="b" data-a="unlist" data-id="${p.id}">Take off the market</button>`;
+      actions += playerTraining(p);
       actions += contractPanel(p);
       actions += `<h2>Rename</h2><input id="pname" maxlength="24" value="${esc(p.name)}" autocomplete="off"><button class="b" data-a="renameplayer" data-id="${p.id}">Change his name</button>`;
     } else {
@@ -1190,7 +1212,7 @@ const SCREENS = {
       ${sm.euroWinners? `<div class="kv"><span>Europe</span><span class="wrap">${['ec','cwc','uefa'].map(k=>sm.euroWinners[k]!==null&&sm.euroWinners[k]!==undefined? euroComp(k).short+': '+esc(st.clubs[sm.euroWinners[k]].short) : '').filter(Boolean).join(', ')}</span></div>` : ''}
       ${sm.qualified? `<div class="kv"><span>Next season</span><span class="hot">${euroComp(sm.qualified).name}</span></div>` : ''}
       ${sm.clawback? `<div class="kv"><span>Sponsor clawback</span><span class="hot bad">${money(-sm.clawback)}</span></div>`:''}
-      <div class="kv"><span>Board mood</span><span>${E.boardMood(u.confidence)}</span></div>
+      ${reviewTraining(old, sm.season)}<div class="kv"><span>Board mood</span><span>${E.boardMood(u.confidence)}</span></div>
       <div class="kv"><span>Bank</span><span class="${u.balance<0?'hot bad':''}">${money(u.balance)}</span></div>
       ${job}<h2>Final table</h2><table><tr><th class="n">#</th><th>Club</th><th class="n">Pts</th></tr>${rows}</table>
       <p class="dim" style="margin-top:10px">Players have aged a year. Check the squad before the new season: some will have retired and the youth team has filled the gaps.</p>
@@ -1457,6 +1479,57 @@ function reputeLine(opp){
   if (E.isHuman(S.state, opp.id)){ const m = E.managerOf(S.state, opp.id); return `Managed by ${esc(m? m.managerName : 'another manager')}: no telling how they will play.`; }
   const h = E.styleHint(S.state, opp); return h? `Known for ${REPUTE[h.k][h.v+1]}.` : 'Not known for any one way of playing.';
 }
+// ---- Training focus and the priority player (milestone 2, slice 2). Standing choices, like the match plan: set once and left.
+// Everything shown about improvement is the engine's own record of points really gained in weekly training (E.trainingRecord);
+// nothing here is a forecast. With the 1.8.0 training rules switched on by the tests none of this is drawn and the Squad screen is as it was.
+function trainingOn(){ return !!(E.CFG.TRAINING && E.CFG.TRAINING.on); }
+function trainIsOpen(){ return S.trainOpen===undefined? (typeof window!=='undefined' && window.innerWidth>=900) : !!S.trainOpen; }
+const FOCUS = [
+  { k:'', name:'Balanced' },
+  { k:'GK', name:'Goalkeepers', men:'goalkeepers', fast:'twice as fast', suits:'A young goalkeeper you want ready sooner.' },
+  { k:'DEF', name:'Defenders', men:'defenders', fast:'half as fast again', suits:'Young defenders you are building the side around.' },
+  { k:'MID', name:'Midfielders', men:'midfielders', fast:'half as fast again', suits:'Young midfielders you are building the side around.' },
+  { k:'FWD', name:'Attackers', men:'attackers', fast:'half as fast again', suits:'Young attackers you are building the side around.' } ];
+const COACH_SHORT = { age:'28 or over: training cannot raise his skill', potential:'At his potential: nothing left to gain', injured:'Injured: no coaching until he is fit', tired:'Under 70 fitness: rested until he recovers' };
+function coachWords(p){ const r = E.coachingNote(p); return r==='age'? `He is ${p.age}. Training does not raise a player's skill from the age of 28, so extra coaching does nothing for him.` : r==='potential'? 'He has reached his potential, so extra coaching does nothing for him.' : r==='injured'? 'He is injured. His extra coaching starts again when he is fit.' : r==='tired'? 'His fitness is under 70, so he is being rested. His extra coaching starts again when he recovers.' : ''; }
+function isPriority(p){ if (!trainingOn()) return false; const pr = E.priorityOf(S.state, user()); return !!pr && pr.id===p.id; }
+function trainedOf(p){ return trainingOn()? (E.trainingRecord(S.state, user()).now.g[p.id] || 0) : 0; }
+function trainedTag(p){ const n = trainedOf(p); return n? `<span class="trn">+${n} trained</span>` : ''; }
+function groupGains(pos){ return FOCUS.slice(1).map(f=>`${f.name} +${pos[f.k]||0}`).join(', '); }
+function trainingDefault(u){ return u.training==='normal' && !E.focusOf(u) && !E.priorityOf(S.state, u); }
+function trainingPanel(){
+  if (!trainingOn()) return '';
+  const st = S.state, u = user(), focus = E.focusOf(u) || '', F = FOCUS.find(f=>f.k===focus), pri = E.priorityOf(st, u), open = trainIsOpen(), rec = E.trainingRecord(st, u);
+  const sum = `<b>${F.name}${focus? ' first' : ''}. ${pri? 'Priority player: '+esc(pri.name) : 'No priority player'}.</b> <span class="dim">${focus || pri? 'Stays this way until you change it.' : 'Every player has an equal share of the coach.'}</span>`;
+  let body = '';
+  if (open){
+    const none = focus && E.focusCount(st, u, focus)===0;
+    body += `<p class="plab" id="tlab-focus">Training focus</p><div class="grid3 focusg" role="group" aria-labelledby="tlab-focus">${FOCUS.map(f=>`<button class="b ${focus===f.k?'on':''}" data-a="focus" data-g="${f.k}" aria-pressed="${focus===f.k}">${f.name}</button>`).join('')}</div>
+      <p class="dim plan-d">${focus? `<span class="pro">For</span> Your ${F.men} who can still improve do so ${F.fast}.<br><span class="con">Against</span> The rest of the squad improve more slowly to pay for it, and the squad as a whole gains a little less.<br><span class="sut">Suits</span> ${F.suits}` : 'Every player who can still improve has an equal share of the coach. Nothing gained and nothing given up.'}</p>
+      ${none? `<p class="dim plan-d twarn"><span class="mark">Note</span> None of your ${F.men} can improve any further, so this focus gives nothing and costs the others a little.</p>` : ''}
+      <p class="plab">Priority player</p>`;
+    if (pri){ const why = coachWords(pri), g = trainedOf(pri), never = ['age','potential'].includes(E.coachingNote(pri));
+      body += `<p class="plan-d"><b>${esc(pri.name)}</b> <span class="dim">${pri.pos}, ${pri.age}. ${g? `+${g} in training this season.` : 'No gain in training yet this season.'}</span></p>
+        ${why? `<p class="dim plan-d twarn"><span class="mark">Note</span> ${why}</p>` : ''}
+        ${never? '' : `<p class="dim plan-d">He improves twice as fast; the rest pay for it, and the extra sessions cost him a point of fitness each week.</p>`}
+        <div class="grid2"><button class="b" data-a="trainpick">Change player</button><button class="b" data-a="nopriority">No priority player</button></div>`; }
+    else body += `<p class="dim plan-d">Nobody. One player can have extra coaching: he improves twice as fast, the rest of the squad a little more slowly, and the extra sessions cost him a point of fitness each week.</p><button class="b" data-a="trainpick">Choose a player</button>`;
+    const top = Object.keys(rec.now.g).map(id=>[st.players[id], rec.now.g[id]]).filter(x=>x[0] && x[0].club===u.id).sort((a,b)=>b[1]-a[1]||a[0].name.localeCompare(b[0].name)).slice(0,3);
+    body += `<p class="plab">This season in training</p><p class="plan-d tgain">${rec.now.n? `<b>Squad +${rec.now.n}.</b> ${groupGains(rec.now.pos)}.${top.length? `<br><span class="dim">Most improved: ${top.map(x=>`${esc(x[0].name)} +${x[1]}`).join(', ')}.</span>` : ''}` : '<span class="dim">Nobody has gained a point of skill in training yet this season.</span>'}</p>
+      ${rec.last? `<p class="dim plan-d">Last season: squad +${rec.last.n}. ${groupGains(rec.last.pos)}.</p>` : ''}
+      <p class="dim plan-d src">Points of skill really gained in weekly training. The summer's changes are not counted.</p>
+      ${trainingDefault(u)? '' : `<button class="b" data-a="trainreset">${ic('refresh')}Reset to default training</button>`}`; }
+  return `<div class="plan tplan"><div class="planhd"><p class="dim ttl">Focus and priority player</p><button class="b small" data-a="trainopen" aria-expanded="${open}">${open? 'Close' : 'Change'}</button></div><p class="plansum">${sum}</p>${body}</div>`;
+}
+// the season review: what the squad really gained in weekly training in the season just ended (the engine's record, nothing else)
+function reviewTraining(club, season){
+  if (!trainingOn()) return ''; const r = E.trainingRecord(S.state, club), last = r.last && r.last.s===season? r.last : null; if (!last) return '';
+  return `<div class="kv"><span>Training</span><span class="wrap">${last.n? `Squad +${last.n} skill: ${FOCUS.slice(1).map(f=>`${f.k==='FWD'?'ATT':f.k} +${last.pos[f.k]||0}`).join(', ')}` : 'No skill gained'}</span></div>`; }
+function playerTraining(p){
+  if (!trainingOn() || p.reserve) return '';
+  const on = isPriority(p), g = trainedOf(p), why = coachWords(p), cur = E.priorityOf(S.state, user());
+  return `<h2>Training</h2><p class="dim">${g? `+${g} in training this season.` : 'No gain in training yet this season.'} ${on? (['age','potential'].includes(E.coachingNote(p))? 'He is your priority player.' : 'He is your priority player: twice the coaching, and a point of fitness a week.') : cur? `Your priority player is ${esc(cur.name)}; choosing this player replaces him.` : 'One player can have extra coaching.'}</p>${why? `<p class="dim"><span class="mark">Note</span> ${why}</p>` : ''}<button class="b" data-a="${on?'nopriority':'priority'}" data-id="${p.id}">${on? 'Stop his extra coaching' : 'Make him the priority player'}</button>`;
+}
 function planCard(){
   if (!tacticsOn()) return '';
   const st = S.state, u = user(), t = E.planOf(u), open = planIsOpen(), plain = PLAN.every(c=>t[c.k]===0);
@@ -1596,6 +1669,12 @@ async function act(a, d){
     case 'loan': { const err = E.takeLoan(st, +d.amt); if (err) toast(err); else { toast('Money in.'); await save(); render(); } break; }
     case 'repay': { const err = E.repayLoan(st); if (err) toast(err); else { toast('Loan cleared.'); await save(); render(); } break; }
     case 'training': E.setTraining(st, d.t); render(); break;
+    case 'focus': if (trainingOn()){ E.setFocus(st, d.g || null); render(); } break;
+    case 'trainopen': S.trainOpen = !trainIsOpen(); render(); break;
+    case 'trainreset': if (trainingOn()){ E.resetTraining(st); render(); toast('Training reset to the default: Normal, balanced, no priority player.'); } break;
+    case 'trainpick': if (trainingOn()){ S.from = S.screen==='trainpick'? S.from : S.screen; go('trainpick'); } break;
+    case 'priority': if (trainingOn()){ E.setPriority(st, +d.id); const p = st.players[+d.id], ok = p && user().priority===p.id; toast(ok? `${p.name} is the priority player.${coachWords(p)? ' Note: '+coachWords(p) : ''}` : 'He cannot be the priority player.'); if (S.screen==='trainpick') go(S.from||'squad'); else render(); } break;
+    case 'nopriority': if (trainingOn()){ E.setPriority(st, null); toast('No priority player.'); if (S.screen==='trainpick') go(S.from||'squad'); else render(); } break;
     case 'tactic': E.setTactics(st, d.k, +d.v); render(); break;
     case 'planreset': E.resetTactics(st); render(); toast('Match plan reset to the default.'); break;
     case 'planopen': S.planOpen = !planIsOpen(); render(); break;

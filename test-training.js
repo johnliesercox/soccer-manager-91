@@ -18,7 +18,9 @@ const E180 = require('./legacy/engine.v180.js'), E171 = require('./legacy/engine
 let fails = 0, checks = 0; const ok = (c, m) => { checks++; if (!c){ fails++; console.log('FAIL', m); } };
 const sig = m => [m.home.id, m.away.id, m.gH, m.gA, m.extra, m.att, m.xgH, m.xgA, m.poss, m.scorers.map(s => s.side + s.p.id + '@' + s.min + (s.et? 'e' : '')).join(','), m.cards.map(c => c.side + c.p.id + c.type + c.min).join(','), m.injuries.map(p => p.id + ':' + p.injury).join(',')].join('|');
 const unsack = s => { if (s.gameOver){ s.gameOver = null; s.sackOffer = null; } };
-const same = (a, b) => { const x = a.gameId, y = b.gameId; a.gameId = b.gameId = 'x'; const r = JSON.stringify(a) === JSON.stringify(b); a.gameId = x; b.gameId = y; return r; };
+// the whole game state, but for the game's random id and the record of training gains (a record only: part 1b holds it to the truth)
+const strip = s => JSON.stringify(s, (k, v) => k === 'trainLog'? undefined : k === 'gameId'? 'x' : v);
+const same = (a, b) => strip(a) === strip(b);
 const young = (E, st, c) => E.squadOf(st, c).filter(p => E.canImprove(p));
 
 // ---- 1. nothing chosen: the 1.8.0 engine exactly ----
@@ -30,9 +32,26 @@ const young = (E, st, c) => E.squadOf(st, c).filter(p => E.canImprove(p));
     for (let w = 0; w < 84; w++){ const ra = E.advanceWeek(a), rb = E180.advanceWeek(b); unsack(a); unsack(b); for (let i = 0; i < Math.max(ra.length, rb.length); i++){ matches++; if (!ra[i] || !rb[i] || sig(ra[i]) !== sig(rb[i])) differ++; } }
     if (same(a, b)) states++;
     ok(a.clubs.every(c => !('focus' in c) && !('priority' in c)), 'nothing chosen: no club has a focus or a priority player written into it');
+    ok(a.clubs.every(c => !c.trainLog || a.managers? true : c.id === a.userClub) && a.clubs.filter(c => c.trainLog).length <= (a.managers? a.managers.length : 1), 'only a manager\'s club keeps a record of training gains');
   }
   ok(differ === 0, `nothing chosen: ${differ} of ${matches} matches differ from the 1.8.0 engine`); ok(states === worlds, `nothing chosen: the whole game state is identical to 1.8.0 after two seasons in ${states} of ${worlds} worlds`);
   console.log(`nothing chosen: ${matches} matches over ${worlds} two-season worlds (one of them a three-manager hot-seat) identical to the 1.8.0 engine, and so is the whole game state`);
+}
+
+// ---- 1b. the record of training gains is the truth: every point gained in the week, by player and by group, and nothing else ----
+{
+  const E = fresh('./engine.js'); let weeks = 0, wrong = 0, points = 0, rolled = 0;
+  for (const [seed, focus] of [[41, null], [42, 'DEF'], [43, 'GK']]){ const st = E.newGame({ seed, userClub: 20 }); E.setTraining(st, 'hard'); E.setStaff(st, 'coach', 3); E.setFocus(st, focus); if (focus) E.setPriority(st, young(E, st, st.clubs[20])[0].id);
+    for (let s = 0; s < 3; s++){ const season = st.season, mine = {}, pos = { GK: 0, DEF: 0, MID: 0, FWD: 0 }; let n = 0;
+      while (st.season === season){ const c = st.clubs[st.userClub], sq = E.squadOf(st, c), before = new Map(sq.map(p => [p.id, p.skill])), last = st.week >= E.CFG.WEEKS;
+        if (last){ const rec = E.trainingRecord(st, c).now; E.advanceWeek(st); unsack(st); const after = E.trainingRecord(st, st.clubs[st.userClub]); if (after.now.n === 0 && after.last && after.last.s === season && after.last.n >= rec.n) rolled++; break; }
+        E.advanceWeek(st); unsack(st); for (const p of sq){ const d = p.skill - before.get(p.id); if (d > 0){ mine[p.id] = (mine[p.id] || 0) + d; pos[p.pos] += d; n += d; } }
+        const rec = E.trainingRecord(st, c).now; weeks++; points = Math.max(points, n);
+        if (rec.n !== n || JSON.stringify(rec.pos) !== JSON.stringify(pos) || Object.keys(mine).some(id => rec.g[id] !== mine[id]) || Object.keys(rec.g).length !== Object.keys(mine).length) wrong++; } } }
+  ok(wrong === 0 && weeks > 300 && points > 15, `the record agrees with the skill really gained, player by player and group by group, in every week (${wrong} wrong of ${weeks}; up to ${points} points in a season)`);
+  ok(rolled === 9, `and at a season's end it becomes "last season" and a new one starts empty (${rolled} of 9)`);
+  const st = E.newGame({ seed: 44, userClub: 20 }); ok(E.trainingRecord(st, st.clubs[20]).now.n === 0 && E.trainingRecord(st, st.clubs[20]).last === null && !('trainLog' in st.clubs[20]), 'a new game has an empty record and nothing written');
+  console.log(`the record of training gains: ${weeks} weeks over nine seasons, exact for every player and every group`);
 }
 
 // ---- 2. the rules switched off: a focus and a priority player are ignored ----
@@ -42,7 +61,7 @@ const young = (E, st, c) => E.squadOf(st, c).filter(p => E.canImprove(p));
     const a = E.newGame({ seed, userClub: 20 }), b = E180.newGame({ seed, userClub: 20 }); const pr = young(E, a, a.clubs[20])[0];
     E.setFocus(a, 'DEF'); E.setPriority(a, pr.id); ok(a.clubs[20].focus === 'DEF' && a.clubs[20].priority === pr.id && E.focusOf(a.clubs[20]) === null && E.priorityOf(a, a.clubs[20]) === null && E.trainingShare(a, a.clubs[20]) === null, 'rules off: the choices are kept but count for nothing');
     for (let w = 0; w < 84; w++){ const ra = E.advanceWeek(a), rb = E180.advanceWeek(b); unsack(a); unsack(b); for (let i = 0; i < Math.max(ra.length, rb.length); i++){ matches++; if (!ra[i] || !rb[i] || sig(ra[i]) !== sig(rb[i])) differ++; } }
-    delete a.clubs[20].focus; delete a.clubs[20].priority; if (same(a, b)) states++;
+    ok(!a.clubs.some(c => c.trainLog), 'rules off: no record of training gains is written'); delete a.clubs[20].focus; delete a.clubs[20].priority; { const x = a.gameId; a.gameId = b.gameId; if (JSON.stringify(a) === JSON.stringify(b)) states++; a.gameId = x; }
   }
   ok(differ === 0, `rules off: ${differ} of ${matches} matches differ from the 1.8.0 engine`); ok(states === 2, `rules off: the game state is identical to 1.8.0 but for the two unused fields in ${states} of 2 worlds`);
   console.log(`rules off: ${matches} matches with a focus and a priority player set and ignored, identical to the 1.8.0 engine`);

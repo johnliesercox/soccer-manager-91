@@ -1136,7 +1136,7 @@ function trainingWeek(state, club){
     if (p.injury>0) continue;
     if (t.inj>0 && rand()<t.inj){ p.injury = Math.max(1, Math.round(rInt(1,4)*CFG.PHYSIO_INJ_LEN[club.staff.physio])); news(state, `${p.name} picked up a knock in training, out ${p.injury} week${p.injury>1?'s':''}.`, 'injury'); continue; }
     if (p.age>=30 || p.skill>=p.pot) continue;
-    if (rand() < (share? share(p) : CFG.TRAIN_BASE*coach*t.gain)){ p.skill++; p.value = valueFor(p); if (rand()<0.35) news(state, `${p.name} is coming on in training. Skill now ${p.skill}.`, 'info'); }
+    if (rand() < (share? share(p) : CFG.TRAIN_BASE*coach*t.gain)){ p.skill++; p.value = valueFor(p); logTraining(state, club, p); if (rand()<0.35) news(state, `${p.name} is coming on in training. Skill now ${p.skill}.`, 'info'); }
   }
 }
 function groundWeek(state, club, results){
@@ -1177,6 +1177,24 @@ function trainingShare(state, club){
   let other = rest>0? (total-sum)/rest : 0, scale = 1;
   if (fav>0 && (rest===0 || other<T.FLOOR)){ other = rest>0? T.FLOOR : 0; scale = (total-other*rest)/sum; }
   return p => { const x = m(p); return Math.min(T.CAP, base*(x>1? x*scale : other)); }; }
+// ---- for the screens (slice 2): why extra coaching would do nothing for a man, and the record of what training has really given
+// 'age' and 'potential' are for good; 'injured' and 'tired' pass. null: he can be coached.
+function coachingNote(p){ return p.age>=28? 'age' : p.skill>=p.pot? 'potential' : p.injury>0? 'injured' : p.fitness<CFG.TRAINING.FIT_MIN? 'tired' : null; }
+function focusCount(state, club, group){ return squadOf(state, club).filter(p => p.pos===group && canImprove(p)).length; }
+function resetTraining(state){ const c = state.clubs[state.userClub]; if (!c) return; c.training = 'normal'; delete c.focus; delete c.priority; }
+// Every point of skill gained in weekly training is written down as it happens: by player and by position group, for this season,
+// with last season's totals kept beside it. It is a record only. Nothing reads it to decide anything, and no random number is drawn
+// for it, so a game plays exactly the same with or without it. (With the new rules switched off nothing is written at all.)
+function logTraining(state, club, p){
+  if (!CFG.TRAINING.on) return; let L = club.trainLog;
+  if (!L || L.s!==state.season){ const prev = L && L.s===state.season-1? { s: L.s, pos: L.pos, n: L.n } : null; L = club.trainLog = { s: state.season, g: {}, pos: { GK: 0, DEF: 0, MID: 0, FWD: 0 }, n: 0 }; if (prev) L.prev = prev; }
+  L.g[p.id] = (L.g[p.id]||0)+1; L.pos[p.pos] = (L.pos[p.pos]||0)+1; L.n++; }
+// what the record says, read without changing it: this season's gains, and last season's totals if they are known
+function trainingRecord(state, club){
+  const none = () => ({ g: {}, pos: { GK: 0, DEF: 0, MID: 0, FWD: 0 }, n: 0 }), L = club && CFG.TRAINING.on? club.trainLog : null;
+  if (!L) return { now: none(), last: null };
+  if (L.s===state.season) return { now: { g: L.g, pos: L.pos, n: L.n }, last: L.prev && L.prev.s===state.season-1? L.prev : null };
+  return { now: none(), last: L.s===state.season-1? { s: L.s, pos: L.pos, n: L.n } : null }; }
 function trainingChance(state, club, p){ if (!canImprove(p)) return 0; const share = trainingShare(state, club); return share? share(p) : CFG.TRAIN_BASE*CFG.COACH_MULT[club.staff.coach]*CFG.TRAIN[club.training].gain; }
 function buildCost(seats){ return seats*CFG.SEAT_COST; }
 function startBuild(state, seats){
@@ -1388,7 +1406,7 @@ function moveManager(state, clubId){
   old.xi = null; for (const p of squadOf(state,old)) p.listed = null;
   if (old.players.length<16 && !state.managers.some(m=>!m.retired && m!==state.managers[state.cur] && m.userClub===old.id)) youthFill(state, old, 16);
   const c = state.clubs[clubId];
-  state.userClub = c.id; c.confidence = CFG.CONF_START; c.overdraftWeeks = 0; c.ledger = []; c.xi = null; c.training = 'normal'; delete c.focus; delete c.priority;
+  state.userClub = c.id; c.confidence = CFG.CONF_START; c.overdraftWeeks = 0; c.ledger = []; c.xi = null; c.training = 'normal'; delete c.focus; delete c.priority; delete c.trainLog;
   state.offers = []; state.loan = null; state.jobOffer = null; state.sackOffer = null; state.gameOver = null;
   if (state.preseason && state.preseason.pending){ state.preseason.offers = sponsorOffers(state, c); state.sponsor = null; state.seasonTicket = null; }
   else { state.sponsor = null; state.seasonTicket = null; }
@@ -1878,7 +1896,7 @@ function restore(state){ let m=0; for (const id in state.players) m=Math.max(m, 
 const Engine = { CFG, CLUB_DATA, FORMATIONS, newGame, advanceWeek, endSeason, autoSelect, tableFor, squadOf, divClubs, expectedPos,
   buyFromList, bidForPlayer, acceptOffer, acceptJob, teamStrength, effSkill, fmt, seedRng, CUP_ROUND_NAMES, refreshValues, wageFor, valueFor,
   nextFixture, buildXI, listPlayer, unlistPlayer, rejectOffer, declineJob, boardMood, restore, prizeFor, overdraftLimit,
-  setStaff, setTraining, FOCUS_KEYS, focusOf, priorityOf, setFocus, setPriority, canImprove, trainingShare, trainingChance, startBuild, buildCost, improveSafety, safetyCost, canSeePot, staffWages,
+  setStaff, setTraining, FOCUS_KEYS, focusOf, priorityOf, setFocus, setPriority, canImprove, trainingShare, trainingChance, coachingNote, focusCount, resetTraining, trainingRecord, startBuild, buildCost, improveSafety, safetyCost, canSeePot, staffWages,
   chooseSponsor, setSeasonTickets, seasonTicketForecast, takeLoan, repayLoan, loanMax, sponsorBase,
   takeSackOffer, resign, bottomClub, updatePositions,
   isHuman, managerOf, activeManagers, setCurrent, saveCurrent, withManager, retireManager, standings, humanListings, renameClub, renamePlayer, scoutSearch, topScorers, gateSummary, supportOf, demandTarget, turnover, ticketOf, setTicketPrice, ticketAdvice, renameAnyClub,
