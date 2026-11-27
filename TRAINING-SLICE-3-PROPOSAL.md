@@ -2,6 +2,21 @@
 
 ## Scope and feasibility proposal
 
+> **Approved by John on 27 November 2026, with Slice 3a (the rules and the balancing) authorised and Slice 3b (the screens) not yet.** His decisions:
+>
+> 1. **Who can learn what.** Every outfield move: a defender can learn midfield or attack, a midfielder defence or attack, an attacker midfield or defence. Goalkeepers stay out, as learners and as a position to learn. One learned position, and he keeps his own.
+> 2. **95% as the starting value, subject to the Slice 3a results.** Compare the long-term effect of 95% and 90%, above all for a distant move such as defender to attacker. Retraining must not make natural positions largely irrelevant or become the dominant long-term strategy. Keep 95% if the tests support it. No further balancing changes without bringing him the measured results.
+> 3. **The priority place does one job at a time:** extra coaching or learning a position. No separate allocation.
+> 4. **The trade-off.** A learner keeps his ordinary improvement and gives up the doubling. The same fitness cost and the same rules for who is working.
+> 5. **Duration.** 12 weeks for the next line, 20 for the far line, adjusted by coach, age and intensity as proposed, with no luck in it. Tests to cover interrupted retraining, injuries, low fitness and changes of intensity.
+> 6. **All or nothing.** Worth what he was out of position until the course is complete, then competent for good.
+> 7. **One learned position.** A later one replaces it; the screen (3b) must say the earlier one will be lost and ask for confirmation. Work towards a position is kept if the course is paused and resumed. A clear rule is wanted for unfinished work when the target is changed (the rule built and proposed is in `TRAINING-SLICE-3A.md`).
+> 8. **Balance is the most important part of 3a.** Keep every proposed test, the ten-season one above all. To be answered: 95% or 90%; whether repeated retraining makes squad composition or natural positions matter less; whether any formation becomes disproportionately strong; whether older players benefit without the ageing system being undermined; whether the balance between human and computer clubs changes; whether values, wages, transfers or long-term squad strength are affected. Retraining adds no skill and no potential, and a player's natural position always remains his most effective.
+> 9. **Not yet:** the Slice 3b screens. **No more work on the testing backlog** unless a genuine regression appears. Matchday stays closed.
+> 10. **Nothing to production.** Live 1.7.0 untouched, the 1.8.0 candidate frozen at `6baa8d0`, all work on `milestone-2-training`, no merges into `main`, no deployment, no tags. After 3b the next milestone on the roadmap is player ratings, match reports and opposition scouting.
+>
+> The measured results are in `TRAINING-SLICE-3A.md`. The text below is the proposal as he read it.
+
 27 November 2026. **A proposal only. Nothing is built, and nothing will be until you have approved a scope.** It follows your approval of training slices 1 and 2, and your note that this is "approval to investigate and propose Slice 3, not approval to implement it".
 
 ## The outcome

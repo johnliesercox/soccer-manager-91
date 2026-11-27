@@ -576,6 +576,18 @@ const CFG = {
     FIT_MIN: 70,         // under this he is rested: no extra coaching that week, and no cost
     FLOOR: 0.4,          // nobody's chance falls below this much of what it would have been
     CAP: 0.20 },         // no man's chance in a week is above this (the most today is 0.1224: Hard with the best coach)
+  // Position retraining (milestone 2, slice 3a). The priority player's place does one job at a time: extra coaching, or learning
+  // one other outfield position. Learning is a fixed amount of work, done at a pace set by the coach, the player's age and the
+  // training intensity, with no luck in it. Until the work is done he is worth in that position what he always was; once it is
+  // done he is worth AS of his skill there, for good. His natural position stays his best, a learned position never lowers what
+  // he was already worth, and nothing here touches his skill, his potential, his value or his wage. Goalkeepers neither learn
+  // nor are learned. A game in which nobody has learned a position plays exactly as it did before. on:false ignores all of it.
+  RETRAIN: { on: true,
+    AS: { near: 0.95, far: 0.95 },         // what a learned position is worth, as a share of his skill: the next line, the far line (one number today; two so that the bench can try them apart)
+    WORK: { near: 12, far: 20 },           // weeks of work at an Average coach, on Normal, aged 24 to 29: the next line, the far line
+    COACH: [0.6, 1, 1.3, 1.6],             // the pace by the coach's grade
+    AGE: [[23, 1.2], [29, 1], [99, 0.8]],  // the pace by age: 23 and under, 24 to 29, 30 and over
+    PACE: { light: 0.75, normal: 1, hard: 1.25 } },   // the pace by training intensity
   SEAT_COST: 120,
   BUILD_WEEKS: 10,
   SAFETY_COST_PER_SEAT: 0.4,
@@ -692,7 +704,11 @@ function posPenalty(natural, slot){
   if ((natural==='MID'&&slot==='FWD')||(natural==='FWD'&&slot==='MID')) return 0.85;
   return 0.7;
 }
-function effSkill(p, slot){ return p.skill*(0.8+0.2*p.fitness/100)*posPenalty(p.pos, slot)*moraleFactor(p); }
+// what a man is worth in a position, as a share of his skill: his own position 1, a learned one RETRAIN.AS, any other the old penalty.
+// A learned position never makes him worth less than the old penalty would, and a man with nothing learned gets the old answer exactly. Goalkeepers are
+// apart whatever is written on them: a goalkeeper is worth outfield what he always was, and nobody is worth more in goal.
+function slotWorth(p, slot){ const pen = posPenalty(p.pos, slot); if (!(CFG.RETRAIN.on && p.pos2 && p.pos2===slot && p.pos!=='GK' && slot!=='GK')) return pen; const as = CFG.RETRAIN.AS[pen===0.85? 'near' : 'far']; return pen<as? as : pen; }
+function effSkill(p, slot){ return p.skill*(0.8+0.2*p.fitness/100)*slotWorth(p, slot)*moraleFactor(p); }
 
 // ---------- Club helpers ----------
 function prestigeFor(div, idx){ return (4-div)*16 + (15-idx); }
@@ -1580,6 +1596,7 @@ function trainingWeek(state, club){
   academyWeek(state, club);
   const t = CFG.TRAIN[club.training]; const coach = CFG.COACH_MULT[club.staff.coach];
   if (CFG.TRAINING.on && club.priority!=null && !priorityOf(state, club)) delete club.priority;   // he has been sold, released, retired or sent to the reserves
+  retrainWeek(state, club);                     // a week of the priority player's course, if he is learning a position
   const share = trainingShare(state, club);   // null unless a focus or a priority player is set
   for (const p of reservesOf(state, club)){
     if (p.skill>=p.pot) continue;
@@ -1618,11 +1635,42 @@ const FOCUS_KEYS = ['GK', 'DEF', 'MID', 'FWD'];
 function focusOf(club){ return CFG.TRAINING.on && club && FOCUS_KEYS.includes(club.focus)? club.focus : null; }
 function priorityOf(state, club){ if (!CFG.TRAINING.on || !club || club.priority==null) return null; const p = state.players[club.priority]; return p && p.club===club.id && !p.reserve && club.players.includes(p.id)? p : null; }
 function setFocus(state, group){ const c = state.clubs[state.userClub]; if (!c) return; if (FOCUS_KEYS.includes(group)) c.focus = group; else delete c.focus; }
-function setPriority(state, playerId){ const c = state.clubs[state.userClub]; if (!c) return; const p = playerId==null? null : state.players[playerId]; if (p && p.club===c.id && !p.reserve && c.players.includes(p.id)) c.priority = p.id; else delete c.priority; }
+function setPriority(state, playerId){ const c = state.clubs[state.userClub]; if (!c) return; delete c.retrain;   /* extra coaching, or nobody: either way the place is not used for learning */ const p = playerId==null? null : state.players[playerId]; if (p && p.club===c.id && !p.reserve && c.players.includes(p.id)) c.priority = p.id; else delete c.priority; }
+// ---- position retraining (slice 3a). club.retrain is the position the priority player is learning (absent: extra coaching).
+// p.learn = { to, done } is a man's unfinished course, kept on him if he is taken off it; p.pos2 is the position he has learned.
+const OUTFIELD = ['DEF', 'MID', 'FWD'];
+function retrainKind(p, to){ return posPenalty(p.pos, to)===0.85? 'near' : 'far'; }
+// may this man learn this position: an outfield player, another outfield position, not his own and not one he already has
+function canLearn(p, to){ return !!p && OUTFIELD.includes(p.pos) && OUTFIELD.includes(to) && to!==p.pos && to!==p.pos2; }
+function retrainPace(club, p){ const R = CFG.RETRAIN; return R.COACH[club.staff.coach]*R.AGE.find(a => p.age<=a[0])[1]*R.PACE[club.training]; }
+// the priority player and what he is learning, or null if his place is used for coaching (or there is nobody in it)
+function learnerOf(state, club){
+  if (!CFG.RETRAIN.on || !club || !club.retrain) return null; const p = priorityOf(state, club); if (!p || !canLearn(p, club.retrain)) return null;
+  const to = club.retrain, kind = retrainKind(p, to), need = CFG.RETRAIN.WORK[kind], done = p.learn && p.learn.to===to? p.learn.done : 0, pace = retrainPace(club, p);
+  return { p, to, kind, need, done, pace, weeksLeft: Math.max(0, Math.ceil((need-done)/pace - 1e-9)), working: !(p.injury>0) && p.fitness>=CFG.TRAINING.FIT_MIN }; }
+function coachedOf(state, club){ const p = priorityOf(state, club); return p && !learnerOf(state, club)? p : null; }
+// how long a course would take this man from nothing, at today's coach, age and intensity (for the screens)
+function retrainWeeks(club, p, to){ return canLearn(p, to)? Math.ceil(CFG.RETRAIN.WORK[retrainKind(p, to)]/retrainPace(club, p) - 1e-9) : null; }
+// Put a man in the priority place to learn a position. A different unfinished course of his is abandoned: one course at a time,
+// and work is kept only towards the position it was done for. A position he has already learned stays his until the new one is
+// finished, and is then replaced. Refused (and nothing changed) for a goalkeeper, for his own position and for one he has.
+function setRetrain(state, playerId, to){
+  const c = state.clubs[state.userClub]; if (!c || !CFG.RETRAIN.on) return false; const p = state.players[playerId];
+  if (!p || p.club!==c.id || p.reserve || !c.players.includes(p.id) || !canLearn(p, to)) return false;
+  c.priority = p.id; c.retrain = to; if (p.learn && p.learn.to!==to) delete p.learn; return true; }
+// one week of the course, for a manager's club. No random number is drawn. Returns the man if he finished this week.
+function retrainWeek(state, club){
+  if (!CFG.RETRAIN.on || !club.retrain) return null;
+  const L = learnerOf(state, club); if (!L){ delete club.retrain; return null; }   // nobody in the place, or the course no longer makes sense
+  if (!L.working) return null;                                                     // injured, or rested under 70 fitness: the week does not count
+  const done = L.done + L.pace;
+  if (done >= L.need - 1e-9){ const p = L.p, had = p.pos2; p.pos2 = L.to; delete p.learn; delete club.retrain; delete club.priority;
+    news(state, `${p.name} can now play in ${ {DEF:'defence', MID:'midfield', FWD:'attack'}[L.to] }${had? ' (and no longer in '+{DEF:'defence', MID:'midfield', FWD:'attack'}[had]+')' : ''}. His place with the coach is free.`, 'good'); return p; }
+  L.p.learn = { to: L.to, done }; return null; }
 function canImprove(p){ return !(p.injury>0) && p.age<30 && p.skill<p.pot; }   // who weekly training can do anything for
 // each man's chance of a point this week when a focus or a priority player is set; null when neither is, and the old line applies
 function trainingShare(state, club){
-  const T = CFG.TRAINING, focus = focusOf(club), pri = priorityOf(state, club); if (!focus && !pri) return null;
+  const T = CFG.TRAINING, focus = focusOf(club), pri = coachedOf(state, club); if (!focus && !pri) return null;   // (a priority player who is learning a position is coached as an ordinary member of the squad)
   const base = CFG.TRAIN_BASE*CFG.COACH_MULT[club.staff.coach]*CFG.TRAIN[club.training].gain;
   const m = p => (focus && p.pos===focus? T.FOCUS[focus] : 1)*(pri && p.id===pri.id && p.fitness>=T.FIT_MIN? T.PRIORITY : 1);   // the multiple a favoured man is meant to have
   let n = 0, fav = 0, sum = 0; for (const p of squadOf(state, club)) if (canImprove(p)){ n++; const x = m(p); if (x>1){ fav++; sum += x; } }
@@ -1634,7 +1682,7 @@ function trainingShare(state, club){
 // 'age' and 'potential' are for good; 'injured' and 'tired' pass. null: he can be coached.
 function coachingNote(p){ return p.age>=28? 'age' : p.skill>=p.pot? 'potential' : p.injury>0? 'injured' : p.fitness<CFG.TRAINING.FIT_MIN? 'tired' : null; }
 function focusCount(state, club, group){ return squadOf(state, club).filter(p => p.pos===group && canImprove(p)).length; }
-function resetTraining(state){ const c = state.clubs[state.userClub]; if (!c) return; c.training = 'normal'; delete c.focus; delete c.priority; }
+function resetTraining(state){ const c = state.clubs[state.userClub]; if (!c) return; c.training = 'normal'; delete c.focus; delete c.priority; delete c.retrain; }
 // Every point of skill gained in weekly training is written down as it happens: by player and by position group, for this season,
 // with last season's totals kept beside it. It is a record only. Nothing reads it to decide anything, and no random number is drawn
 // for it, so a game plays exactly the same with or without it. (With the new rules switched off nothing is written at all.)
@@ -1859,7 +1907,7 @@ function moveManager(state, clubId){
   old.xi = null; for (const p of squadOf(state,old)) p.listed = null;
   if (old.players.length<16 && !state.managers.some(m=>!m.retired && m!==state.managers[state.cur] && m.userClub===old.id)) youthFill(state, old, 16);
   const c = state.clubs[clubId];
-  state.userClub = c.id; c.confidence = CFG.CONF_START; c.overdraftWeeks = 0; c.ledger = []; c.xi = null; c.training = 'normal'; delete c.focus; delete c.priority; delete c.trainLog;
+  state.userClub = c.id; c.confidence = CFG.CONF_START; c.overdraftWeeks = 0; c.ledger = []; c.xi = null; c.training = 'normal'; delete c.focus; delete c.priority; delete c.retrain; delete c.trainLog;
   state.offers = []; state.loan = null; state.jobOffer = null; state.sackOffer = null; state.gameOver = null;
   if (state.preseason && state.preseason.pending){ state.preseason.offers = sponsorOffers(state, c); state.sponsor = null; state.seasonTicket = null; }
   else { state.sponsor = null; state.seasonTicket = null; }
@@ -2349,7 +2397,7 @@ function restore(state){ let m=0; for (const id in state.players) m=Math.max(m, 
 const Engine = { CFG, CLUB_DATA, FORMATIONS, newGame, advanceWeek, endSeason, autoSelect, tableFor, squadOf, divClubs, expectedPos,
   buyFromList, bidForPlayer, acceptOffer, acceptJob, teamStrength, effSkill, fmt, seedRng, CUP_ROUND_NAMES, refreshValues, wageFor, valueFor,
   nextFixture, buildXI, listPlayer, unlistPlayer, rejectOffer, declineJob, boardMood, restore, prizeFor, overdraftLimit,
-  setStaff, setTraining, FOCUS_KEYS, focusOf, priorityOf, setFocus, setPriority, canImprove, trainingShare, trainingChance, coachingNote, focusCount, resetTraining, trainingRecord, startBuild, buildCost, improveSafety, safetyCost, canSeePot, staffWages,
+  setStaff, setTraining, FOCUS_KEYS, focusOf, priorityOf, setFocus, setPriority, canImprove, trainingShare, trainingChance, coachingNote, focusCount, resetTraining, trainingRecord, OUTFIELD, posPenalty, slotWorth, canLearn, retrainKind, retrainPace, retrainWeeks, learnerOf, coachedOf, setRetrain, retrainWeek, startBuild, buildCost, improveSafety, safetyCost, canSeePot, staffWages,
   chooseSponsor, setSeasonTickets, seasonTicketForecast, takeLoan, repayLoan, loanMax, sponsorBase,
   takeSackOffer, resign, bottomClub, updatePositions,
   isHuman, managerOf, activeManagers, setCurrent, saveCurrent, withManager, retireManager, standings, humanListings, renameClub, renamePlayer, scoutSearch, topScorers, gateSummary, supportOf, demandTarget, turnover, ticketOf, setTicketPrice, ticketAdvice, renameAnyClub,
@@ -2358,8 +2406,8 @@ const Engine = { CFG, CLUB_DATA, FORMATIONS, newGame, advanceWeek, endSeason, au
   contractAsk, offerContract, releasePlayer, freeAgentsList, signFreeAgent, playerStatus, moraleWord, moraleFactor, available, wantsYears, letGo,
   reservesOf, upgradeAcademy, promoteReserve, releaseReserve,
   clubRecords, topClubScorers, careerOf, careerScore, careerSummary, SCORE, MODES };
-if (typeof location!=='undefined' && location && /[?&]rules=1\.7(&|$)/.test(String(location.search||''))){ CFG.TACTICS.on = false; CFG.TRAINING.on = false; }   // a test switch for the comparison tools: the rules of 1.7.1
-if (typeof location!=='undefined' && location && /[?&]rules=1\.8(&|$)/.test(String(location.search||''))) CFG.TRAINING.on = false;   // the same for the rules of 1.8.0: tactics as they are, training as it was
+if (typeof location!=='undefined' && location && /[?&]rules=1\.7(&|$)/.test(String(location.search||''))){ CFG.TACTICS.on = false; CFG.TRAINING.on = false; CFG.RETRAIN.on = false; }   // a test switch for the comparison tools: the rules of 1.7.1
+if (typeof location!=='undefined' && location && /[?&]rules=1\.8(&|$)/.test(String(location.search||''))){ CFG.TRAINING.on = false; CFG.RETRAIN.on = false; }   // the same for the rules of 1.8.0: tactics as they are, training as it was
 if (typeof module!=='undefined') module.exports = Engine;
 
 </script>
@@ -8081,7 +8129,7 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const money = n => (n<0?'-':'')+'£'+E.fmt(Math.abs(n));
 const SAVE_KEY = 'sm91-save';
-const APP_VERSION = '1.8.0-training2';   // a development build on the way to the training milestone (milestone 2, slice 2: the screens for a training focus and a priority player). Not a release: 1.8.0 is frozen on the branch release-1.8.0-rc1. Only a label carrying "-dev" shows the style preview
+const APP_VERSION = '1.8.0-training3';   // a development build on the way to the training milestone (milestone 2, slice 3a: the rules for learning a second position, with no screen for it yet; the screens are those of slice 2). Not a release: 1.8.0 is frozen on the branch release-1.8.0-rc1. Only a label carrying "-dev" shows the style preview
 const CHANGELOG = [
   { v:'1.8.0', when:'November 2026', notes:[
     'Tactics. You now decide how your team plays as well as its formation. On the Squad screen, under Match plan, there are four choices: Mentality (Defensive, Balanced, Attacking), Passing (Short, Mixed, Direct), Pressing (Low, Normal, High) and Shooting (Work it in, Balanced, Shoot on sight). Each one tells you what it gains you, what it costs and whom it suits.',
