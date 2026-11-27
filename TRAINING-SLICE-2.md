@@ -2,6 +2,10 @@
 
 **Checkpoint for John, 27 November 2026.** Milestone 2 (training and player development), slice 2, as you approved it on 27 November: the interface for the training focus and the priority player, in the Premium Dark design. Slice 1 (the rules and their balance) is `TRAINING-SLICE-1.md`.
 
+**Approved by John on 27 November 2026 (afternoon), as it stands, after he had used it on his Galaxy.** His decisions: no layout or wording changes; the collapsed layout on a phone is kept. The warning that a player has reached his potential stays even for a manager with no scout, and it must never show the potential rating itself, which stays part of scouting (a test now holds that: with no scout, the warning is given in words, with no figure, and nobody's potential is shown). The "+2 trained" mark stays on the squad list. The record of training gains in the saved game is accepted; the tests that hold it to the truth are kept. The older suites that compare whole saved games with earlier versions are to leave out only that record and still catch any change to skills, results or other saved data (done: they keep the new rules switched on and leave out the one field; `test-training.js`, part 1c, proves that a point of skill, potential or fitness, a balance, a table, a setting or a look-alike field is each still noticed). The one-off failure of the viewport audit is recorded on a new testing backlog (`TESTING-BACKLOG.md`), not to be worked on. Position retraining is to be investigated and proposed only: `TRAINING-SLICE-3-PROPOSAL.md`. Nothing goes to production.
+
+The report below is as it was written that morning.
+
 **Status.** Built and tested on the branch `milestone-2-training`. **Nothing has gone to production.** The live site is 1.7.0, `main` has not moved, and the 1.8.0 candidate is still frozen at `6baa8d0`. Position retraining and every other optional feature are untouched. **This stops here for you to look at how the controls look and feel.**
 
 ## 1. In short

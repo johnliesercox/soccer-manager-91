@@ -54,6 +54,29 @@ const young = (E, st, c) => E.squadOf(st, c).filter(p => E.canImprove(p));
   console.log(`the record of training gains: ${weeks} weeks over nine seasons, exact for every player and every group`);
 }
 
+// ---- 1c. the comparison leaves out the record of training gains and nothing else ----
+// (the same rule is used by test-equivalence.js and test-tactics.js for their whole-state comparisons with older engines)
+{
+  const E = fresh('./engine.js'); const a = E.newGame({ seed: 51, userClub: 20 }), b = E180.newGame({ seed: 51, userClub: 20 }); E.setTraining(a, 'hard'); E180.setTraining(b, 'hard'); E.setStaff(a, 'coach', 3); E180.setStaff(b, 'coach', 3);
+  for (let w = 0; w < 20; w++){ E.advanceWeek(a); E180.advanceWeek(b); unsack(a); unsack(b); }
+  ok(a.clubs[20].trainLog && a.clubs[20].trainLog.n > 0 && same(a, b) && JSON.stringify(a).length > JSON.stringify(b).length, 'after 20 weeks the two saved games differ by the record and compare as the same without it');
+  const alter = (what, f, expectSame) => { const c = JSON.parse(JSON.stringify(a)); f(c); ok(same(c, b) === expectSame, what + (expectSame? ' is not noticed (it is the record)' : ' is noticed')); };
+  alter('one point on one player\'s skill', c => { c.players[c.clubs[20].players[4]].skill++; }, false);
+  alter('one point on a computer club\'s player', c => { c.players[c.clubs[33].players[2]].skill--; }, false);
+  alter('a player\'s potential', c => { c.players[c.clubs[20].players[7]].pot++; }, false);
+  alter('a player\'s fitness', c => { c.players[c.clubs[20].players[1]].fitness--; }, false);
+  alter('a club\'s balance', c => { c.clubs[20].balance++; }, false);
+  alter('a league table', c => { c.clubs[5].st.pts++; }, false);
+  alter('the training level', c => { c.clubs[20].training = 'normal'; }, false);
+  alter('a focus written onto the club', c => { c.clubs[20].focus = 'DEF'; }, false);
+  alter('a priority player written onto the club', c => { c.clubs[20].priority = c.clubs[20].players[3]; }, false);
+  alter('the week', c => { c.week++; }, false);
+  alter('a field with a similar name', c => { c.clubs[20].trainLog2 = { n: 1 }; }, false);
+  alter('a different figure in the record', c => { c.clubs[20].trainLog.n += 5; c.clubs[20].trainLog.g = {}; }, true);
+  alter('the record taken away', c => { for (const k of c.clubs) delete k.trainLog; }, true);
+  console.log('the comparison with older engines leaves out the record of training gains and nothing else: a point of skill, potential or fitness, a balance, a table, a setting or a look-alike field is each noticed');
+}
+
 // ---- 2. the rules switched off: a focus and a priority player are ignored ----
 {
   const E = fresh('./engine.js'); E.CFG.TRAINING.on = false; let matches = 0, differ = 0, states = 0;

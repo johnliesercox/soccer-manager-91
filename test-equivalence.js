@@ -6,8 +6,12 @@ const Enew = require('./engine.js'); const Eold = require('./legacy/engine.v112.
 // The tactics milestone adds match plans and rebalanced formations. They are a change to the match rules that the owner approved, so this
 // comparison with older engines runs with them switched off (test-tactics.js proves that off is the 1.7.1 engine exactly,
 // and that all-Balanced 4-4-2 with them on is too).
-Enew.CFG.TACTICS.on = false; Enew.CFG.TRAINING.on = false;   /* nor the record of training gains (the training milestone), which test-training.js covers */
+Enew.CFG.TACTICS.on = false;
 let fails = 0; const ok = (c,m) => { if (!c){ fails++; console.log('FAIL', m); } };
+// A whole saved game as text, leaving out one thing only: the record of training gains (club.trainLog, the training milestone), which no
+// older engine writes. It is a record: nothing decides by it. Every player's skill, every result and every other field is compared.
+// test-training.js proves that this leaves out the record and nothing else, and holds the record itself to the truth.
+const noLog = s => JSON.stringify(s, (k, v) => k === 'trainLog'? undefined : v);
 const slim = st => JSON.stringify(st.lastSlim) + '|' + JSON.stringify(st.clubs.map(c=>[c.balance, c.pts, c.leaguePos, c.players.length]));
 let totalWeeks = 0, divergedAt = [];
 for (const seed of [11, 22, 33, 44, 55, 66]){
@@ -33,12 +37,12 @@ console.log(`identical weeks: ${totalWeeks}`);
   const src = fs.readFileSync(path.join(__dirname, 'engine.js'), 'utf8').replace(/function creditExtraTime\(scorers, xiH, xiA, eH, eA, tH, tA\)\{[\s\S]*?\n\}/, 'function creditExtraTime(){}');
   if (!/function creditExtraTime\(\)\{\}/.test(src)){ ok(false, 'could not switch extra-time crediting off (the function has changed shape)'); }
   const tmp = path.join(process.env.SCRATCH || '/tmp', 'engine-noet.js'); fs.writeFileSync(tmp, src);
-  const Enoet = require(tmp); Enoet.CFG.TACTICS.on = false; Enoet.CFG.TRAINING.on = false;   /* nor the record of training gains (the training milestone), which test-training.js covers */
+  const Enoet = require(tmp); Enoet.CFG.TACTICS.on = false;
   let same = 0;
   for (const seed of [11, 22, 33]){
     const a = Enoet.newGame({ seed, userClub: 20 }), b = Eold.newGame({ seed, userClub: 20 });
     for (let week=0; week<84; week++){ Enoet.advanceWeek(a); Eold.advanceWeek(b); for (const s of [a,b]) if (s.gameOver){ s.gameOver=null; s.sackOffer=null; } if (slim(a)!==slim(b)){ ok(false, `seed ${seed}: engines differ at week ${week+1} with extra-time crediting off`); break; } same++; }
-    a.gameId = b.gameId = 'x'; ok(JSON.stringify(a)===JSON.stringify(b), `seed ${seed}: full state identical after two seasons`);
+    a.gameId = b.gameId = 'x'; ok(noLog(a)===noLog(b), `seed ${seed}: full state identical after two seasons`);
   }
   console.log(`with extra-time crediting off: ${same} identical weeks over three two-season worlds`);
 }

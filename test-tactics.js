@@ -16,16 +16,20 @@ const path = require('path'), cp = require('child_process');
 const fresh = f => { delete require.cache[require.resolve(f)]; return require(f); };
 const Eold = require('./legacy/engine.v171.js');
 let fails = 0, checks = 0; const ok = (c, m) => { checks++; if (!c){ fails++; console.log('FAIL', m); } };
+// A whole saved game as text, leaving out one thing only: the record of training gains (club.trainLog, the training milestone), which no
+// older engine writes. It is a record: nothing decides by it. Every player's skill, every result and every other field is compared.
+// test-training.js proves that this leaves out the record and nothing else, and holds the record itself to the truth.
+const noLog = s => JSON.stringify(s, (k, v) => k === 'trainLog'? undefined : v);
 const sig = m => [m.home.id, m.away.id, m.gH, m.gA, m.extra, m.att, m.xgH, m.xgA, m.scorers.map(s => s.side + s.p.id + '@' + s.min + (s.et? 'e' : '')).join(','), m.cards.map(c => c.side + c.p.id + c.type + c.min).join(','), m.injuries.map(p => p.id + ':' + p.injury).join(',')].join('|');
 const unsack = s => { if (s.gameOver){ s.gameOver = null; s.sackOffer = null; } };
 
 // ---- 1. rules off: the 1.7.1 engine exactly ----
 {
-  const E = fresh('./engine.js'); E.CFG.TACTICS.on = false; E.CFG.TRAINING.on = false;   /* nor the record of training gains (the training milestone), which test-training.js covers */ let matches = 0, differ = 0, states = 0;
+  const E = fresh('./engine.js'); E.CFG.TACTICS.on = false; let matches = 0, differ = 0, states = 0;
   for (const seed of [11, 22, 33]){
     const a = E.newGame({ seed, userClub: 20 }), b = Eold.newGame({ seed, userClub: 20 }); a.clubs[20].formation = b.clubs[20].formation = '3-5-2';     // a formation the new table would value differently
     for (let w = 0; w < 84; w++){ const ra = E.advanceWeek(a), rb = Eold.advanceWeek(b); unsack(a); unsack(b); for (let i = 0; i < Math.max(ra.length, rb.length); i++){ matches++; if (!ra[i] || !rb[i] || sig(ra[i]) !== sig(rb[i])) differ++; } }
-    a.gameId = b.gameId = 'x'; if (JSON.stringify(a) === JSON.stringify(b)) states++;
+    a.gameId = b.gameId = 'x'; if (noLog(a) === noLog(b)) states++;
   }
   ok(differ === 0, `rules off: ${differ} of ${matches} matches differ from the 1.7.1 engine`); ok(states === 3, `rules off: the whole game state is identical to 1.7.1 after two seasons in ${states} of 3 worlds`);
   console.log(`rules off: ${matches} matches over three two-season worlds (the manager in 3-5-2) identical to the 1.7.1 engine, and so is the whole game state`);
@@ -33,14 +37,14 @@ const unsack = s => { if (s.gameOver){ s.gameOver = null; s.sackOffer = null; } 
 
 // ---- 2. rules on, everyone all-Balanced and in 4-4-2: still drawn exactly as in 1.7.1 ----
 {
-  const E = fresh('./engine.js'); E.CFG.TACTICS.computer = false; E.CFG.TRAINING.on = false;   /* the record of training gains is test-training.js's business */ let matches = 0, differ = 0, states = 0, kept = 0;
+  const E = fresh('./engine.js'); E.CFG.TACTICS.computer = false; let matches = 0, differ = 0, states = 0, kept = 0;
   for (const seed of [11, 22, 33, 1991]){
     const a = E.newGame({ seed, userClub: 20 }), b = Eold.newGame({ seed, userClub: 20 });
     for (let w = 0; w < 84; w++){ const wk = a.week, ra = E.advanceWeek(a), rb = Eold.advanceWeek(b); unsack(a); unsack(b); for (let i = 0; i < Math.max(ra.length, rb.length); i++){ matches++; if (!ra[i] || !rb[i] || sig(ra[i]) !== sig(rb[i])) differ++; else { ok(ra[i].poss > 0 && ra[i].poss < 1 && ra[i].tH && ra[i].tA && E.PLAN_KEYS.every(k => ra[i].tH[k] === 0 && ra[i].tA[k] === 0), 'an all-Balanced match records its plans and its possession'); } }
       // the saved game differs only by the figures now kept with the manager's own result of the week
       const r = a.userResults[wk], q = b.userResults[wk]; if (r && r.poss !== undefined){ kept++; const bare = Object.assign({}, r); delete bare.poss; delete bare.xg; delete bare.plan; delete bare.oppPlan; ok(JSON.stringify(bare) === JSON.stringify(q), 'the manager\'s result is the 1.7.1 result with the figures added'); } }
     // at the end the two games are the same game (the screens never save the last week's match records, which now carry the plans)
-    const strip = st => JSON.stringify(Object.assign({}, st, { lastResults: null, gameId: 'x' })); if (strip(a) === strip(b)) states++;
+    const strip = st => noLog(Object.assign({}, st, { lastResults: null, gameId: 'x' })); if (strip(a) === strip(b)) states++;
   }
   ok(differ === 0, `rules on, all-Balanced 4-4-2: ${differ} of ${matches} matches differ from the 1.7.1 engine`); ok(states === 4, `rules on, all-Balanced: the saved game is identical to 1.7.1 after two seasons in ${states} of 4 worlds`); ok(kept > 0, 'the match figures are kept with the manager\'s results');
   console.log(`rules on, everyone all-Balanced in 4-4-2: ${matches} matches over four two-season worlds identical to the 1.7.1 engine, and so is the saved game after two seasons; along the way the manager's results carry the new match figures (${kept} of them) and nothing else differs`);

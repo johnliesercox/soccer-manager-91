@@ -71,6 +71,14 @@ const panel = H => (H.d.querySelector('.tplan') || { textContent: '' }).textCont
     await say(full, /He has reached his potential, so extra coaching does nothing for him/, /At his potential: nothing left to gain/, 'a player at his potential');
     const fitMan = squad.find(p => E.coachingNote(p) === null && p.id !== pick.id); fitMan.injury = 3; await say(fitMan, /He is injured\. His extra coaching starts again when he is fit/, /Injured: no coaching until he is fit/, 'an injured player'); fitMan.injury = 0;
     fitMan.fitness = 60; await say(fitMan, /His fitness is under 70, so he is being rested\. His extra coaching starts again when he recovers/, /Under 70 fitness: rested until he recovers/, 'a player under 70 fitness'); fitMan.fitness = 100;
+    // with no scout the game does not show how far a player can go. The warning still says he has reached his potential, and gives no figure
+    { const keepScout = u.staff.scout, wasPri = u.priority, shown = q(H, '.mark.up').length; u.staff.scout = 0; E.setPriority(st, full.id); H.app().render(); await H.sleep(40);
+      ok(shown > 0 && q(H, '.mark.up').length === 0 && !H.text().includes('▲'), 'with no scout the Squad screen shows nobody\'s potential');
+      ok(/Note He has reached his potential, so extra coaching does nothing for him/.test(panel(H)) && !/\d/.test((panel(H).match(/Note He has reached[^.]*\./) || [''])[0]), 'the warning that he has reached his potential is still given, in words and with no figure');
+      await H.click('[data-a="trainpick"]', 60); const r = q(H, 'tr').find(x => x.textContent.includes(full.name)); ok(r && /At his potential: nothing left to gain/.test(r.textContent) && q(H, '.mark.up').length === 0 && !H.text().includes('▲') && !new RegExp('\\b' + full.pot + '\\b').test(r.textContent.replace(String(full.skill), '')), 'and the list of players says the same of him and shows no potential for anybody');
+      await H.click('[data-a="back"]', 60); await H.click(`[data-a="player"][data-id="${full.id}"]`, 60); ok(/He has reached his potential/.test(H.text()) && !H.text().includes('▲'), 'and so does his own page'); await H.click('[data-a="back"]', 60);
+      const other = squad.find(p => p.age < 28 && p.pot > p.skill && p.id !== full.id); E.setPriority(st, other.id); H.app().render(); await H.sleep(40); ok(!/Note/.test(panel(H)) && !H.text().includes('▲'), 'a player with room to improve carries no note, and how much room is not shown');
+      u.staff.scout = keepScout; E.setPriority(st, wasPri); H.app().render(); await H.sleep(40); }
     ok(E.coachingNote(old) === 'age' && E.coachingNote(full) === 'potential' && E.trainingChance(st, u, old) === 0 && E.trainingChance(st, u, full) === 0, 'and the warnings are true: the engine gives those two no chance at all');
     await H.click('[data-a="nopriority"]', 60);
     // a focus on a group with nobody left to coach
