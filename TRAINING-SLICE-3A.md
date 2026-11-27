@@ -219,7 +219,7 @@ Also held: all or nothing (19 of 20 weeks at exactly 70%, then 95%); the game's 
 
 ## 7. Regression
 
-Everything below was run on the build of this checkpoint (`index.html`, labelled 1.8.0-training3, md5 `a80bee2071f96dca4517c0f295ab8763`). "The candidate" is the frozen 1.8.0 release candidate. Fifty-three checks ran; fifty-two passed outright and the fifty-third is the comparison that is meant to show four differences.
+Everything below was run on the build of this checkpoint (`index.html`, labelled 1.8.0-training3, md5 `a80bee2071f96dca4517c0f295ab8763`). "The candidate" is the frozen 1.8.0 release candidate. Fifty-four checks ran; fifty-three passed outright and the other is the comparison that is meant to show four differences.
 
 | What has to be kept | Result |
 |---|---|
@@ -256,7 +256,7 @@ Whichever you choose, I will change only that number and bring you the bench aga
 
 **3. When a course finishes.** Built: the priority place is left empty and the news says so. The alternative is to move the player to extra coaching automatically. I recommend the rule as built, because the game then does nothing the manager did not choose.
 
-**Then, when you are ready: slice 3b, the screens.** Not started. From this slice it would need to show, besides what the proposal listed: the confirmations in decisions 2 and above; and, on the team selection screen, where a man who has learned a position will play, since the best use of retraining is choosing him ahead of a weaker natural player.
+**Then, when you are ready: slice 3b, the screens.** Not started. From this slice it would need to show, besides what the proposal listed: the two confirmations (a learned position about to be replaced, and unfinished work about to be lost); and, on the team selection screen, where a man who has learned a position will play, since the best use of retraining is choosing him ahead of a weaker natural player.
 
 ## 9. The preview, and where things are
 
