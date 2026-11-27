@@ -1,5 +1,5 @@
 Soccer Manager '91: the balance bench for position retraining, slice 3a (27 November 2026)
-The output of node tools/retraining-balance.js (50 worlds of 10 seasons, six formations, three values) on the engine of this commit (engine.js md5 fc4572f858352c29677a9eae8d69eef2).
+The output of node tools/retraining-balance.js --as 0.95,0.9,0.95/0.9 (50 worlds of 10 seasons, six formations, three values; when it was run this was the tool's default) on the engine of that commit (engine.js md5 fc4572f858352c29677a9eae8d69eef2).
 The targets are those of the scope proposal as written, and John's questions of 27 November. Lines that read MISS are findings, set out in TRAINING-SLICE-3A.md.
 
 ==================================================================

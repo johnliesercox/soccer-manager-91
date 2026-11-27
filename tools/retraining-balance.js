@@ -5,10 +5,17 @@
 // The manager buys and sells nobody, so the only thing that differs between the lines is what the priority place is used for.
 //
 //   node tools/retraining-balance.js --quick              a small run with loose limits (well under a minute; test-retraining.js uses it)
-//   node tools/retraining-balance.js                      the full run: 50 worlds of 10 seasons, six formations, at three values (most of an hour)
-//   node tools/retraining-balance.js --as 0.95            one value only
-//   node tools/retraining-balance.js --as 0.95,0.9,0.95/0.9    the full run's three: 95%, 90%, and 95% for the next line with 90% for the far line
+//   node tools/retraining-balance.js                      the full run at the game's own value: 50 worlds of 10 seasons, six formations (20 minutes)
+//   node tools/retraining-balance.js --as 0.95,0.9,0.95/0.9    the comparison of slice 3a: 95%, 90%, and 95% for the next line with 90% for the far line (most of an hour)
 //   node tools/retraining-balance.js --worlds 60 --seasons 10 --save out.json
+//
+// The game's own value is 95% for the next line and 90% for the far line, approved by John on 27 November 2026 on the comparison
+// kept in tools/reference/retraining-balance-slice-3a.txt. He accepted two exceptions to the targets at that value, and asked that
+// they be recorded as exceptions and the targets left as written. They are ACCEPTED below, and the bench reads ACCEPTED, not MET,
+// for them: (1) one retraining may be worth more than half a point in its best single season where its ten-season average is
+// within the half point (measured: 0.61 in 5-4-1); (2) continuous retraining may pass 1 point in its best single season where
+// its ten-season average is within 1 point (measured: 0.83 on average and 1.08 in the best season, in 5-4-1). Anything beyond
+// those measured figures reads MISS again.
 //
 // The lines (Normal training, an Average coach):
 //   none     nobody in the priority place
@@ -31,7 +38,9 @@
 const path = require('path'), cp = require('child_process');
 const args = process.argv.slice(2), flag = f => args.includes(f), num = (f, d) => { const i = args.indexOf(f); return i >= 0? +args[i + 1] : d; }, str = (f, d) => { const i = args.indexOf(f); return i >= 0? args[i + 1] : d; };
 const QUICK = flag('--quick'), WORLDS = num('--worlds', QUICK? 6 : 50), SEASONS = num('--seasons', QUICK? 3 : 10), U = num('--club', 20);
-const AS = str('--as', QUICK? '0.95' : '0.95,0.9,0.95/0.9').split(',');   // each is one number, or next line/far line
+const OWN = (() => { const a = require(path.join(__dirname, '..', 'engine.js')).CFG.RETRAIN.AS; return a.near === a.far? String(a.near) : a.near + '/' + a.far; })();   // the game's own value, read before anything changes it
+const AS = str('--as', OWN).split(',');   // each is one number, or next line/far line
+const ACCEPTED = { as: '0.95/0.9', one: 0.61, always: 1.08, slack: 0.05 };   // John's accepted exceptions (see the head of this file): the measured best seasons, and no more than a rounding over them
 const asOf = spec => { const [a, b] = String(spec).split('/').map(Number); return { near: a, far: b === undefined? a : b }; };
 const FORMS = QUICK? ['4-4-2', '5-4-1'] : ['4-4-2', '4-3-3', '5-3-2', '3-5-2', '5-4-1', '4-5-1'], PLAIN = QUICK? ['none'] : ['none', 'coach'], RE = QUICK? ['one', 'always', 'all'] : ['one', 'always', 'old', 'far', 'all'];
 const KEYS = ['eff', 'gAuto', 'gBest', 'best', 'lost', 'outW', 'near', 'far', 'old', 'raw', 'age', 'gain', 'sq', 'value', 'wages', 'pts', 'div', 'left', 'joined', 'offers', 'pos2', 'done', 'cpuPos2'];
@@ -97,7 +106,7 @@ const CHILD = flag('--child'); if (CHILD) process.stdout.write(JSON.stringify(ru
 const mean = a => { const b = a.filter(x => x === x); return b.length? b.reduce((x, y) => x + y, 0)/b.length : NaN; }, sd = a => { const b = a.filter(x => x === x), m = mean(b); return Math.sqrt(mean(b.map(x => (x - m)*(x - m)))); }, se = a => sd(a)/Math.sqrt(Math.max(1, a.filter(x => x === x).length));
 const f = (x, n = 1) => x === x? x.toFixed(n) : 'n/a', sgn = (x, n = 2) => x === x? (x >= 0? '+' : '') + x.toFixed(n) : 'n/a';
 const all = (R, key, from = 0, to = 99) => [].concat(...R.slice(from, to).map(S => S[key])), bySeason = (R, key) => R.map(S => mean(S[key]));
-let miss = 0; const target = (name, okk, text) => { if (!okk) miss++; console.log((okk? 'MET   ' : 'MISS  ') + name + ': ' + text); };
+let miss = 0, accepted = 0; const target = (name, okk, text, exception) => { if (!okk && exception) accepted++; else if (!okk) miss++; console.log((okk? 'MET   ' : exception? 'ACCEPTED ' : 'MISS  ') + name + ': ' + text + (!okk && exception? ' [an exception John accepted on 27 November 2026: the average is within the limit, the best single season is not]' : '')); };
 const PTS = 1.4, pc = spec => { const a = asOf(spec); return a.near === a.far? Math.round(a.near*100) + '%' : `${Math.round(a.near*100)}% next line and ${Math.round(a.far*100)}% far line`; };
 async function main(){
   const D = {}; const queue = FORMS.slice(), work = async () => { while (queue.length){ const fm = queue.shift(); D[fm] = await new Promise((res, rej) => { const ch = cp.spawn(process.execPath, [__filename, '--child', fm].concat(args), { stdio: ['ignore', 'pipe', 'inherit'] }); let buf = ''; ch.stdout.on('data', d => buf += d); ch.on('close', code => code? rej(new Error(fm + ' exit ' + code)) : res(JSON.parse(buf))); }); } };
@@ -142,11 +151,12 @@ async function main(){
     console.log('\n9. Computer clubs: none retrains (exact, in test-retraining.js), so the manager gains on them exactly what section 1 shows. Players with a second position at other clubs at a season\'s end (men the manager retrained who have moved on): ' + FORMS.map(fm => `${fm} ${f(mean(all(D[fm]['always@' + A0], 'cpuPos2')), 1)}`).join(', ')); }
 
   console.log('\n=== The targets ===');
-  for (const as of AS){ const lim = QUICK? 3 : 1; console.log(`at ${pc(as)}:`);
+  for (const as of AS){ const lim = QUICK? 3 : 1, a0 = asOf(as), own = !QUICK && a0.near === asOf(ACCEPTED.as).near && a0.far === asOf(ACCEPTED.as).far; console.log(`at ${pc(as)}:`);
     const one = FORMS.map(fm => [fm, g(fm, 'one', as, 'gAuto')*PTS, g(fm, 'one', as, 'gBest')*PTS, top(fm, 'one', as, 'gBest')*PTS]);
-    target('R3a one retraining is worth no more than 0.5 of a league point a season in any formation', one.every(x => Math.max(x[1], x[2]) <= 0.5*lim), one.map(x => `${x[0]} ${sgn(x[1])} / ${sgn(x[2])} (best season ${sgn(x[3])})`).join(', '));
+    const oneAvg = one.every(x => Math.max(x[1], x[2]) <= 0.5*lim), oneTop = Math.max(...one.map(x => x[3]));
+    target('R3a one retraining is worth no more than 0.5 of a league point a season in any formation', own? oneAvg && oneTop <= 0.5 : oneAvg, one.map(x => `${x[0]} ${sgn(x[1])} / ${sgn(x[2])} (best season ${sgn(x[3])})`).join(', '), own && oneAvg && oneTop <= ACCEPTED.one + ACCEPTED.slack);
     const alw = FORMS.map(fm => [fm, g(fm, 'always', as, 'gAuto')*PTS, g(fm, 'always', as, 'gBest')*PTS, Math.max(top(fm, 'always', as, 'gAuto'), top(fm, 'always', as, 'gBest'))*PTS]);
-    target('R3b a manager who retrains somebody continuously for ten seasons is never worth more than 1 point a season over one who does not', alw.every(x => x[3] <= 1*lim), alw.map(x => `${x[0]} ${sgn(x[1])} / ${sgn(x[2])} on average, ${sgn(x[3])} in its best season`).join('; '));
+    target('R3b a manager who retrains somebody continuously for ten seasons is never worth more than 1 point a season over one who does not', alw.every(x => x[3] <= 1*lim), alw.map(x => `${x[0]} ${sgn(x[1])} / ${sgn(x[2])} on average, ${sgn(x[3])} in its best season`).join('; '), own && alw.every(x => Math.max(x[1], x[2]) <= 1 && x[3] <= ACCEPTED.always + ACCEPTED.slack));
     const ceil = FORMS.map(fm => [fm, g(fm, 'all', as, 'gAuto')*PTS, g(fm, 'all', as, 'gBest')*PTS]); console.log('      the ceiling (every outfield player with a second position, free): ' + ceil.map(x => `${x[0]} ${sgn(x[1])} / ${sgn(x[2])}`).join(', '));
     if (!QUICK){ const pn = FORMS.map(fm => mean(all(D[fm].none, 'pts'))), add = FORMS.map(fm => Math.max(g(fm, 'always', as, 'gAuto'), g(fm, 'always', as, 'gBest'))*PTS), est = FORMS.map((fm, i) => pn[i] + add[i]), bestN = Math.max(...pn), spread = a => Math.max(...a) - Math.min(...a);
       target('Rf no formation becomes the one to play: with continuous retraining none stands more than half a point above the best formation without it', Math.max(...est) - bestN <= 0.5, FORMS.map((fm, i) => `${fm} ${f(pn[i])} to ${f(est[i])}`).join(', ') + `; the six formations span ${f(spread(pn))} points without retraining and ${f(spread(est))} with`);
@@ -155,5 +165,5 @@ async function main(){
     target('R4 no skill added: the squad gains the same in training, and is as skilful, with a learner as with nobody in the place', within(gn) && within(sq), `skill gained a season ${pm(gn)}, average skill of the squad ${pm(sq)} (exact, week by week, in test-retraining.js)`);
     target('R5 no money in it: squad value and wages the same with and without', within(va) && within(wa), `value ${pm(va, 1, '%')}, wages ${pm(wa, 1, '%')} (no player's value or wage changes: exact in test-retraining.js)`);
     target('R8 computer clubs are untouched', true, 'none retrains (exact in test-retraining.js)'); }
-  console.log(miss? `\n${miss} target${miss > 1? 's' : ''} missed` : '\nevery target met'); }
+  console.log((miss? `\n${miss} target${miss > 1? 's' : ''} missed` : accepted? '\nevery target met or an accepted exception' : '\nevery target met') + (accepted? ` (${accepted} accepted exception${accepted > 1? 's' : ''})` : '')); }
 if (!CHILD) main().catch(e => { console.error(e); process.exit(2); });

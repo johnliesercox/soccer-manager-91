@@ -130,7 +130,7 @@ const CFG = {
   // he was already worth, and nothing here touches his skill, his potential, his value or his wage. Goalkeepers neither learn
   // nor are learned. A game in which nobody has learned a position plays exactly as it did before. on:false ignores all of it.
   RETRAIN: { on: true,
-    AS: { near: 0.95, far: 0.95 },         // what a learned position is worth, as a share of his skill: the next line, the far line (one number today; two so that the bench can try them apart)
+    AS: { near: 0.95, far: 0.90 },         // what a learned position is worth, as a share of his skill: the next line 95%, the far line 90% (John, 27 November 2026, on the measured results; unlearned they are 0.85 and 0.70)
     WORK: { near: 12, far: 20 },           // weeks of work at an Average coach, on Normal, aged 24 to 29: the next line, the far line
     COACH: [0.6, 1, 1.3, 1.6],             // the pace by the coach's grade
     AGE: [[23, 1.2], [29, 1], [99, 0.8]],  // the pace by age: 23 and under, 24 to 29, 30 and over
@@ -251,7 +251,7 @@ function posPenalty(natural, slot){
   if ((natural==='MID'&&slot==='FWD')||(natural==='FWD'&&slot==='MID')) return 0.85;
   return 0.7;
 }
-// what a man is worth in a position, as a share of his skill: his own position 1, a learned one RETRAIN.AS, any other the old penalty.
+// what a man is worth in a position, as a share of his skill: his own position 1, a learned one RETRAIN.AS (by how far it is from his own), any other the old penalty.
 // A learned position never makes him worth less than the old penalty would, and a man with nothing learned gets the old answer exactly. Goalkeepers are
 // apart whatever is written on them: a goalkeeper is worth outfield what he always was, and nobody is worth more in goal.
 function slotWorth(p, slot){ const pen = posPenalty(p.pos, slot); if (!(CFG.RETRAIN.on && p.pos2 && p.pos2===slot && p.pos!=='GK' && slot!=='GK')) return pen; const as = CFG.RETRAIN.AS[pen===0.85? 'near' : 'far']; return pen<as? as : pen; }

@@ -15,6 +15,8 @@
 > 9. **Not yet:** the Slice 3b screens. **No more work on the testing backlog** unless a genuine regression appears. Matchday stays closed.
 > 10. **Nothing to production.** Live 1.7.0 untouched, the 1.8.0 candidate frozen at `6baa8d0`, all work on `milestone-2-training`, no merges into `main`, no deployment, no tags. After 3b the next milestone on the roadmap is player ratings, match reports and opposition scouting.
 >
+> **Decided on the measured results, 27 November 2026 (evening):** a learned position is worth **95% in a neighbouring position and 90% in a distant one**; the natural position stays 100%. Two exceptions to target R3 are accepted and recorded as exceptions, with the targets left as written (continuous retraining in 5-4-1: 0.83 a season on average, 1.08 in its best season; one retraining: 0.61 in its best season with the average within the half point). Where the text below says 95% for every learned position, read this.
+>
 > The measured results are in `TRAINING-SLICE-3A.md`. The text below is the proposal as he read it.
 
 27 November 2026. **A proposal only. Nothing is built, and nothing will be until you have approved a scope.** It follows your approval of training slices 1 and 2, and your note that this is "approval to investigate and propose Slice 3, not approval to implement it".

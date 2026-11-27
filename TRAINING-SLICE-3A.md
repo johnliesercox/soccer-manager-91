@@ -2,6 +2,23 @@
 
 **Checkpoint for John, 27 November 2026.** Milestone 2 (training and player development), slice 3a, as you approved it on 27 November: the rules for learning a second position, and the measurements. There are no screens for it; that is slice 3b, which is not started. Your decisions are at the head of `TRAINING-SLICE-3-PROPOSAL.md`.
 
+> **Reviewed by John on 27 November 2026 (evening). The overall Slice 3a approach is approved, with one adjustment to positional effectiveness, which is now made:**
+>
+> * **95% in a neighbouring position** (defender to midfielder, for example), **90% in a distant position** (defender to attacker), **100% in the natural position.** His reasons: 90% everywhere would make some retraining too weak, 95% everywhere gives slightly too much in the long-term 5-4-1 case, and the split is a sensible distinction between an adjacent role and a different area of the pitch.
+>
+> **Two accepted exceptions. They are exceptions; the original targets are not changed.**
+>
+> | Target as written | Measured at the approved value | John's decision |
+> |---|---|---|
+> | R3, continuous: never worth more than 1 league point a season | 5-4-1, best pick: 0.83 on average, **1.08 in its best single season** | Accepted. "I don't think we should reduce the benefits further simply to eliminate that small difference." |
+> | R3, one retraining: no more than 0.5 of a league point a season | Ten-season average 0.29 at most; **best single season 0.61** in 5-4-1 | Accepted, "provided the longer-term average remains within the intended balance". |
+>
+> The bench holds both: at the approved value these two lines read ACCEPTED, not MET, and a result beyond the measured figures reads MISS again.
+>
+> **His message arrived cut off** after "The important principles remain that retraining must not become a dominant strategy,". Decisions 2 and 3 of section 8 (unfinished work when the target is changed; what happens when a course finishes) and slice 3b therefore still wait for him. Nothing of them has been acted on.
+>
+> Section 10 is what was done after his decision. Sections 1 to 9 are the report as he read it, when the game still used 95% for both.
+
 **Status.** Built and tested on the branch `milestone-2-training`. **Nothing has gone to production.** The live site is 1.7.0, `main` has not moved, and the 1.8.0 candidate is still frozen at `6baa8d0`. **This stops here for your review of the numbers.** The value of a learned position is still 95% in the game, as you approved; I have changed no balance number.
 
 ## 1. In short
@@ -265,3 +282,43 @@ The file is `soccer-manager-91-1.8.0-training3.html`. **There is nothing new to 
 * Branch `milestone-2-training`, development commits only. `main` is at `cde3c8f` (live 1.7.0). The 1.8.0 candidate is at `6baa8d0` on `milestone-1-tactics` and `release-1.8.0-rc1`, unmoved. No tag, no deployment, no merge.
 * No work was done on the testing backlog or the matchday.
 * New in the repository: `test-retraining.js`, `tools/retraining-balance.js`, `tools/reference/retraining-balance-slice-3a.txt`, `legacy/engine.training2.js` (the game before this slice, for the identity proof), and this report.
+
+## 10. After your decision: the split value is in the game
+
+**What changed.** One number: the worth of a learned position in the far line is now 90%. The next line stays 95% and the natural position 100%. The build is labelled `1.8.0-training3.1`. Nothing else in the rules moved, and there are still no screens for retraining.
+
+**The bench at the game's own value** gives exactly the figures of the third column you decided on (the record is `tools/reference/retraining-balance-approved.txt`). League points a season, the game's pick, the best pick, and the best pick's best single season in brackets:
+
+| Formation | One retraining | Continuous, ten seasons | The ceiling |
+|---|---|---|---|
+| 4-4-2 | 0.02 / 0.04 (0.09) | 0.08 / 0.26 (0.31) | 0.11 / 0.31 |
+| 4-3-3 | 0.02 / 0.04 (0.09) | 0.07 / 0.22 (0.33) | 0.08 / 0.24 |
+| 5-3-2 | 0.08 / 0.13 (0.36) | 0.31 / 0.56 (0.70) | 0.41 / 0.73 |
+| 3-5-2 | 0.07 / 0.13 (0.32) | 0.24 / 0.52 (0.61) | 0.32 / 0.71 |
+| 5-4-1 | 0.20 / 0.29 (**0.61**) | 0.47 / 0.83 (**1.08**) | 0.50 / 0.94 |
+| 4-5-1 | 0.07 / 0.16 (0.40) | 0.27 / 0.66 (0.85) | 0.32 / 0.77 |
+
+The two figures in bold are your accepted exceptions. Every other target is met: no formation becomes the one to play, ageing is untouched, no skill and no money are added, computer clubs do not retrain.
+
+**The principle you named, that retraining must not become a dominant strategy,** holds at this value: the most it is worth in any formation is 0.83 of a point a season on the ten-season average, it is reached in the second or third season, and it does not grow after that.
+
+**The bench now measures the game's own value by default.** The three-value comparison you decided on is kept as it was (`tools/reference/retraining-balance-slice-3a.txt`) and can be run again with `--as 0.95,0.9,0.95/0.9`.
+
+**Tests.** `test-retraining.js`: 1,009 checks, no failures. It now holds the game to 95% for the next line and 90% for the far line, in every combination. One correction to a test of mine: the check that the team picker prefers a retrained man "to an equal man" had not in fact made the two men equal, because a line of the test had been swallowed by a comment. It passed at 95% by a narrow margin and failed at 90%, which is how I found it. It is repaired and now tests what it says.
+
+**Regression on this build** (`index.html` md5 `60c17b8617316c717a22a8b20f5cf558`):
+
+| Check | Result |
+|---|---|
+| The 28 test suites | All pass. |
+| Identical behaviour when retraining is unused | 12,050 matches identical to the game before this slice, with the whole saved game; with nothing chosen, identical to 1.8.0. |
+| The screens against slice 2 | All 360 stops identical. |
+| The screens against the candidate, with the 1.8.0 rules switch | 356 of 360 identical; the four are the Help sentence about age, as before. |
+| Match frames, player pictures, ground tiles (1.7.1 rules switch); the approved football | 198, 61,248 and 1,717 identical to the pixel; all 36 matches identical. |
+| Saves, both ways, against the candidate, 1.7.0 and 1.6.0 | Six runs, 21 or 22 checks each, no failures. |
+| The tactics bench | Its recorded output, line for line. |
+
+**Not run again, and why.** The layout, keyboard, touch, soak, hair and speed audits and the training bench all passed on the build of section 7 three hours earlier. Since then the only change to the game is the one number above, which no screen and no part of training reads, and the screens are proved identical stop for stop. I will run them all again at the slice 3b checkpoint, or now if you would like them on this build.
+
+**Still waiting for you:** the rest of your message; decisions 2 and 3 of section 8; and whether to begin slice 3b.
+

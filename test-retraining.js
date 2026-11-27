@@ -4,11 +4,12 @@
 // What this suite holds the engine to:
 //   1. With nobody retrained the game is exactly the game before this slice: every match and the whole saved game.
 //   2. With the rules switched off, second positions and courses are ignored and the game is the game before this slice.
-//   3. What a man is worth: his own position always his best, a learned one 95%, never less than he was worth before, goalkeepers apart.
+//   3. What a man is worth: his own position always his best, a learned one 95% in the next line and 90% in the far line (as John
+//      approved on the measured results, 27 November 2026), never less than he was worth before, goalkeepers apart.
 //   4. Who may learn what: outfield players, another outfield position, one at a time; a goalkeeper nothing, nobody goalkeeper.
 //   5. How long it takes: every row of the approved table, exactly, and the same with Light and Hard; no random number drawn.
 //   6. Interruptions: an injury, low fitness, a pause and a change of intensity; work kept towards the same position, abandoned on a change of target.
-//   7. All or nothing: worth what he was until the last week, then 95% for good; a second course replaces the first only when it finishes.
+//   7. All or nothing: worth what he was until the last week, then 95% or 90% for good; a second course replaces the first only when it finishes.
 //   8. The trade-off: a learner has his ordinary chance of improving and nobody else's changes; the fitness cost is the priority player's.
 //   9. No skill, potential, value or wage is touched, and the summer (ageing, decline, retirement) does not know of it.
 //  10. Computer clubs never retrain; one fields a retrained man at what he has learned.
@@ -55,15 +56,16 @@ const WEEKS = { near: { 20: [17, 10, 8, 7], 26: [20, 12, 10, 8], 31: [25, 15, 12
 
 // ---- 3. what a man is worth ----
 {
-  const E = fresh('./engine.js'), AS = E.CFG.RETRAIN.AS.near, POS = ['GK', 'DEF', 'MID', 'FWD']; let n = 0;
-  ok(AS === 0.95 && E.CFG.RETRAIN.AS.far === 0.95, 'a learned position is worth 95% of his skill, the next line and the far line alike: ' + JSON.stringify(E.CFG.RETRAIN.AS));
+  const E = fresh('./engine.js'), A = E.CFG.RETRAIN.AS, POS = ['GK', 'DEF', 'MID', 'FWD']; let n = 0; const far = (a, b) => (a === 'DEF' && b === 'FWD') || (a === 'FWD' && b === 'DEF');
+  ok(A.near === 0.95 && A.far === 0.90, 'a learned position is worth 95% of his skill in the next line and 90% in the far line: ' + JSON.stringify(A));
+  ok(A.far < A.near && A.near < 1 && A.near > 0.85 && A.far > 0.70, 'so his own position is always his best, the next line learned is worth more than the far line learned, and each is worth more learned than not');
   for (const pos of POS) for (const pos2 of [undefined, ...POS]) for (const slot of POS){ const p = { pos, pos2, skill: 70, fitness: 100, morale: 60 }, w = E.slotWorth(p, slot), old = E.posPenalty(pos, slot); n++;
     ok(w >= old && w <= 1 && (slot === pos? w === 1 : w < 1), `${pos} with ${pos2} in ${slot}: never less than before, never more than his own position (${w})`);
-    if (pos2 === slot && slot !== pos && pos !== 'GK' && slot !== 'GK') ok(w === AS, `${pos} who has learned ${slot} is worth ${AS} there`);
+    if (pos2 === slot && slot !== pos && pos !== 'GK' && slot !== 'GK') ok(w === (far(pos, slot)? 0.90 : 0.95), `${pos} who has learned ${slot} is worth ${far(pos, slot)? '90%' : '95%'} there`);
     if (pos2 !== slot) ok(w === old, `${pos} with ${pos2} in ${slot}: a position he has not learned is worth what it was`);
     if (pos === 'GK' || slot === 'GK') ok(w === old, 'goalkeepers are apart: ' + pos + ' in ' + slot);
     ok(E.effSkill(p, slot) === 70*(0.8 + 0.2)*w*(0.92 + 0.13*0.6), 'and effective skill is skill, fitness, that worth and morale, as before'); }
-  console.log(`what a man is worth: ${n} combinations of position, learned position and place; his own always 1, a learned one ${AS}, everything else as it was`);
+  console.log(`what a man is worth: ${n} combinations of position, learned position and place; his own always 1, a learned one ${A.near} (next line) or ${A.far} (far line), everything else as it was`);
 }
 
 // ---- 4. who may learn what ----
@@ -122,17 +124,18 @@ const WEEKS = { near: { 20: [17, 10, 8, 7], 26: [20, 12, 10, 8], 31: [25, 15, 12
 {
   const E = fresh('./engine.js'); const st = E.newGame({ seed: 71, userClub: 20 }), c = st.clubs[20], p = E.squadOf(st, c).find(x => x.pos === 'DEF'); p.age = 26; p.fitness = 100; p.injury = 0; E.setRetrain(st, p.id, 'FWD');
   let early = true; for (let i = 0; i < 19; i++){ E.retrainWeek(st, c); if (E.slotWorth(p, 'FWD') !== 0.7 || E.slotWorth(p, 'MID') !== 0.85) early = false; }
-  ok(early && !p.pos2, 'for 19 of 20 weeks he is worth in attack exactly what he was: 70%'); E.retrainWeek(st, c); ok(p.pos2 === 'FWD' && E.slotWorth(p, 'FWD') === 0.95 && E.slotWorth(p, 'MID') === 0.85 && E.slotWorth(p, 'DEF') === 1, 'the twentieth week makes it 95%; midfield, which he has not learned, is still 85%, and defence is still his own');
-  for (let i = 0; i < 60; i++) E.retrainWeek(st, c); ok(p.pos2 === 'FWD' && E.slotWorth(p, 'FWD') === 0.95, 'and it stays: nothing to keep up');
+  ok(early && !p.pos2, 'for 19 of 20 weeks he is worth in attack exactly what he was: 70%'); E.retrainWeek(st, c); ok(p.pos2 === 'FWD' && E.slotWorth(p, 'FWD') === 0.90 && E.slotWorth(p, 'MID') === 0.85 && E.slotWorth(p, 'DEF') === 1, 'the twentieth week makes it 90% (the far line); midfield, which he has not learned, is still 85%, and defence is still his own');
+  for (let i = 0; i < 60; i++) E.retrainWeek(st, c); ok(p.pos2 === 'FWD' && E.slotWorth(p, 'FWD') === 0.90, 'and it stays: nothing to keep up');
   // a second course: the first position is his until the second is finished, then it is replaced
-  ok(E.setRetrain(st, p.id, 'MID'), 'he can then learn midfield'); for (let i = 0; i < 11; i++) E.retrainWeek(st, c); ok(p.pos2 === 'FWD' && E.slotWorth(p, 'FWD') === 0.95 && E.slotWorth(p, 'MID') === 0.85, 'while he learns it, attack is still his'); E.retrainWeek(st, c);
+  ok(E.setRetrain(st, p.id, 'MID'), 'he can then learn midfield'); for (let i = 0; i < 11; i++) E.retrainWeek(st, c); ok(p.pos2 === 'FWD' && E.slotWorth(p, 'FWD') === 0.90 && E.slotWorth(p, 'MID') === 0.85, 'while he learns it, attack is still his'); E.retrainWeek(st, c);
   ok(p.pos2 === 'MID' && E.slotWorth(p, 'MID') === 0.95 && E.slotWorth(p, 'FWD') === 0.7 && st.news.some(n => /can now play in midfield \(and no longer in attack\)/.test(n.text)), 'when it is finished midfield replaces attack: one learned position, and the news says which was lost');
   // the team picker prefers him to a man who has not learned the place
   const st2 = E.newGame({ seed: 72, userClub: 20 }), c2 = st2.clubs[20]; c2.formation = '5-4-1'; c2.xi = null; const defs = E.squadOf(st2, c2).filter(x => x.pos === 'DEF'); defs[0].injury = 4; const xi0 = E.autoSelect(st2, c2), before = xi0.find(x => x.slot === 'DEF' && x.p.pos !== 'DEF');
-  const spare = E.squadOf(st2, c2).find(x => x.pos === before.p.pos && !(x.injury > 0) && !xi0.some(y => y.p === x));   // a team-mate from the same line who is not in the eleven spare.skill = before.p.skill; spare.fitness = before.p.fitness; spare.morale = before.p.morale;
+  const spare = E.squadOf(st2, c2).find(x => x.pos === before.p.pos && !(x.injury > 0) && !xi0.some(y => y.p === x));   // a team-mate from the same line who is not in the eleven
+  spare.skill = before.p.skill; spare.fitness = before.p.fitness; spare.morale = before.p.morale;   // made his equal in everything but what he has learned
   const def0 = E.teamStrength(E.autoSelect(st2, c2)).def; spare.pos2 = 'DEF'; const xi1 = E.autoSelect(st2, c2), after = xi1.find(x => x.slot === 'DEF' && x.p.pos !== 'DEF');
   ok(before && spare && after.p === spare && E.effSkill(spare, 'DEF') > E.effSkill(before.p, 'DEF') && E.teamStrength(xi1).def > def0, 'short of a defender, the picker fields the man who has learned defence ahead of an equal man who has not, and the defence is the stronger for it');
-  console.log('all or nothing: worth what he was until the last week, then 95% for good; a second course replaces the first only when it finishes');
+  console.log('all or nothing: worth what he was until the last week, then 90% (far line) or 95% (next line) for good; a second course replaces the first only when it finishes');
 }
 
 // ---- 8. the trade-off: ordinary improvement, nobody else's changed, the same fitness cost ----
@@ -175,7 +178,7 @@ const WEEKS = { near: { 20: [17, 10, 8, 7], 26: [20, 12, 10, 8], 31: [25, 15, 12
   ok(differ === 0 && !q.pos2 && !q.learn, 'a computer club does not retrain anybody, even with a course written into it: a season identical to the game before');
   const st = E.newGame({ seed: 102, userClub: 20 }), c = st.clubs[31]; c.formation = '4-4-2'; const mids = E.squadOf(st, c).filter(x => x.pos === 'MID'); mids[0].injury = 5; mids[1].injury = 5; const fill = E.autoSelect(st, c).find(x => x.slot === 'MID' && x.p.pos !== 'MID'); const s0 = E.teamStrength(E.autoSelect(st, c)).mid; fill.p.pos2 = 'MID'; const xi1 = E.autoSelect(st, c), s1 = E.teamStrength(xi1).mid;
   ok(fill && s1 > s0 && xi1.some(x => x.p === fill.p && x.slot === 'MID'), 'a computer club that holds a retrained man fields him at what he has learned');
-  console.log('computer clubs never retrain; one that holds a retrained man fields him at 95%');
+  console.log('computer clubs never retrain; one that holds a retrained man fields him at what he has learned');
 }
 
 // ---- 11. hot-seat, a new job, the same seed, saves ----

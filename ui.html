@@ -462,7 +462,7 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const money = n => (n<0?'-':'')+'£'+E.fmt(Math.abs(n));
 const SAVE_KEY = 'sm91-save';
-const APP_VERSION = '1.8.0-training3';   // a development build on the way to the training milestone (milestone 2, slice 3a: the rules for learning a second position, with no screen for it yet; the screens are those of slice 2). Not a release: 1.8.0 is frozen on the branch release-1.8.0-rc1. Only a label carrying "-dev" shows the style preview
+const APP_VERSION = '1.8.0-training3.1';   // a development build on the way to the training milestone (milestone 2, slice 3a with the value John approved: a learned position is worth 95% in the next line and 90% in the far line. The rules only, with no screen for them yet; the screens are those of slice 2). Not a release: 1.8.0 is frozen on the branch release-1.8.0-rc1. Only a label carrying "-dev" shows the style preview
 const CHANGELOG = [
   { v:'1.8.0', when:'November 2026', notes:[
     'Tactics. You now decide how your team plays as well as its formation. On the Squad screen, under Match plan, there are four choices: Mentality (Defensive, Balanced, Attacking), Passing (Short, Mixed, Direct), Pressing (Low, Normal, High) and Shooting (Work it in, Balanced, Shoot on sight). Each one tells you what it gains you, what it costs and whom it suits.',
