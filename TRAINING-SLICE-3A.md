@@ -318,7 +318,7 @@ The two figures in bold are your accepted exceptions. Every other target is met:
 | Saves, both ways, against the candidate, 1.7.0 and 1.6.0 | Six runs, 21 or 22 checks each, no failures. |
 | The tactics bench | Its recorded output, line for line. |
 
-**Not run again, and why.** The layout, keyboard, touch, soak, hair and speed audits and the training bench all passed on the build of section 7 three hours earlier. Since then the only change to the game is the one number above, which no screen and no part of training reads, and the screens are proved identical stop for stop. I will run them all again at the slice 3b checkpoint, or now if you would like them on this build.
+**Not run again, and why.** The layout, keyboard, touch, soak, hair and speed audits and the training bench all passed on the build of section 7 earlier this evening. Since then the only change to the game is the one number above, which no screen and no part of training reads, and the screens are proved identical stop for stop. I will run them all again at the slice 3b checkpoint, or now if you would like them on this build.
 
 **Still waiting for you:** the rest of your message; decisions 2 and 3 of section 8; and whether to begin slice 3b.
 
