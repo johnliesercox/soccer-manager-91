@@ -17,6 +17,8 @@
 >
 > **Decided on the measured results, 27 November 2026 (evening):** a learned position is worth **95% in a neighbouring position and 90% in a distant one**; the natural position stays 100%. Two exceptions to target R3 are accepted and recorded as exceptions, with the targets left as written (continuous retraining in 5-4-1: 0.83 a season on average, 1.08 in its best season; one retraining: 0.61 in its best season with the average within the half point). Where the text below says 95% for every learned position, read this.
 >
+> **Also decided, 28 November 2026:** a change of target discards the unfinished work, and a pause keeps it (the rule as built); when a course finishes the priority place is left empty, the news says so, and the player is not moved to extra coaching automatically (the rule as built). For the screens (3b): explain the difference between pausing and changing; show exactly how many completed weeks will be lost and ask for confirmation, and the same before a completed secondary position is replaced; show completed secondary positions during squad selection so that it is obvious when a retrained player is the better choice. Slice 3b waits for his formal approval of the final values.
+>
 > The measured results are in `TRAINING-SLICE-3A.md`. The text below is the proposal as he read it.
 
 27 November 2026. **A proposal only. Nothing is built, and nothing will be until you have approved a scope.** It follows your approval of training slices 1 and 2, and your note that this is "approval to investigate and propose Slice 3, not approval to implement it".
